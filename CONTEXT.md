@@ -1,78 +1,120 @@
-# Skock - space fleet auto battler using boids movement
+# Skock — Space Fleet Auto-Battler
 
-The game is a rougelike/lite. It will have a semi multiplayer mode where you can auto battle others fleets. The battles are deterministic, so replaying the results locally should yeild the same results for both players and or verification-server (for a given seed). The multi play part is just retrieving opponents from the the server to get a fleet to auto battle.
+Skock is a roguelite where you command a fleet hyperspace-jumping from location to location to scavenge and survive — a homage to Gallforce and Homeworld. Each run consists of 8 encounters against opponent fleets. Battles are fully deterministic: replaying a battle with the same seed and fleet snapshots produces byte-identical results on any machine, enabling local replays and server-side anti-cheat verification. The multiplayer layer is simple: retrieve an opponent's fleet from the server and auto-battle it locally.
 
-Game story is a homage to Gallforce and homeworld. It is a story of fleet hyperspace jumping from place to place to scavange and survive
+## Core constraints
 
-* The game will be top down 2d, but use 3d engine/textures as sprites to easier rotate the graphics
-* The game will use boids for flock movement of the ships
-* The ships should have inertia or something to simulate space movement
-* The ships should have acceleration attribute
-* The game should run in 30 ticks/sec and a simulated battle should always end after 120sec.
-* The game should be fully deterministic given the random seed
-* The art style should be anime like macross and gallforce
-* A game session should hopefully take 15-30 min
-* Run state lives on the server
-* Seeded run generation
-* Encounter database. We will have currated opponent fleets that always exist for players to face
-* Single threaded
+- Top-down 2D; 3D engine/textures used as sprites for easy rotation
+- 30 ticks/sec logical simulation; renderer interpolates between ticks
+- All battles end within 120 seconds
+- Fully deterministic given the seed
+- Single-threaded simulation
+- Anime art style (Macross, Gallforce)
+- Target session length: 15–30 minutes
 
-1) A headless simulation runner. Command-line tool that takes a seed + two fleet JSONs and prints the result + a tick-by-tick log. Lets you write tests, debug desyncs, run balance simulations (Monte Carlo over 10,000 battles to see win rates per ship type).
+## The Mothership
 
-2) A determinism CI test. On every commit, run a fixed corpus of (seed, fleetA, fleetB) battles and assert the result hash matches a golden file. The day this test breaks, you know exactly which commit introduced non-determinism. Without this, desyncs become impossible to debug because they accumulate over weeks.
+The Mothership is the player's one permanent ship and the heart of the fleet. It is a combat entity — it appears on the battlefield with beam weapons and point defense. Destroying the enemy Mothership wins the battle; losing your own ends the run immediately regardless of remaining fleet.
 
-Game loop:
+Fleet size is limited by the Mothership's **hangar capacity** (a tonnage value). Each ship has a tonnage cost; heavier ships cost more. Lore: the entire fleet must physically dock inside the Mothership to survive hyperspace jumps. Upgrading hangar capacity (costs `Tech`) is a primary progression axis.
 
-The game consist of 8jumps+, you face 8 fleets.
+## Game loop
 
-Shopping mode:
-1) you start with one ship the Mothership and you only have one, your mothership has logistic limiting fleet size.
-2) You repair/build/scrap new ships/squadrons to add to the fleet using resources
-3) you buy weapon/equipment upgrades that apply to all ships/squadrons.
-4) the screen of weapons and tech is randomized, and it costs to reroll the table.
-Battle mode:
-5) Facing a fleet, you will face a fleet of of equal level and has the same win loss ratio as you (1jump, 2jump, 3jump, 4jump ... )
-6) you hyper space jump in your fleet on the left opponent on the right
-7) The fleet battles it out, if the simulation takes longer than 60s attrition will start to kick in ships take 1% damage every second increasing with 1% every second. And if it takes longer than 120sec both fleet warp out and it is considered a victory for both/draw.
-8) Winning/loosing for that jump round gives you resources
-9) your fleet is healed to full, and the game loop repeats until the 8th round or you have lost 3 rounds
-10) optional you can continue after the 8th round but get minimal resources and game over as soon as you loose to any fleet.
+A run consists of 8 jumps. Lose 3 battles and the run ends. After the 8th jump the player may continue into endless mode, earning minimal resources and ending the run on the first loss.
 
+### Shopping phase
 
-The server side
-Embarrassingly simple by comparison:
+1. Spend `Salvage` to build new ships or scrap unwanted ones.
+2. Spend `Tech` across three tracks:
+   - **Mothership upgrades** — hangar capacity, Mothership weapons/armor. Permanent; always available.
+   - **Fleet doctrine** — fleet-wide passive bonuses per ship role (e.g. all Fighters +10% speed). Randomized table per jump, rerollable with `Tech`.
+   - **Rare equipment** — one-off items attached to a specific ship. Randomized table, rerollable with `Tech`.
 
-* Stateless HTTP API, not real-time. REST or gRPC, doesn't matter.
-* Postgres (or SQLite if you're tiny). Tables: users, fleets, battle_results, runs, leaderboards.
-* Endpoints: register/login, save fleet, fetch opponent (random, or matched by ELO/run-progress), submit battle result, fetch leaderboard.
-* Server language: whatever you're comfortable with. Go, Rust + axum, Python + FastAPI, Node + Fastify, C# ASP.NET. The load is trivial — a single small VM serves thousands of concurrent users for this kind of game.
+### Battle phase
 
+3. Face a curated opponent fleet matched to your current jump number and win/loss ratio.
+4. Your fleet warps in from the left; the opponent warps in from the right.
+5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. At 120 seconds both fleets warp out — draw.
+6. Earn resources based on outcome:
+   - `Salvage` — earned from enemy ships destroyed during the battle
+   - `Tech` — earned from victories (rarer)
 
-## Language
-Concrete recommendation
-Engine:           Godot 4 with C#  (or Bevy + Rust if you prefer)
-Sim language:     Pure C# (or Rust) — engine-agnostic module
-Math:             Fixed-point (32.32 for positions, 16.16 for most else)
-RNG:              PCG or xoshiro256**, explicit state, no globals
-Containers:       SortedDictionary / BTreeMap / arrays-by-ID only
-Tick rate:        30Hz logical, render interpolates
-Boids:            SoA + uniform spatial grid, ≤16 neighbors per ship
-Server lang:      Whatever you're fastest in (Go / Rust+axum / Python+FastAPI)
-Server DB:        Postgres
-Server protocol:  REST/JSON, async only, no real-time
-Anti-cheat:       Server re-simulates sampled battles using same sim code
-Replays:          Store seed + value-snapshot of both fleets
-Tooling:          Headless sim runner + determinism CI test from day one
+### Between jumps
 
+All ships auto-heal to full HP for free. The player may optionally skip healing a ship to receive `Salvage` instead — a trade of combat effectiveness for resources. Ships that reach 0 HP during battle survive at 1 HP minimum; no ship is permanently destroyed by combat. Ships below full HP fight with proportionally deteriorated stats (speed, damage, turn rate, etc.).
 
+The only way to permanently remove a ship is to manually salvage it in the shop. Salvage yield is proportional to current HP — a damaged ship returns less, preventing a skip-heal-then-salvage farming loop.
+
+## Combat
+
+### Weapon archetypes
+
+- **Hitscan** — damage resolves instantly at the tick fired. No sim entity created.
+- **Projectile** — a first-class sim entity with position, velocity, target, and `ticks_remaining`. On expiry without a hit it fizzles (`projectile_fizzled`).
+- **Beam / ray** — continuous damage over a fixed tick duration. The beam entity persists in state snapshots while active (source, target, `ticks_remaining`). Damages everything in its path each tick — can hit multiple targets in a line. Capital ships carry beams: slow charge time, high sustained damage, long cooldown.
+
+### Projectile subtypes
+
+- **Seeking missile** — homes toward a target each tick within a turn-rate limit. Fizzles after N ticks if no hit. Interceptable by point defense.
+- **Torpedo** — straight-line, no homing (or very low turn rate). High damage, long lifetime. Interceptable by point defense.
+- **Drifting bomb / mine** — launched with an initial velocity then drifts unpowered. Detonates on proximity (radius trigger). No target tracking. Can be shot down by point defense.
+
+### Events
+
+`projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `beam_fired`, `beam_hit`, `beam_ended`
+
+### Ship roles
+
+Ship role is an enum label (`Fighter`, `MissileBoat`, `TorpedoBomber`, `MineLayer`, `PointDefense`, `Capital`) derived from a ship's boid weight profile and primary weapon type — not hard-coded behavior. Two ships with the same role share the same defaults but can diverge via stat tuning.
+
+TODO: define weapon stats (damage, range, cooldown, missile turn rate, beam charge time, point-defense priority rules).
+TODO: revisit ship roles — add more archetypes and flesh out Capital ship stats once combat feel is playtested.
+TODO: shop economy needs playtesting — reroll costs, Tech drop rates, doctrine bonus magnitudes, rare equipment pool.
+
+## Boids
+
+Ships use boids-based movement with inertia and acceleration. Layout: SoA (struct of arrays) with a uniform spatial grid; each ship considers ≤16 neighbors per tick.
+
+Forces are a weighted sum per ship: `separation`, `cohesion`, `alignment`, `seek_enemy`, `maintain_range`. Each ship role has a distinct weight profile — behavior changes by tuning weights, not code. Note: `seek_enemy` doubles as follow-leader (point it at an ally); `separation` doubles as flee-from-enemy (point it at a threat).
+
+TODO: define weight profiles per ship role.
+TODO: revisit boid forces — more forces likely needed once combat feel is playtested.
+
+## Tech stack
+
+| Concern | Choice |
+|---|---|
+| Game engine | Godot 4 (C#) |
+| Sim language | Rust — engine-agnostic CLI tool |
+| Server | Rust + axum — shares fleet/ship types with sim crate. Fallback: Node + Fastify. |
+| Database | Postgres |
+| Server protocol | REST/JSON, async, no real-time |
+| Math | Fixed-point via `fixed` crate — `I32F32` for positions, `I16F16` for most else |
+| RNG | xoshiro256+ (`rand_xoshiro` crate), explicit state (4× u64), no globals |
+| Containers (sim) | `BTreeMap` / `BTreeSet` / arrays-by-ID only — see ADR-0001 |
+| Replays | Seed + value-snapshot of both fleets at battle start |
+| Anti-cheat | Server re-simulates sampled battles using the same sim binary |
+
+## Sim ↔ client interface
+
+The Rust sim is a standalone CLI tool. Godot invokes it as a subprocess and reads the battle log written to disk.
+
+**Format:** JSON (human-readable; invaluable for debugging desyncs). Upgrade path to MessagePack (`rmp-serde` / `MessagePack-CSharp`) when log size or parse time becomes a problem — no schema compiler required.
+
+**Schema:** two parallel streams —
+- **State snapshots** (every tick): tick number + full ship state (position, velocity, heading, health) for all ships. Allows the renderer to scrub to any point in the battle.
+- **Event stream** (sparse): one entry per meaningful occurrence (shot fired, hit, ship at 0 HP, etc.). Renderer uses this to trigger visual effects at the correct tick.
+
+TODO: validate schema against renderer needs once the engine layer is being built.
+TODO: evaluate GDExtension (`gdext` crate) to embed the sim directly in Godot once the sim API stabilises.
 
 ## Build order
 
-1. Headless deterministic boids sim in pure C#/Rust. No graphics. Two fleets, fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical.
-2. Determinism CI test. Lock in a corpus of battles with known result hashes. This now runs on every commit forever.
-3. Engine layer. Godot/Unity scene that loads a battle log and renders it. Camera, ship sprites, projectile effects, victory screen.
+1. Headless deterministic boids sim in Rust. No graphics. Two fleets fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical.
+2. Determinism CI test. Lock in a corpus of (seed, fleetA, fleetB) battles with known result hashes. Runs on every commit forever.
+3. Engine layer. Godot 4 (C#) scene that loads a battle log and renders it. Camera, ship sprites, projectile effects, victory screen.
 4. Meta layer. Run map, shop, fleet builder, ship roster. All local first.
-5. Local roguelike loop end-to-end. Single player, no server, full run start to finish. Playtest the hell out of this. The game lives or dies here.
-6. Server. Account system, fleet upload, opponent fetch. Async multiplayer dropped onto the existing single-player game.
-7. Verification. Server-side replay simulation as a worker.
+5. Local roguelite loop end-to-end. Single player, no server, full run start to finish. Playtest thoroughly — the game lives or dies here.
+6. Server. Account system, fleet upload, opponent fetch. Async multiplayer dropped onto the existing single-player loop.
+7. Verification. Server-side replay simulation as a background worker.
 8. Polish, balance, content.
