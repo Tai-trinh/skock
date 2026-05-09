@@ -1,6 +1,6 @@
 MOUNTS = -v $$(pwd):/app
 
-.PHONY: install-win install-docker docker-build docker-run
+.PHONY: install-win install-docker docker-build docker-run fmt-check
 
 install-win:
 	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
@@ -28,3 +28,7 @@ docker-build:
 
 docker-run:
 	docker run --rm -it --gpus all $(MOUNTS) -w /app skock bash
+
+# TODO: run once sim crate exists
+fmt-check:
+	cargo fmt --check
