@@ -56,7 +56,7 @@ Ships that reach 0 HP during battle explode and are removed from the sim that ti
 
 ### Weapon archetypes
 
-- **Hitscan** — damage resolves instantly at the tick fired. No sim entity created.
+- **Hitscan** — damage resolves instantly at the tick fired. No sim entity created. Optional `miss_chance` (0.0–1.0): rolled via battle RNG each shot; on miss, a `hitscan_missed` event fires and no damage is applied.
 - **Projectile** — a first-class sim entity with position, velocity, target, and `ticks_remaining`. On expiry without a hit it fizzles (`projectile_fizzled`).
 - **Beam / ray** — continuous damage over a fixed tick duration. The beam entity persists in state snapshots while active (source, target, `ticks_remaining`). Damages everything in its path each tick — can hit multiple targets in a line. `Artillery`-role and `Battlecruiser`/`Dreadnought` hull class ships typically carry beams: slow charge time, high sustained damage, long cooldown.
 
@@ -81,7 +81,7 @@ TODO: revisit all status effects once core sim (movement, combat, hitscan) is wo
 
 ### Events
 
-`projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`, `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
+`projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`, `hitscan_fired`, `hitscan_missed`, `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
 
 ### Ship roles
 
