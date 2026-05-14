@@ -20,7 +20,9 @@ Three components built in this order:
 
 ## Sim ↔ client interface
 
-The sim writes a JSON battle log. Two parallel streams:
+**Transport:** sim writes MessagePack bytes to stdout; Godot reads subprocess stdout after process exits. Battle result/status go to stderr. `--debug` flag writes JSON to disk instead. At 256 entities: ~40 MB MessagePack / ~100 MB JSON — JSON too large for production. Same data model, format is a flag not a rewrite.
+
+Two parallel streams:
 - **State snapshots** (every tick) — full ship state (position, velocity, heading, health) for all ships and active projectiles/beams. Allows the renderer to scrub to any tick.
 - **Event stream** (sparse) — one entry per meaningful occurrence (`projectile_fired`, `projectile_hit`, `beam_hit`, `mine_detonated`, etc.). Drives visual effects.
 
