@@ -37,7 +37,7 @@ A run consists of 8 jumps. Lose 3 battles and the run ends. After the 8th jump t
 
 ### Battle phase
 
-3. Face a curated opponent fleet matched to your current jump number and win/loss ratio.
+3. Face a curated opponent fleet matched to your current jump number and win/loss ratio. Opponent fleets are hand-authored fleet JSON files shipped with the game, organized by difficulty tier. When the server exists, real player fleets replace them — the fleet JSON format is the bridge.
 4. Your fleet warps in from the left; the opponent warps in from the right.
 5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. At 120 seconds both fleets warp out — draw.
 6. Earn resources based on outcome:
@@ -49,6 +49,8 @@ A run consists of 8 jumps. Lose 3 battles and the run ends. After the 8th jump t
 All ships auto-heal to full HP for free. The player may optionally skip healing a ship to receive `Salvage` instead — a trade of combat effectiveness for resources. Ships that reach 0 HP during battle survive at 1 HP minimum; no ship is permanently destroyed by combat. Ships below full HP fight with proportionally deteriorated stats (speed, damage, turn rate, etc.).
 
 The only way to permanently remove a ship is to manually salvage it in the shop. Salvage yield is proportional to current HP — a damaged ship returns less, preventing a skip-heal-then-salvage farming loop.
+
+Ships that reach 0 HP during battle explode and are removed from the sim that tick (`ship_destroyed` event). They do not appear in subsequent state snapshots. After the battle, the fleet roster restores all destroyed ships to 1 HP — the player does not lose them permanently. This keeps battles visually dramatic without punishing the player with forced repurchases.
 
 ## Combat
 
@@ -79,7 +81,7 @@ TODO: revisit all status effects once core sim (movement, combat, hitscan) is wo
 
 ### Events
 
-`projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`
+`projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`, `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
 
 ### Ship roles
 
@@ -107,7 +109,7 @@ TODO: shop economy needs playtesting — reroll costs, Tech drop rates, doctrine
 
 ## Boids
 
-Ships use boids-based movement with inertia and acceleration. Layout: SoA (struct of arrays) with a uniform spatial grid; each ship considers ≤16 neighbors per tick.
+Ships use boids-based movement with inertia and acceleration. Neighbor search is O(N²) brute-force for now — the sim runs offline so raw throughput is not the first concern. TODO: replace with a uniform spatial grid or k-d tree if sim speed becomes a bottleneck during playtesting.
 
 Forces are a weighted sum per ship: `separation`, `cohesion`, `alignment`, `seek_enemy`, `maintain_range`. Each ship role has a distinct weight profile — behavior changes by tuning weights, not code. Note: `seek_enemy` doubles as follow-leader (point it at an ally); `separation` doubles as flee-from-enemy (point it at a threat).
 
@@ -132,6 +134,80 @@ Each ship has a `morale` value (0–100). Morale is part of the sim state and in
 **Effect on behavior:** morale is expressed through boid weights. Low morale shifts weights toward fleeing — `separation` from enemies increases, a `seek_mothership` force activates pulling the ship back toward the Mothership. High morale allows full aggressive weight profiles. The transition is continuous, not a binary flip.
 
 TODO: define morale thresholds, recovery rate, damage/destruction penalty magnitudes, and Mothership proximity radius.
+
+## Tick loop phase order
+
+Each tick executes phases in this exact order — order is part of the determinism contract:
+
+1. Increment tick counter
+2. Apply continuous effects — shield recharge, burn/radiation damage, status effect countdowns
+3. Rebuild spatial grid from current positions
+4. Compute boid forces per ship (reads spatial grid)
+5. Integrate positions and velocities (apply forces + inertia)
+6. Resolve weapon firing — check range, cooldown, ammo; spawn projectiles
+7. Advance projectiles — move, check hits, check fizzle
+8. Resolve beam damage — all active beams deal damage to ships in path
+9. Apply damage — shields absorb first, then armor reduction, then hull HP
+10. Check victory condition — Mothership at 0 HP ends battle
+11. Apply attrition if tick > 1800 (60s × 30 Hz) — 1% max HP damage per second, increasing 1% per second
+12. Write state snapshot + events to battle log
+
+## Sim code design
+
+### Error handling
+
+Panics for logic invariants inside the tick loop. Boundary errors (bad CLI args, invalid fleet JSON, stdout write failure) are caught in `main` and written to stderr as structured JSON — same channel as the battle result, but with an `"error"` key instead of `"winner"`:
+
+```json
+{"error": "invalid_fleet_json", "message": "ship[2].hp must be > 0"}
+```
+
+Godot reads stderr after sim exit; a non-zero exit code plus an `"error"` key means the battle failed to run.
+
+### Effect resolution
+
+At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. Proc-based effects (on_hit, on_kill) will be event-driven and layered on top of pre-resolved stats when implemented. TODO: add conditional trigger effects that activate on sim state conditions — e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. These are evaluated each tick against sim state, not pre-resolved.
+
+### Fixed-point type assignments
+
+| Field category | Type | Bytes |
+|---|---|---|
+| Position (x, y) | `I32F32` | 8 |
+| Velocity, acceleration | `I16F16` | 4 |
+| Heading (radians) | `I16F16` | 4 |
+| HP, shield HP, damage, regen | `I16F16` | 4 |
+| Armor fraction, crit chance | `I16F16` | 4 |
+| Boid weights | `I16F16` | 4 |
+
+`I32F32` only for positions — needed for future battlefield scaling. Everything else `I16F16` (±32 767 range, 4 bytes). Halves per-field cost in state snapshots.
+
+### Point defense targeting
+
+Point defense (`PointDefense` role) uses `target_priority: "projectile"`. Each tick it scans all live projectiles within weapon `range`, picks the one closest to any friendly ship (highest threat), and fires if cooldown allows. On hit: `projectile_intercepted` event, projectile removed. No special code path — point defense is a standard weapon that targets `ProjectileId` instead of `ShipId`.
+
+### Projectile hit detection
+
+Point-in-radius per tick: projectile hits if `distance(projectile, target) <= hit_radius`. No swept segment test. Tunneling is prevented by capping projectile speed so it cannot travel more than one ship-radius per tick. TODO: add swept segment test if tunneling is observed in playtesting.
+
+### Beam hit detection
+
+Ray from source toward the nearest valid target. Hits the first ship whose center is within `beam_width` of the ray (sorted by distance). Ray stops at the first hit — client draws the beam terminating at the hit ship. TODO: add `beam_pierce` weapon field to punch through multiple hulls once basic beams are playtested.
+
+### Damage resolution
+
+```
+shield_absorbed = min(raw_damage, shield_hp)
+shield_hp      -= shield_absorbed
+spillover       = raw_damage - shield_absorbed
+hull_damage     = spillover * (1.0 - armor)
+hp             -= hull_damage
+```
+
+Shields absorb first. Armor only reduces spillover damage to hull HP. A ship with full shields is tankier against burst; armor matters most when shields are down.
+
+### Entity IDs
+
+Typed newtypes — `ShipId(u32)`, `ProjectileId(u32)`, `BeamId(u32)` — each with its own counter in sim state. Prevents accidental cross-type ID comparisons at compile time. IDs are assigned at entity creation and never reused within a battle. BTreeMap keys throughout the sim use these typed IDs.
 
 ## Rust workspace structure
 
@@ -164,13 +240,19 @@ The Rust sim is a standalone CLI tool. Godot invokes it as a subprocess. Sim run
 
 **Transport:** sim writes MessagePack log bytes to stdout; Godot reads subprocess stdout after process exits. Debug flag (`--debug`) writes JSON to disk instead for desync investigation.
 
-**Battle result:** single-line JSON written to stderr on completion: `{"winner": "fleet_a", "ticks": 2134, "reason": "mothership_destroyed"}`. Reasons: `mothership_destroyed`, `timeout_draw`. Always written regardless of `--debug` flag — Godot reads stderr to determine outcome and pick the correct victory screen.
+**Battle result:** single-line JSON written to stderr on completion:
+```json
+{"winner": "fleet_a", "ticks": 2134, "reason": "mothership_destroyed", "fleet_a_survivors": [{"blueprint_drawing_id": "...", "hp": 45}], "fleet_b_survivors": [...]}
+```
+Reasons: `mothership_destroyed`, `timeout_draw`. `fleet_a_survivors` and `fleet_b_survivors` list final HP for every ship that was alive at battle end — ships that reached 0 HP mid-battle are absent (treated as 1 HP by the client when restoring the fleet). Always written regardless of `--debug` flag.
 
 **Format:** MessagePack (`rmp-serde` in Rust, `MessagePack-CSharp` in Godot) in production; JSON on disk in debug. At up to 256 total entities a full 120s battle log is ~100 MB JSON / ~40 MB MessagePack. Same data model — switching is a flag not a rewrite.
 
-**Schema:** two parallel streams —
-- **State snapshots** (every tick): tick number + full ship state (position, velocity, heading, health) for all ships. Allows the renderer to scrub to any point in the battle.
-- **Event stream** (sparse): one entry per meaningful occurrence (shot fired, hit, ship at 0 HP, etc.). Renderer uses this to trigger visual effects at the correct tick.
+**Schema:** the battle log opens with a header record containing a `schema_version` integer. Client rejects logs where the version doesn't match what it understands. Followed by one MessagePack record per tick, interleaved:
+```
+{ tick, ships: [...], projectiles: [...], beams: [...], events: [...] }
+```
+State snapshot and events for the same tick are one record. Godot builds the scrub index and event list in a single pass. No framing needed beyond MessagePack's own length encoding.
 
 **Render loop:** interpolated. Renderer runs at display framerate. Each frame computes `t ∈ [0,1]` between the two nearest sim ticks and lerps ship positions and headings. Events fire when `t` crosses a tick boundary. State snapshots allow seeking to any tick directly without replaying from tick 0.
 
@@ -183,7 +265,9 @@ TODO: evaluate GDExtension (`gdext` crate) to embed the sim directly in Godot on
 
 ## Fleet JSON specification
 
-The sim CLI takes a seed as a CLI argument and two fleet JSON files: `skock-sim --seed <u64> fleet_a.json fleet_b.json`.
+The sim CLI takes a seed as a CLI argument, two fleet JSON files, and an optional sim config: `skock-sim --seed <u64> fleet_a.json fleet_b.json [--config sim_config.json]`.
+
+`sim_config.json` holds global tuning knobs — attrition start tick, attrition rate, boid force caps, tick rate, battlefield bounds. In development, loaded from disk via `--config`. In production, embedded at compile time via `include_str!` — the `--config` flag overrides the embedded config for local testing. No runtime file dependency in the shipped binary.
 
 Fleet JSON top-level structure:
 ```json
@@ -269,9 +353,9 @@ Doctrine entry (supports upsides and downsides via multiple effects):
 {
   "id": "glass_cannon",
   "effects": [
-    { "scope": { "role": "Fighter" },            "stat": "damage", "modifier": 1.30 },
-    { "scope": { "hull_class": "Destroyer" },    "stat": "hp",     "modifier": 0.70 },
-    { "scope": null,                             "stat": "speed",  "modifier": 1.05 }
+    { "scope": { "role": "Fighter" },         "type": "stat_modifier", "stat": "damage", "modifier_type": "more",      "modifier": 1.30 },
+    { "scope": { "hull_class": "Destroyer" }, "type": "stat_modifier", "stat": "hp",     "modifier_type": "increased", "modifier": -0.30 },
+    { "scope": null,                          "type": "stat_modifier", "stat": "speed",  "modifier_type": "increased", "modifier": 0.05 }
   ]
 }
 ```
@@ -288,7 +372,11 @@ Equipment entry (ship-level, supports passive and active effects):
 ```
 
 Known effect types:
-- `stat_modifier` — multiplies a stat: `{ "type": "stat_modifier", "stat": "speed", "modifier": 1.2 }`
+- `stat_modifier` — modifies a stat. Two stacking modes via `modifier_type`:
+  - `"increased"` / `"decreased"` — additive: all bonuses on the same stat sum together, then applied as `base * (1 + total)`. Negative `modifier` values are decreases (e.g. `-0.30` = 30% decreased).
+  - `"more"` / `"less"` — multiplicative: each bonus multiplies the running total independently. Sub-1.0 values are less (e.g. `0.70` = 30% less).
+  - Final formula: `base * (1 + Σ increased/decreased) * Π more/less`
+  - Example: `{ "type": "stat_modifier", "stat": "speed", "modifier_type": "more", "modifier": 1.2 }`
 - `hp_regen` — restores HP per tick: `{ "type": "hp_regen", "value": 2 }`
 - `damage_reduction` — reduces all incoming damage by a fraction: `{ "type": "damage_reduction", "value": 0.15 }`
 
@@ -316,7 +404,17 @@ All four effect sources (`doctrines`, `role_equipment`, `faction_effects`, `admi
 TODO: define art style guide for hull meshes per class (Corvette = slim/fast silhouette, Dreadnought = wide/blocky, etc.).
 TODO: define faction names and visual identity once more than one faction is needed.
 
-**Run state (pre-server):** serialized to a local JSON save file via Godot's file API. Temporary scaffolding — replaced by server run state once the server is built. No SQLite or local DB.
+**Run state (pre-server):** serialized to a local JSON save file via Godot's file API. Human-editable — save file tampering is the player's problem in single-player. Replaced by server run state once the server is built: the server becomes the source of truth for fleet JSON and all player choices between fights, making local save tampering irrelevant. No SQLite or local DB.
+
+**UI data flow:** one-way. A single `RunState` C# class owns all run state. UI nodes read from it and subscribe to signals for updates; player actions call methods on it. No UI node owns state. Prevents split-brain bugs where multiple nodes disagree on currency counts or fleet composition.
+
+**Godot project structure:**
+- `src/sim/` — subprocess wrapper, battle log parser, playback state
+- `src/meta/` — `RunState`, shop logic, fleet builder logic
+- `src/ui/` — pure UI nodes, display only; call into `meta/` or `sim/` via signals, never the reverse
+- `src/rendering/` — battle renderer, ship sprite assembly, effect triggers
+
+No game logic in `_Ready()` or `_Process()` — those delegate to the appropriate layer.
 
 **Subprocess handling:** `System.Diagnostics.Process` (.NET standard API). Godot spawns the sim binary, waits for exit, reads stdout (MessagePack log) and stderr (battle result JSON).
 
@@ -324,11 +422,11 @@ TODO: define faction names and visual identity once more than one faction is nee
 
 ## Build order
 
-1. Headless deterministic boids sim in Rust. No graphics. Two fleets fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical.
+1. Headless deterministic boids sim in Rust. No graphics. Two fleets fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical. **First playable milestone:** two ship types (fighter + mothership), hitscan only, no status effects, no equipment, no doctrines. Watch the replay. Evaluate whether boids combat feels fun before building anything else.
 2. Determinism CI test. Lock in a corpus of (seed, fleetA, fleetB) battles with known result hashes. Runs on every commit forever.
 3. Engine layer. Godot 4 (C#) scene that loads a battle log and renders it. Camera, ship sprites, projectile effects, victory screen.
 4. Meta layer. Run map, shop, fleet builder, ship roster. All local first.
-5. Local roguelite loop end-to-end. Single player, no server, full run start to finish. Playtest thoroughly — the game lives or dies here.
+5. Local roguelite loop end-to-end. Single player, no server, full run start to finish. Playtest thoroughly — the game lives or dies here. **Rule:** no new weapon types or combat mechanics added before this step is complete. Combat complexity is content, not foundation.
 6. Server. Account system, fleet upload, opponent fetch. Async multiplayer dropped onto the existing single-player loop.
 7. Verification. Server-side replay simulation as a background worker.
 8. Polish, balance, content.
