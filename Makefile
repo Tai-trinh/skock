@@ -8,7 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt-check det win-build-sim win-build-godot start-godot docker-engine-start docker-build-sim docker-build-godot
+.PHONY: install-win install-docker docker-image docker-run fmt-check det win-build-sim win-build-godot start-godot docker-engine-start docker-build-sim docker-build-godot test-godot
 
 install-win:
 	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
@@ -59,6 +59,9 @@ win-build-godot:
 
 start-godot:
 	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
+
+test-godot:
+	powershell.exe -Command "& (Get-ChildItem '$$env:LOCALAPPDATA\Microsoft\WinGet\Packages' -Recurse -Filter 'Godot_v*mono*.exe' | Select-Object -First 1 -ExpandProperty FullName) --headless --path client/ --quit-after 300 2>&1"
 
 fmt-check:
 	cargo fmt --check
