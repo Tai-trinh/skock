@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Collections.Generic;
+using System.IO;
 using MessagePack;
 
 namespace Skock.Sim;
@@ -7,18 +9,14 @@ public static class BattleLogParser
 {
     private const uint ExpectedSchemaVersion = 1;
 
-    /// <summary>
-    /// Parses a complete MessagePack battle log from a byte array.
-    /// The log is a sequence of top-level MessagePack objects: one LogHeader
-    /// followed by one TickRecord per simulated tick.
-    /// </summary>
     public static BattleLog Parse(byte[] bytes)
     {
         var options = MessagePackSerializerOptions.Standard;
         var sequence = new ReadOnlySequence<byte>(bytes);
+        var reader = new MessagePackReader(sequence);
 
-        var header = MessagePackSerializer.Deserialize<LogHeader>(sequence, out var pos, options);
-        sequence = sequence.Slice(pos);
+        var header = MessagePackSerializer.Deserialize<LogHeader>(ref reader, options);
+        sequence = sequence.Slice(reader.Consumed);
 
         if (header.SchemaVersion != ExpectedSchemaVersion)
             throw new InvalidDataException(
@@ -29,8 +27,9 @@ public static class BattleLogParser
         var ticks = new List<TickRecord>();
         while (!sequence.IsEmpty)
         {
-            var tick = MessagePackSerializer.Deserialize<TickRecord>(sequence, out pos, options);
-            sequence = sequence.Slice(pos);
+            reader = new MessagePackReader(sequence);
+            var tick = MessagePackSerializer.Deserialize<TickRecord>(ref reader, options);
+            sequence = sequence.Slice(reader.Consumed);
             ticks.Add(tick);
         }
 

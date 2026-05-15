@@ -85,7 +85,7 @@ public partial class BattleRenderer : Node2D
         );
         var log = BattleLogParser.Parse(logBytes);
         // Marshal back to main thread before touching Godot nodes.
-        CallDeferred(MethodName.InitializeDeferred, log, result);
+        Callable.From(() => Initialize(log, result)).CallDeferred();
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
