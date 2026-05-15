@@ -1,7 +1,28 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Skock.Meta;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum HullClass { Corvette, Frigate, Destroyer, Cruiser, Battlecruiser, Dreadnought }
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum Role { Fighter, Missile, Torpedo, Mine, PointDefense, Artillery, Plasma, Railgun }
+
+public static class HullClassExtensions
+{
+    public static int Tonnage(this HullClass h) => h switch
+    {
+        HullClass.Corvette      => 2,
+        HullClass.Frigate       => 4,
+        HullClass.Destroyer     => 6,
+        HullClass.Cruiser       => 10,
+        HullClass.Battlecruiser => 16,
+        HullClass.Dreadnought   => 24,
+        _ => throw new ArgumentOutOfRangeException(nameof(h), h, null),
+    };
+}
 
 // C# mirror of the Rust FleetJson type — serializes to the format the sim reads.
 public sealed class FleetJsonData
@@ -20,9 +41,8 @@ public sealed class FleetJsonData
 public sealed class ShipDefData
 {
     [JsonPropertyName("blueprint_drawing_id")] public string BlueprintDrawingId { get; set; } = "";
-    // HullClass and Role are PascalCase in Rust (no serde rename_all).
-    [JsonPropertyName("hull_class")] public string HullClass { get; set; } = "Corvette";
-    [JsonPropertyName("role")] public string Role { get; set; } = "Fighter";
+    [JsonPropertyName("hull_class")] public HullClass HullClass { get; set; } = HullClass.Corvette;
+    [JsonPropertyName("role")] public Role Role { get; set; } = Role.Fighter;
     [JsonPropertyName("weight")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Weight { get; set; }
@@ -114,17 +134,6 @@ public sealed class WeaponDefData
 
 public static class ShipDisplay
 {
-    public static int TonnageFor(string hullClass) => hullClass switch
-    {
-        "Corvette" => 2,
-        "Frigate" => 4,
-        "Destroyer" => 6,
-        "Cruiser" => 10,
-        "Battlecruiser" => 16,
-        "Dreadnought" => 24,
-        _ => 2,
-    };
-
     public static string NameFor(ShipDefData ship)
     {
         var weight = ship.Weight is null ? "" : ship.Weight + " ";

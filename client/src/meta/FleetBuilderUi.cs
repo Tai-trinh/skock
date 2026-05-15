@@ -38,7 +38,7 @@ public partial class FleetBuilderUi : Control
         {
             var ship = _state.Fleet.Ships[i];
             var index = i;
-            var yield = ShipDisplay.TonnageFor(ship.HullClass) * 3;
+            var yield = ship.HullClass.Tonnage() * 3;
             var btn = new Button
             {
                 Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]",
@@ -70,7 +70,7 @@ public partial class FleetBuilderUi : Control
         if (index >= _state.Fleet.Ships.Count)
             return;
         var ship = _state.Fleet.Ships[index];
-        var yield = ShipDisplay.TonnageFor(ship.HullClass) * 3;
+        var yield = ship.HullClass.Tonnage() * 3;
         _state.Fleet.Ships.RemoveAt(index);
         _state.Salvage += yield;
         _statusLabel.Text = $"Salvaged {ShipDisplay.NameFor(ship)} for {yield} salvage.";

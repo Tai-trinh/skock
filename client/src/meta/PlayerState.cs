@@ -12,7 +12,7 @@ public sealed class PlayerState
     public int HangarCapacity { get; set; } = 10;
     public FleetJsonData Fleet { get; set; } = DefaultFleet();
 
-    public int UsedTonnage => Fleet.Ships.Sum(s => ShipDisplay.TonnageFor(s.HullClass));
+    public int UsedTonnage => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
     public int FreeTonnage => HangarCapacity - UsedTonnage;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
@@ -72,8 +72,8 @@ public sealed class PlayerState
         Mothership = new ShipDefData
         {
             BlueprintDrawingId = "mothership_a",
-            HullClass = "Dreadnought",
-            Role = "Artillery",
+            HullClass = HullClass.Dreadnought,
+            Role = Role.Artillery,
             Hp = 500, MaxHp = 500,
             Speed = 1, Acceleration = 0.3, TurnRate = 0.1,
             BoidWeights = new BoidWeightsData
