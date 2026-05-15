@@ -11,6 +11,10 @@ config_version=5
 [application]
 
 run/main_scene="res://scenes/FleetBuilder.tscn"
+
+[autoload]
+
+RunState="*res://src/meta/RunState.cs"
 config/features=PackedStringArray("4.6", "C#")
 
 [configuration]

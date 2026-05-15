@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -45,20 +45,15 @@ public partial class BattleRenderer : Node2D
 		_resultLabel.Visible = false;
 		_debugLabel.Text = "Loading sim...";
 
-		// Paths are relative to the project dir (client/); sim lives one level up.
-		var projectDir = ProjectSettings.GlobalizePath("res://");
-		var simBin = Path.GetFullPath(Path.Combine(projectDir, "..", "target", "release", "skock-sim.exe"));
-		var playerFleet = PlayerState.FleetPath(projectDir);
-		var fleetA = File.Exists(playerFleet)
-			? playerFleet
-			: Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_a.json"));
-		var fleetB = Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_b.json"));
+		var run = RunState.Instance;
+		var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
+		var fleetB = Path.GetFullPath(Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json"));
 
 		Task.Run(() =>
 		{
 			try
 			{
-				LoadFromSimRun(42, fleetA, fleetB, simBin);
+				LoadFromSimRun(42, fleetA, fleetB, run.SimBinaryPath);
 			}
 			catch (Exception e)
 			{
@@ -178,7 +173,7 @@ public partial class BattleRenderer : Node2D
 		if (Input.IsActionJustPressed("ui_accept"))
 		{
 			if (_playback.IsFinished)
-				GetTree().ChangeSceneToFile("res://scenes/FleetBuilder.tscn");
+				RunState.Instance.RecordBattleResult(_playback.Result ?? new BattleResult());
 			else
 				_playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
 		}
@@ -205,8 +200,8 @@ public partial class BattleRenderer : Node2D
 
 		_resultLabel.Visible = true;
 		_resultLabel.Text = result.Winner == "draw"
-			? "DRAW — time limit reached\n\n[Space] Back to fleet"
-			: $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)\n\n[Space] Back to fleet";
+			? "DRAW — time limit reached\n\n[Space] Continue"
+			: $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)\n\n[Space] Continue";
 	}
 
 	private void FitCamera()
