@@ -1,6 +1,6 @@
 MOUNTS = -v $$(pwd):/app
 
-.PHONY: install-win install-docker docker-build docker-run fmt-check det
+.PHONY: install-win install-docker docker-image docker-run fmt-check det win-build win-build-godot start_godot
 
 install-win:
 	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
@@ -23,7 +23,7 @@ install-docker:
 	sudo service docker restart
 	@echo "Done. Re-login or run: newgrp docker"
 
-docker-build:
+docker-image:
 	docker build -t skock .
 
 docker-run:
@@ -31,6 +31,15 @@ docker-run:
 
 det:
 	cargo test --test determinism
+
+win-build:
+	cargo.exe build -p sim --release
+
+win-build-godot:
+	dotnet.exe build client/skock.csproj
+
+start_godot:
+	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
 
 fmt-check:
 	cargo fmt --check

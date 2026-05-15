@@ -4,8 +4,17 @@ winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsof
 # Rust toolchain manager
 winget install Rustlang.Rustup
 
+# Install stable Rust toolchain (rustup ships with none by default)
+rustup install stable
+rustup default stable
+
 # .NET SDK — required for Godot 4 C# scripting
 winget install Microsoft.DotNet.SDK.8
 
 # Godot 4 with .NET/C# support
 winget install GodotEngine.GodotEngine.Mono
+
+# Restore NuGet packages for the Godot C# project (MessagePack-CSharp etc.)
+Push-Location "$PSScriptRoot/client"
+dotnet restore
+Pop-Location

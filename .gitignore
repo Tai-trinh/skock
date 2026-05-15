@@ -1,0 +1,10 @@
+# Rust
+target/
+
+# Godot generated
+client/.godot/
+client/**/*.uid
+client/skock.csproj.old
+
+# dotnet
+*.user
