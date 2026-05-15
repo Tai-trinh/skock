@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,198 +11,204 @@ namespace Skock.Rendering;
 
 public partial class BattleRenderer : Node2D
 {
-    [Export]
-    public int TickRate { get; set; } = 30;
+	[Export]
+	public int TickRate { get; set; } = 30;
 
-    // ── Scene children ────────────────────────────────────────────────────────
+	// ── Scene children ────────────────────────────────────────────────────────
 
-    private Camera2D _camera = null!;
-    private Node2D _shipsContainer = null!;
-    private Label _debugLabel = null!;
-    private Label _resultLabel = null!;
-    private DebugOverlay _debugOverlay = null!;
+	private Camera2D _camera = null!;
+	private Node2D _shipsContainer = null!;
+	private Label _debugLabel = null!;
+	private Label _resultLabel = null!;
+	private DebugOverlay _debugOverlay = null!;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+	// ── State ─────────────────────────────────────────────────────────────────
 
-    private PlaybackState? _playback;
-    private readonly Dictionary<uint, ShipNode> _shipNodes = [];
+	private PlaybackState? _playback;
+	private readonly Dictionary<uint, ShipNode> _shipNodes = [];
 
-    // Sim world → Godot world: 1 sim unit = SimScale pixels, y-axis flipped.
-    private const float SimScale = 1f;
+	// Sim world → Godot world: 1 sim unit = SimScale pixels, y-axis flipped.
+	private const float SimScale = 1f;
 
-    // ── Godot lifecycle ───────────────────────────────────────────────────────
+	// ── Godot lifecycle ───────────────────────────────────────────────────────
 
-    public override void _Ready()
-    {
-        _camera = GetNode<Camera2D>("Camera2D");
-        _shipsContainer = GetNode<Node2D>("Ships");
-        _debugLabel = GetNode<Label>("DebugUI/DebugLabel");
-        _resultLabel = GetNode<Label>("DebugUI/ResultLabel");
-        _debugOverlay = GetNode<DebugOverlay>("DebugOverlay");
+	public override void _Ready()
+	{
+		_camera = GetNode<Camera2D>("Camera2D");
+		_shipsContainer = GetNode<Node2D>("Ships");
+		_debugLabel = GetNode<Label>("DebugUI/DebugLabel");
+		_resultLabel = GetNode<Label>("DebugUI/ResultLabel");
+		_debugOverlay = GetNode<DebugOverlay>("DebugOverlay");
 
-        FitCamera();
-        _resultLabel.Visible = false;
+		FitCamera();
+		_resultLabel.Visible = false;
+		_debugLabel.Text = "Loading sim...";
 
-        // Paths are relative to the project dir (client/); sim lives one level up.
-        var projectDir = ProjectSettings.GlobalizePath("res://");
-        var simBin = Path.Combine(projectDir, "..", "target", "release", "skock-sim.exe");
-        var fleetA = Path.Combine(projectDir, "..", "sim", "test_data", "fleet_a.json");
-        var fleetB = Path.Combine(projectDir, "..", "sim", "test_data", "fleet_b.json");
+		// Paths are relative to the project dir (client/); sim lives one level up.
+		var projectDir = ProjectSettings.GlobalizePath("res://");
+		var simBin = Path.GetFullPath(Path.Combine(projectDir, "..", "target", "release", "skock-sim.exe"));
+		var fleetA = Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_a.json"));
+		var fleetB = Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_b.json"));
 
-        Task.Run(() =>
-        {
-            try
-            {
-                LoadFromSimRun(42, fleetA, fleetB, simBin);
-            }
-            catch (SimRunException e)
-            {
-                Callable.From(() => _debugLabel.Text = $"Sim error: {e.Message}").CallDeferred();
-            }
-        });
-    }
+		GD.Print($"[sim] bin:    {simBin}  exists={File.Exists(simBin)}");
+		GD.Print($"[sim] fleetA: {fleetA}  exists={File.Exists(fleetA)}");
+		GD.Print($"[sim] fleetB: {fleetB}  exists={File.Exists(fleetB)}");
 
-    public override void _Process(double delta)
-    {
-        if (_playback is null || !_playback.IsLoaded)
-            return;
+		Task.Run(() =>
+		{
+			try
+			{
+				LoadFromSimRun(42, fleetA, fleetB, simBin);
+			}
+			catch (Exception e)
+			{
+				GD.PrintErr($"[sim] {e.GetType().Name}: {e.Message}");
+				Callable.From(() => _debugLabel.Text = $"Error: {e.GetType().Name} (see Output panel)").CallDeferred();
+			}
+		});
+	}
 
-        HandleInput();
-        _playback.Advance(delta, TickRate);
-        Render();
+	public override void _Process(double delta)
+	{
+		if (_playback is null || !_playback.IsLoaded)
+			return;
 
-        if (_playback.IsFinished)
-            ShowResult();
-    }
+		HandleInput();
+		_playback.Advance(delta, TickRate);
+		Render();
 
-    // ── Public API ────────────────────────────────────────────────────────────
+		if (_playback.IsFinished)
+			ShowResult();
+	}
 
-    public void LoadFromFile(string msgpackPath)
-    {
-        var bytes = Godot.FileAccess.GetFileAsBytes(msgpackPath);
-        var log = BattleLogParser.Parse(bytes);
-        var result = new BattleResult { Winner = "unknown", Ticks = (uint)log.Ticks.Length, Reason = "loaded_from_file" };
-        Initialize(log, result);
-    }
+	// ── Public API ────────────────────────────────────────────────────────────
 
-    public void LoadFromSimRun(ulong seed, string fleetAPath, string fleetBPath, string simBinPath, string? configPath = null)
-    {
-        var (logBytes, result) = SimRunner.Run(simBinPath, seed, fleetAPath, fleetBPath, configPath);
-        var log = BattleLogParser.Parse(logBytes);
-        Callable.From(() => Initialize(log, result)).CallDeferred();
-    }
+	public void LoadFromFile(string msgpackPath)
+	{
+		var bytes = Godot.FileAccess.GetFileAsBytes(msgpackPath);
+		var log = BattleLogParser.Parse(bytes);
+		var result = new BattleResult { Winner = "unknown", Ticks = (uint)log.Ticks.Length, Reason = "loaded_from_file" };
+		Initialize(log, result);
+	}
 
-    // ── Private ───────────────────────────────────────────────────────────────
+	public void LoadFromSimRun(ulong seed, string fleetAPath, string fleetBPath, string simBinPath, string? configPath = null)
+	{
+		var (logBytes, result) = SimRunner.Run(simBinPath, seed, fleetAPath, fleetBPath, configPath);
+		var log = BattleLogParser.Parse(logBytes);
+		Callable.From(() => Initialize(log, result)).CallDeferred();
+	}
 
-    private void Initialize(BattleLog log, BattleResult result)
-    {
-        _playback = new PlaybackState(log, result);
-        RebuildShipNodes(log);
-    }
+	// ── Private ───────────────────────────────────────────────────────────────
 
-    private void RebuildShipNodes(BattleLog log)
-    {
-        foreach (var node in _shipNodes.Values)
-            node.QueueFree();
-        _shipNodes.Clear();
+	private void Initialize(BattleLog log, BattleResult result)
+	{
+		_playback = new PlaybackState(log, result);
+		RebuildShipNodes(log);
+	}
 
-        if (log.Ticks.Length == 0)
-            return;
+	private void RebuildShipNodes(BattleLog log)
+	{
+		foreach (var node in _shipNodes.Values)
+			node.QueueFree();
+		_shipNodes.Clear();
 
-        foreach (var snapshot in log.Ticks[0].Ships)
-        {
-            var node = new ShipNode();
-            _shipsContainer.AddChild(node);
-            node.Init(snapshot.Id, snapshot.Fleet, snapshot.IsMothership);
-            _shipNodes[snapshot.Id] = node;
-        }
-    }
+		if (log.Ticks.Length == 0)
+			return;
 
-    private void Render()
-    {
-        if (_playback is null)
-            return;
+		foreach (var snapshot in log.Ticks[0].Ships)
+		{
+			var node = new ShipNode();
+			_shipsContainer.AddChild(node);
+			node.Init(snapshot.Id, snapshot.Fleet, snapshot.IsMothership);
+			_shipNodes[snapshot.Id] = node;
+		}
+	}
 
-        var (tickA, tickB, t) = _playback.CurrentFrame();
+	private void Render()
+	{
+		if (_playback is null)
+			return;
 
-        var snapshotsB = new Dictionary<uint, ShipSnapshot>(tickB.Ships.Length);
-        foreach (var s in tickB.Ships)
-            snapshotsB[s.Id] = s;
+		var (tickA, tickB, t) = _playback.CurrentFrame();
 
-        var aliveIds = new HashSet<uint>(tickA.Ships.Length);
-        foreach (var snap in tickA.Ships)
-            aliveIds.Add(snap.Id);
+		var snapshotsB = new Dictionary<uint, ShipSnapshot>(tickB.Ships.Length);
+		foreach (var s in tickB.Ships)
+			snapshotsB[s.Id] = s;
 
-        foreach (var (id, node) in _shipNodes)
-            node.Visible = aliveIds.Contains(id);
+		var aliveIds = new HashSet<uint>(tickA.Ships.Length);
+		foreach (var snap in tickA.Ships)
+			aliveIds.Add(snap.Id);
 
-        foreach (var snapA in tickA.Ships)
-        {
-            if (!_shipNodes.TryGetValue(snapA.Id, out var node))
-                continue;
+		foreach (var (id, node) in _shipNodes)
+			node.Visible = aliveIds.Contains(id);
 
-            var posA = new Vector2(snapA.WorldX, -snapA.WorldY) * SimScale;
-            var hpFrac = snapA.HpFraction;
-            float headingRad;
-            Vector2 posB;
+		foreach (var snapA in tickA.Ships)
+		{
+			if (!_shipNodes.TryGetValue(snapA.Id, out var node))
+				continue;
 
-            if (snapshotsB.TryGetValue(snapA.Id, out var snapB))
-            {
-                posB = new Vector2(snapB.WorldX, -snapB.WorldY) * SimScale;
-                headingRad = Mathf.LerpAngle(snapA.HeadingRad, snapB.HeadingRad, t);
-            }
-            else
-            {
-                posB = posA;
-                headingRad = snapA.HeadingRad;
-            }
+			var posA = new Vector2(snapA.WorldX, -snapA.WorldY) * SimScale;
+			var hpFrac = snapA.HpFraction;
+			float headingRad;
+			Vector2 posB;
 
-            node.ApplySnapshot(posA.Lerp(posB, t), headingRad, hpFrac);
-        }
+			if (snapshotsB.TryGetValue(snapA.Id, out var snapB))
+			{
+				posB = new Vector2(snapB.WorldX, -snapB.WorldY) * SimScale;
+				headingRad = Mathf.LerpAngle(snapA.HeadingRad, snapB.HeadingRad, t);
+			}
+			else
+			{
+				posB = posA;
+				headingRad = snapA.HeadingRad;
+			}
 
-        UpdateDebugLabel(tickA);
-        _debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
-    }
+			node.ApplySnapshot(posA.Lerp(posB, t), headingRad, hpFrac);
+		}
 
-    private void HandleInput()
-    {
-        if (_playback is null)
-            return;
+		UpdateDebugLabel(tickA);
+		_debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
+	}
 
-        if (Input.IsActionJustPressed("ui_accept"))
-            _playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
-    }
+	private void HandleInput()
+	{
+		if (_playback is null)
+			return;
 
-    private void UpdateDebugLabel(TickRecord tick)
-    {
-        if (_playback is null)
-            return;
+		if (Input.IsActionJustPressed("ui_accept"))
+			_playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
+	}
 
-        var fleetA = tick.Ships.Count(s => s.Fleet == 0);
-        var fleetB = tick.Ships.Count(s => s.Fleet == 1);
-        _debugLabel.Text =
-            $"Tick {tick.Tick} / {_playback.TotalTicks}  |  "
-            + $"Speed {_playback.PlaybackSpeed}×  |  "
-            + $"Fleet A: {fleetA} ships  Fleet B: {fleetB} ships  "
-            + $"[Space] toggle speed";
-    }
+	private void UpdateDebugLabel(TickRecord tick)
+	{
+		if (_playback is null)
+			return;
 
-    private void ShowResult()
-    {
-        if (_playback?.Result is not { } result)
-            return;
+		var fleetA = tick.Ships.Count(s => s.Fleet == 0);
+		var fleetB = tick.Ships.Count(s => s.Fleet == 1);
+		_debugLabel.Text =
+			$"Tick {tick.Tick} / {_playback.TotalTicks}  |  "
+			+ $"Speed {_playback.PlaybackSpeed}×  |  "
+			+ $"Fleet A: {fleetA} ships  Fleet B: {fleetB} ships  "
+			+ $"[Space] toggle speed";
+	}
 
-        _resultLabel.Visible = true;
-        _resultLabel.Text = result.Winner == "draw"
-            ? "DRAW — time limit reached"
-            : $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)";
-    }
+	private void ShowResult()
+	{
+		if (_playback?.Result is not { } result)
+			return;
 
-    private void FitCamera()
-    {
-        var viewport = GetViewport().GetVisibleRect().Size;
-        var zoom = Mathf.Min(viewport.X, viewport.Y) / 1000f * 0.9f;
-        _camera.Zoom = new Vector2(zoom, zoom);
-        _camera.Position = Vector2.Zero;
-    }
+		_resultLabel.Visible = true;
+		_resultLabel.Text = result.Winner == "draw"
+			? "DRAW — time limit reached"
+			: $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)";
+	}
+
+	private void FitCamera()
+	{
+		var viewport = GetViewport().GetVisibleRect().Size;
+		var zoom = Mathf.Min(viewport.X, viewport.Y) / 1000f * 0.9f;
+		_camera.Zoom = new Vector2(zoom, zoom);
+		_camera.Position = Vector2.Zero;
+	}
 }
