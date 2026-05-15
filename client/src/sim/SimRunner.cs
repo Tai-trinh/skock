@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -18,6 +17,8 @@ public sealed class SimRunException(string message) : Exception(message);
 
 public static class SimRunner
 {
+	private const string ResultPrefix = "RESULT:";
+
 	/// <summary>
 	/// Runs the sim binary and returns the raw MessagePack stdout bytes.
 	/// Throws <see cref="SimRunException"/> if the sim exits with an error.
@@ -45,7 +46,6 @@ public static class SimRunner
 		using var process = Process.Start(psi)
 			?? throw new SimRunException($"Failed to start sim binary: {simBinaryPath}");
 
-		// Read stdout into memory (battle log) and stderr (result JSON)
 		// Read both streams concurrently to avoid deadlock on large output.
 		byte[] logBytes = [];
 		string stderrText = "";
@@ -62,30 +62,32 @@ public static class SimRunner
 		process.WaitForExit();
 		Task.WaitAll(stdoutTask, stderrTask);
 
-		// stderr may contain compiler warnings before the JSON line — take the last line.
-		var resultLine = stderrText
-			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.LastOrDefault(l => l.StartsWith('{')) ?? "";
+		var resultLine = FindResultLine(stderrText);
 
-		if (process.ExitCode != 0 || string.IsNullOrEmpty(resultLine))
+		if (resultLine is null)
 			throw new SimRunException(
-				$"Sim exited with code {process.ExitCode}. stderr:\n{stderrText}"
+				$"Sim exited with code {process.ExitCode} and no RESULT line. stderr:\n{stderrText}"
 			);
 
-		var result = ParseResult(resultLine);
-		if (result.Winner == "")
-			throw new SimRunException($"Sim reported an error: {resultLine}");
-
-		return (logBytes, result);
+		return (logBytes, ParseResult(resultLine));
 	}
+
+	private static string? FindResultLine(string stderr) =>
+		Array.Find(
+			stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			l => l.StartsWith(ResultPrefix)
+		)?[ResultPrefix.Length..];
 
 	private static BattleResult ParseResult(string json)
 	{
 		using var doc = JsonDocument.Parse(json);
 		var root = doc.RootElement;
 
-		if (root.TryGetProperty("error", out _))
-			return new BattleResult(); // empty Winner signals error to caller
+		if (root.TryGetProperty("error", out var errorCode))
+		{
+			var message = root.TryGetProperty("message", out var msg) ? msg.GetString() : null;
+			throw new SimRunException($"Sim error [{errorCode.GetString()}]: {message}");
+		}
 
 		return new BattleResult
 		{

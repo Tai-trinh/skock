@@ -174,13 +174,13 @@ Each tick executes phases in this exact order — order is part of the determini
 
 ### Error handling
 
-Panics for logic invariants inside the tick loop. Boundary errors (bad CLI args, invalid fleet JSON, stdout write failure) are caught in `main` and written to stderr as structured JSON — same channel as the battle result, but with an `"error"` key instead of `"winner"`:
+Panics for logic invariants inside the tick loop. Boundary errors (bad CLI args, invalid fleet JSON, stdout write failure) are caught in `main` and written to stderr with the `RESULT:` sentinel — same protocol as the battle result, with an `"error"` key instead of `"winner"`:
 
-```json
-{"error": "invalid_fleet_json", "message": "ship[2].hp must be > 0"}
+```
+RESULT:{"error": "invalid_fleet_json", "message": "ship[2].hp must be > 0"}
 ```
 
-Godot reads stderr after sim exit; a non-zero exit code plus an `"error"` key means the battle failed to run.
+Godot reads stderr after sim exit, finds the `RESULT:` line, and inspects it. If the JSON contains an `"error"` key, the battle failed. If no `RESULT:` line exists (e.g. a Rust panic), the sim crashed.
 
 ### Effect resolution
 
@@ -258,9 +258,9 @@ The Rust sim is a standalone CLI tool. Godot invokes it as a subprocess. Sim run
 
 **Transport:** sim writes MessagePack log bytes to stdout; Godot reads subprocess stdout after process exits. Debug flag (`--debug`) writes JSON to disk instead for desync investigation.
 
-**Battle result:** single-line JSON written to stderr on completion:
-```json
-{"winner": "fleet_a", "ticks": 2134, "reason": "mothership_destroyed", "fleet_a_survivors": [{"blueprint_drawing_id": "...", "hp": 45}], "fleet_b_survivors": [...]}
+**Battle result:** single line on stderr, prefixed with `RESULT:` sentinel, on completion:
+```
+RESULT:{"winner": "fleet_a", "ticks": 2134, "reason": "mothership_destroyed", "fleet_a_survivors": [{"blueprint_drawing_id": "...", "hp": 45}], "fleet_b_survivors": [...]}
 ```
 Reasons: `mothership_destroyed`, `timeout_draw`. `fleet_a_survivors` and `fleet_b_survivors` list final HP for every ship that was alive at battle end — ships that reached 0 HP mid-battle are absent (treated as 1 HP by the client when restoring the fleet). Always written regardless of `--debug` flag.
 

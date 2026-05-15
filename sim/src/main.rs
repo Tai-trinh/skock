@@ -103,7 +103,7 @@ fn main() {
         .collect();
 
     eprintln!(
-        "{}",
+        "RESULT:{}",
         json!({
             "winner": winner,
             "ticks": ticks,
@@ -129,5 +129,5 @@ fn load_fleet(path: &std::path::Path) -> anyhow::Result<FleetJson> {
 }
 
 fn emit_error(code: &str, message: &str) {
-    eprintln!("{}", json!({ "error": code, "message": message }));
+    eprintln!("RESULT:{}", json!({ "error": code, "message": message }));
 }
