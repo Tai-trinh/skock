@@ -18,18 +18,30 @@ Skock is a roguelite where you command a fleet hyperspace-jumping from location 
 
 ## The Mothership
 
-The Mothership is the player's one permanent ship and the heart of the fleet. It is a combat entity — it appears on the battlefield with artillery-class weapons and point defense. Destroying the enemy Mothership wins the battle; losing your own ends the run immediately regardless of remaining fleet.
+The Mothership is a colony ship — the last refuge of a surviving population fleeing across the stars. It carries both the fleet and the people. It is a combat entity: it appears on the battlefield with artillery-class weapons and point defense. Destroying the enemy Mothership wins the battle; losing your own ends the run immediately regardless of remaining fleet.
 
 Fleet size is limited by the Mothership's **hangar capacity** (a tonnage value). Each ship has a tonnage cost; heavier ships cost more. Lore: the entire fleet must physically dock inside the Mothership to survive hyperspace jumps. Upgrading hangar capacity (costs `Tech`) is a primary progression axis.
 
 ## Game loop
 
-A run consists of 8 jumps. Lose 3 battles and the run ends. After the 8th jump the player may continue into endless mode, earning minimal resources and ending the run on the first loss.
+A run consists of 8 jumps. Lose 3 battles and the run ends — lore: each defeat decimates the colony population that crew and sustain the fleet; after three losses not enough people remain to operate the Mothership. After the 8th jump the player may continue into endless mode, earning minimal resources and ending the run on the first loss.
 
 ### Shopping phase
 
-1. Spend `Salvage` to build new ships or scrap unwanted ones.
-2. Spend `Tech` across four tracks:
+Ships are the primary combo pieces. Doctrines are the synergizers — they activate multiplicatively when you have enough ships of the right role/type to qualify. The combo-hunting loop: build a fleet composition, then find the doctrines that make it pop, or find a doctrine first and draft ships toward it.
+
+**Lore framing:** at each jump destination the player finds a dockyard offering a random selection of ships for commission (spend `Salvage`). Separately, the Mothership's research team surfaces a randomized set of doctrines and tech discoveries for the player to adopt (spend `Tech`). Neither the dockyard nor the research team offers the same things twice — the player adapts to what's available, not what they planned.
+
+1. **Dockyard** — randomized selection of ships available to commission this jump, organized by hull class tier. Spend `Salvage` to add a ship to the fleet, or salvage an existing ship to recoup resources. Reroll any tier's offer by spending `Salvage`.
+
+   Slot counts per tier reflect rarity and tonnage cost — smaller ships appear more often and are easier to stack:
+   - **Capital** (Battlecruiser, Dreadnought): 1 offer
+   - **Destroyer / Cruiser**: 2 offers
+   - **Frigate**: 3 offers
+   - **Corvette / Fighter**: 5 offers
+
+   TODO: playtest and tune dockyard offer counts, ship tonnage values, and Salvage costs per hull class once the loop is end-to-end. Numbers above are first-pass guesses.
+2. **Research** — spend `Tech` across four tracks:
    - **Mothership upgrades** — hangar capacity, Mothership weapons/armor. Permanent; always available.
    - **Doctrines** — role/fleet-scoped passive bonuses (e.g. all Fighters +10% speed). Randomized table per jump, rerollable with `Tech`.
    - **Role equipment** — rarer, higher-magnitude role-scoped items (e.g. all `Missile`-role ships gain shield regen). Randomized table, rerollable with `Tech`.
@@ -397,7 +409,14 @@ Meshes are looked up from a client-side dictionary at battle log load time. `blu
 
 **Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Start with one faction; add more as art and balance allows.
 
-**Admiral:** chosen once at run start, locked for the full run. Confers passive bonuses only via `admiral_effects` in the fleet JSON — same effects vocabulary as doctrines. `admiral_id` is opaque to the sim; the client uses it to look up the admiral's portrait (2D anime front-facing art) shown in the shopping sequence. Multiple admirals available to choose from at run start, each with a distinct bonus profile and personality. TODO: revisit active admiral abilities (battle triggers, once-per-run effects) once proc-based effects are implemented.
+**Admiral:** the first decision of every run. The player picks one admiral from a selection screen before jump 1. Each admiral comes with a small starting fleet (2–3 ships that match their archetype) and a permanent passive bonus via `admiral_effects`. The starting fleet and bonus telegraph a build direction — the player knows their initial angle and hunts the dockyard and research for cards that complete the combo. `admiral_id` is opaque to the sim; the client uses it to look up the admiral's portrait (2D anime front-facing art) and starting fleet definition. Locked for the full run once chosen.
+
+Example admirals (placeholder — tune during playtesting):
+- **Admiral Kira** — starts with 2 Fighter Corvettes; all Fighters +15% speed.
+- **Admiral Voss** — starts with 1 Artillery Frigate + 1 Destroyer; beam weapons +10% damage.
+- **Admiral Shen** — starts with 1 Cruiser; Mothership hangar capacity +4T at run start.
+
+TODO: define full admiral roster, starting fleets, and bonus magnitudes once the loop is playtested. TODO: revisit active admiral abilities (battle triggers, once-per-run effects) once proc-based effects are implemented.
 
 All four effect sources (`doctrines`, `role_equipment`, `faction_effects`, `admiral_effects`) use the same data-driven effects vocabulary. The sim concatenates all four into a single flat list and applies them identically — the source array is invisible at the sim layer. Keeping them as separate arrays in the fleet JSON makes the source of each bonus explicit for client-side debugging and UI display ("this bonus comes from your admiral").
 
@@ -406,13 +425,25 @@ TODO: define faction names and visual identity once more than one faction is nee
 
 **Run state (pre-server):** serialized to a local JSON save file via Godot's file API. Human-editable — save file tampering is the player's problem in single-player. Replaced by server run state once the server is built: the server becomes the source of truth for fleet JSON and all player choices between fights, making local save tampering irrelevant. No SQLite or local DB.
 
+**Run reset:** every run starts fresh from the chosen admiral's starting fleet. No ships, doctrines, or equipment carry over between runs. The combo-hunting feel depends on a blank slate — a persistent fleet collapses into one optimal build. The admiral selection screen is the only persistent choice a player makes at run start.
+
+**Meta-progression (out-of-run):** separate from run state. Tracks achievements and unlocks across all runs. TODO: design meta-progression system — achievements that unlock new admirals, new factions, additional starting difficulties (e.g. smaller hangar cap, fewer starting ships), and cosmetic or quality-of-life goodies. Implement after the core loop is playtested.
+
 **UI data flow:** one-way. A single `RunState` C# class owns all run state. UI nodes read from it and subscribe to signals for updates; player actions call methods on it. No UI node owns state. Prevents split-brain bugs where multiple nodes disagree on currency counts or fleet composition.
 
 **Godot project structure:**
 - `src/sim/` — subprocess wrapper, battle log parser, playback state
-- `src/meta/` — `RunState`, shop logic, fleet builder logic
+- `src/meta/` — `RunState`, shop logic, admiral definitions, dockyard logic
 - `src/ui/` — pure UI nodes, display only; call into `meta/` or `sim/` via signals, never the reverse
 - `src/rendering/` — battle renderer, ship sprite assembly, effect triggers
+
+**Scenes:**
+- `AdmiralSelect.tscn` — run start; player picks an admiral, sees starting fleet and passive bonus. Transitions to `Dockyard.tscn` on confirm.
+- `Dockyard.tscn` — between every battle; randomized ship offers by tier (5/3/2/1), research/doctrine track, salvage and heal decisions. Transitions to `Battle.tscn` on launch.
+- `Battle.tscn` — battle playback. Transitions to `Dockyard.tscn` on next jump, or to `RunEnd.tscn` on 3rd loss or completing jump 8.
+- `RunEnd.tscn` — run result screen. Victory: the colony wins the race to a new frontier world — the Mothership finds a habitable planet and the survivors make landfall. Defeat: the colony falls short, crew lost, no world found. Shows run stats (battles won/lost, ships built, doctrines acquired). Returns to `AdmiralSelect.tscn` for a new run. TODO: flesh out victory/defeat narrative and art direction once core loop is playtested.
+
+The existing `FleetBuilder.tscn` is superseded by `Dockyard.tscn` — rename and extend rather than rewrite. `FleetBuilderUi.cs` buy/salvage logic carries over directly.
 
 No game logic in `_Ready()` or `_Process()` — those delegate to the appropriate layer.
 
@@ -425,7 +456,7 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
 1. Headless deterministic boids sim in Rust. No graphics. Two fleets fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical. **First playable milestone:** two ship types (fighter + mothership), hitscan only, no status effects, no equipment, no doctrines. Watch the replay. Evaluate whether boids combat feels fun before building anything else.
 2. Determinism CI test. Lock in a corpus of (seed, fleetA, fleetB) battles with known result hashes. Runs on every commit forever.
 3. Engine layer. Godot 4 (C#) scene that loads a battle log and renders it. Camera, ship sprites, projectile effects, victory screen.
-4. Meta layer. Run map, shop, fleet builder, ship roster. All local first.
+4. Meta layer. Shop, fleet builder, ship roster. All local first. No run map — encounters are linear, 1 through 8 in sequence.
 5. Local roguelite loop end-to-end. Single player, no server, full run start to finish. Playtest thoroughly — the game lives or dies here. **Rule:** no new weapon types or combat mechanics added before this step is complete. Combat complexity is content, not foundation.
 6. Server. Account system, fleet upload, opponent fetch. Async multiplayer dropped onto the existing single-player loop.
 7. Verification. Server-side replay simulation as a background worker.
