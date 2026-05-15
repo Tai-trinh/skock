@@ -94,6 +94,20 @@ public partial class RunState : Node
     private string StatePath() =>
         Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_state.json"));
 
+    // ── Run lifecycle ─────────────────────────────────────────────────────────
+
+    public void StartRun(Admiral admiral)
+    {
+        Salvage = admiral.StartingSalvage;
+        Tech = admiral.StartingTech;
+        HangarCapacity = admiral.StartingHangarCapacity;
+        JumpNumber = 1;
+        LossCount = 0;
+        AdmiralId = admiral.Id;
+        Fleet = admiral.StartingFleet;
+        Save();
+    }
+
     // ── Battle result + scene transitions ─────────────────────────────────────
 
     public void RecordBattleResult(BattleResult result)
