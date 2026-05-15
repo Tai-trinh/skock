@@ -24,13 +24,7 @@ pub fn spawn_fleet(state: &mut SimState, fleet: &FleetJson, side: Fleet, config:
     }
 
     let ms_pos = Pos2::from_f64(spawn_x, 0.0);
-    let ms = build_ship(
-        state.alloc_ship_id(),
-        &fleet.mothership,
-        side,
-        ms_pos,
-        true,
-    );
+    let ms = build_ship(state.alloc_ship_id(), &fleet.mothership, side, ms_pos, true);
     state.ships.insert(ms.id, ms);
 }
 
@@ -91,11 +85,8 @@ pub fn build_ship(id: ShipId, def: &ShipDef, fleet: Fleet, pos: Pos2, is_mothers
         ammo: w.ammo,
     });
 
-    let preferred_range = def
-        .weapon
-        .as_ref()
-        .map(|w| I16F16::from_num(w.range))
-        .unwrap_or(I16F16::ZERO);
+    let preferred_range =
+        def.weapon.as_ref().map(|w| I16F16::from_num(w.range)).unwrap_or(I16F16::ZERO);
 
     let heading = match fleet {
         Fleet::A => I16F16::ZERO,

@@ -19,10 +19,7 @@ fn dir(from: &Pos2, to: &Pos2) -> Vec2 {
         return Vec2::ZERO;
     }
     let dist = cordic::sqrt(d_sq);
-    Vec2 {
-        x: I16F16::from_num(dx / dist),
-        y: I16F16::from_num(dy / dist),
-    }
+    Vec2 { x: I16F16::from_num(dx / dist), y: I16F16::from_num(dy / dist) }
 }
 
 pub fn compute_forces(
@@ -87,10 +84,8 @@ pub fn compute_forces(
 
     // Alignment: steer toward average velocity of neighbors
     if ali_count > 0 {
-        let avg = Vec2 {
-            x: ali.x / I16F16::from_num(ali_count),
-            y: ali.y / I16F16::from_num(ali_count),
-        };
+        let avg =
+            Vec2 { x: ali.x / I16F16::from_num(ali_count), y: ali.y / I16F16::from_num(ali_count) };
         total += avg * ship.boid_weights.alignment;
     }
 
@@ -109,10 +104,7 @@ pub fn compute_forces(
             let range_force = if diff > I32F32::ZERO {
                 dir_to_enemy
             } else {
-                Vec2 {
-                    x: -dir_to_enemy.x,
-                    y: -dir_to_enemy.y,
-                }
+                Vec2 { x: -dir_to_enemy.x, y: -dir_to_enemy.y }
             };
             total += range_force * ship.boid_weights.maintain_range;
         }

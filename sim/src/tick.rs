@@ -88,14 +88,8 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
     // Phase 9: damage already applied inline in combat.rs
 
     // Phase 10: check victory condition
-    let mothership_a = state
-        .ships
-        .values()
-        .any(|s| s.fleet == Fleet::A && s.is_mothership);
-    let mothership_b = state
-        .ships
-        .values()
-        .any(|s| s.fleet == Fleet::B && s.is_mothership);
+    let mothership_a = state.ships.values().any(|s| s.fleet == Fleet::A && s.is_mothership);
+    let mothership_b = state.ships.values().any(|s| s.fleet == Fleet::B && s.is_mothership);
 
     match (mothership_a, mothership_b) {
         (false, _) => return TickResult::Winner(Fleet::B),

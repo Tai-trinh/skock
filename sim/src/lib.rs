@@ -54,10 +54,5 @@ pub fn run_battle(
         TickResult::Continue => unreachable!(),
     };
 
-    BattleOutput {
-        log_bytes,
-        winner,
-        ticks: state.tick,
-        reason,
-    }
+    BattleOutput { log_bytes, winner, ticks: state.tick, reason }
 }

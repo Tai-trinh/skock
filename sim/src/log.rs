@@ -1,6 +1,6 @@
+use crate::state::{Event, Fleet, SimState};
 use serde::Serialize;
 use std::io::{self, Write};
-use crate::state::{Event, Fleet, SimState};
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -31,22 +31,10 @@ struct ShipSnapshot {
 #[derive(Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum LogEvent {
-    HitscanFired {
-        source_id: u32,
-        target_id: u32,
-        damage: i32,
-    },
-    HitscanMissed {
-        source_id: u32,
-        target_id: u32,
-    },
-    ShipDestroyed {
-        id: u32,
-        fleet: u8,
-    },
-    ShipAtLowHp {
-        id: u32,
-    },
+    HitscanFired { source_id: u32, target_id: u32, damage: i32 },
+    HitscanMissed { source_id: u32, target_id: u32 },
+    ShipDestroyed { id: u32, fleet: u8 },
+    ShipAtLowHp { id: u32 },
     AttritionStarted,
 }
 
@@ -68,35 +56,24 @@ fn fleet_byte(f: Fleet) -> u8 {
 
 fn map_event(e: &Event) -> LogEvent {
     match e {
-        Event::HitscanFired {
-            source_id,
-            target_id,
-            damage,
-        } => LogEvent::HitscanFired {
+        Event::HitscanFired { source_id, target_id, damage } => LogEvent::HitscanFired {
             source_id: source_id.0,
             target_id: target_id.0,
             damage: damage.to_bits(),
         },
-        Event::HitscanMissed {
-            source_id,
-            target_id,
-        } => LogEvent::HitscanMissed {
-            source_id: source_id.0,
-            target_id: target_id.0,
-        },
-        Event::ShipDestroyed { id, fleet } => LogEvent::ShipDestroyed {
-            id: id.0,
-            fleet: fleet_byte(*fleet),
-        },
+        Event::HitscanMissed { source_id, target_id } => {
+            LogEvent::HitscanMissed { source_id: source_id.0, target_id: target_id.0 }
+        }
+        Event::ShipDestroyed { id, fleet } => {
+            LogEvent::ShipDestroyed { id: id.0, fleet: fleet_byte(*fleet) }
+        }
         Event::ShipAtLowHp { id } => LogEvent::ShipAtLowHp { id: id.0 },
         Event::AttritionStarted => LogEvent::AttritionStarted,
     }
 }
 
 pub fn write_header(out: &mut impl Write) -> io::Result<()> {
-    let header = LogHeader {
-        schema_version: SCHEMA_VERSION,
-    };
+    let header = LogHeader { schema_version: SCHEMA_VERSION };
     let bytes = rmp_serde::to_vec_named(&header).expect("header serialization failed");
     out.write_all(&bytes)
 }
@@ -124,13 +101,7 @@ pub fn write_tick(out: &mut impl Write, state: &SimState) -> io::Result<()> {
 
     let events: Vec<LogEvent> = state.events.iter().map(map_event).collect();
 
-    let record = TickRecord {
-        tick: state.tick,
-        ships,
-        projectiles: vec![],
-        beams: vec![],
-        events,
-    };
+    let record = TickRecord { tick: state.tick, ships, projectiles: vec![], beams: vec![], events };
 
     let bytes = rmp_serde::to_vec_named(&record).expect("tick serialization failed");
     out.write_all(&bytes)

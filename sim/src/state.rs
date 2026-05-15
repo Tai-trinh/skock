@@ -10,16 +10,10 @@ pub struct Pos2 {
 }
 
 impl Pos2 {
-    pub const ZERO: Self = Self {
-        x: I32F32::ZERO,
-        y: I32F32::ZERO,
-    };
+    pub const ZERO: Self = Self { x: I32F32::ZERO, y: I32F32::ZERO };
 
     pub fn from_f64(x: f64, y: f64) -> Self {
-        Self {
-            x: I32F32::from_num(x),
-            y: I32F32::from_num(y),
-        }
+        Self { x: I32F32::from_num(x), y: I32F32::from_num(y) }
     }
 }
 
@@ -30,26 +24,17 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    pub const ZERO: Self = Self {
-        x: I16F16::ZERO,
-        y: I16F16::ZERO,
-    };
+    pub const ZERO: Self = Self { x: I16F16::ZERO, y: I16F16::ZERO };
 
     pub fn from_f64(x: f64, y: f64) -> Self {
-        Self {
-            x: I16F16::from_num(x),
-            y: I16F16::from_num(y),
-        }
+        Self { x: I16F16::from_num(x), y: I16F16::from_num(y) }
     }
 }
 
 impl std::ops::Add for Vec2 {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Self {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
+        Self { x: self.x + rhs.x, y: self.y + rhs.y }
     }
 }
 
@@ -63,10 +48,7 @@ impl std::ops::AddAssign for Vec2 {
 impl std::ops::Mul<I16F16> for Vec2 {
     type Output = Self;
     fn mul(self, rhs: I16F16) -> Self {
-        Self {
-            x: self.x * rhs,
-            y: self.y * rhs,
-        }
+        Self { x: self.x * rhs, y: self.y * rhs }
     }
 }
 
@@ -134,22 +116,10 @@ pub struct Ship {
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    HitscanFired {
-        source_id: ShipId,
-        target_id: ShipId,
-        damage: I16F16,
-    },
-    HitscanMissed {
-        source_id: ShipId,
-        target_id: ShipId,
-    },
-    ShipDestroyed {
-        id: ShipId,
-        fleet: Fleet,
-    },
-    ShipAtLowHp {
-        id: ShipId,
-    },
+    HitscanFired { source_id: ShipId, target_id: ShipId, damage: I16F16 },
+    HitscanMissed { source_id: ShipId, target_id: ShipId },
+    ShipDestroyed { id: ShipId, fleet: Fleet },
+    ShipAtLowHp { id: ShipId },
     AttritionStarted,
 }
 

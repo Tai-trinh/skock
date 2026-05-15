@@ -58,17 +58,10 @@ pub fn resolve_hitscan(state: &mut SimState) {
 
         let roll = rng_frac(&mut state.rng);
         if roll < miss_chance {
-            state.events.push(Event::HitscanMissed {
-                source_id: id,
-                target_id,
-            });
+            state.events.push(Event::HitscanMissed { source_id: id, target_id });
         } else {
             let crit_roll = rng_frac(&mut state.rng);
-            let final_damage = if crit_roll < crit_chance {
-                damage * crit_damage
-            } else {
-                damage
-            };
+            let final_damage = if crit_roll < crit_chance { damage * crit_damage } else { damage };
 
             apply_damage(state, target_id, final_damage, id);
 
@@ -105,7 +98,8 @@ fn apply_damage(state: &mut SimState, target_id: ShipId, raw_damage: I16F16, _so
 
     // Check low HP threshold (25%)
     let low_hp_threshold = ship.max_hp / I16F16::from_num(4);
-    if ship.hp <= low_hp_threshold && !state.low_hp_flagged.get(&target_id).copied().unwrap_or(false)
+    if ship.hp <= low_hp_threshold
+        && !state.low_hp_flagged.get(&target_id).copied().unwrap_or(false)
     {
         state.low_hp_flagged.insert(target_id, true);
         state.events.push(Event::ShipAtLowHp { id: target_id });
@@ -115,10 +109,7 @@ fn apply_damage(state: &mut SimState, target_id: ShipId, raw_damage: I16F16, _so
     if ship.hp <= I16F16::ZERO {
         ship.hp = I16F16::ZERO;
         let fleet = ship.fleet;
-        state.events.push(Event::ShipDestroyed {
-            id: target_id,
-            fleet,
-        });
+        state.events.push(Event::ShipDestroyed { id: target_id, fleet });
         state.ships.remove(&target_id);
     }
 }
