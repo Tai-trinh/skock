@@ -18,19 +18,25 @@ Skock is a roguelite where you command a fleet hyperspace-jumping from location 
 
 ## The Mothership
 
-The Mothership is a colony ship — the last refuge of a surviving population fleeing across the stars. It carries both the fleet and the people. It is a combat entity: it appears on the battlefield with artillery-class weapons and point defense. Destroying the enemy Mothership wins the battle; losing your own ends the run immediately regardless of remaining fleet.
+The Mothership is a colony ship — the last refuge of a surviving population fleeing across the stars. It carries both the fleet and the people. It is a combat entity: it appears on the battlefield with artillery-class weapons and point defense.
+
+**Win condition:** destroy the enemy Mothership.
+
+**Forced retreat:** if the player's Mothership reaches 0 HP mid-battle, it immediately warps out — the battle ends, all surviving fleet ships are recalled with it. The Mothership is never destroyed; it escapes. This counts as a battle loss toward the 3-loss run limit. Lore: the Mothership's emergency jump drive activates the instant the hull is critically breached — the colony cannot afford to be lost.
 
 Fleet size is limited by the Mothership's **hangar capacity** (a tonnage value). Each ship has a tonnage cost; heavier ships cost more. Lore: the entire fleet must physically dock inside the Mothership to survive hyperspace jumps. Upgrading hangar capacity (costs `Tech`) is a primary progression axis.
 
 ## Game loop
 
-A run consists of 8 jumps. Lose 3 battles and the run ends — lore: each defeat decimates the colony population that crew and sustain the fleet; after three losses not enough people remain to operate the Mothership. After the 8th jump the player may continue into endless mode, earning minimal resources and ending the run on the first loss.
+A run consists of 8 jumps through contested space. Every fleet encountered is a rival colony ship competing for the same fertile frontier systems — not enemies, but competitors. Lose 3 battles and the run ends — lore: each defeat decimates the colony population; after three losses not enough people remain to operate the Mothership.
+
+**Hidden final encounter:** completing all 8 jumps without a single loss AND achieving a top-10% run score unlocks a secret 9th encounter — the strongest rival fleet, which reached the prime homeworld first. Beating them claims the best world (true victory ending). Skipping or losing still earns the standard victory (settling for a second-rate system). TODO: define the scoring formula once the loop is playtested.
 
 ### Shopping phase
 
 Ships are the primary combo pieces. Doctrines are the synergizers — they activate multiplicatively when you have enough ships of the right role/type to qualify. The combo-hunting loop: build a fleet composition, then find the doctrines that make it pop, or find a doctrine first and draft ships toward it.
 
-**Lore framing:** at each jump destination the player finds a dockyard offering a random selection of ships for commission (spend `Salvage`). Separately, the Mothership's research team surfaces a randomized set of doctrines and tech discoveries for the player to adopt (spend `Tech`). Neither the dockyard nor the research team offers the same things twice — the player adapts to what's available, not what they planned.
+**Lore framing:** at each jump destination the player finds a dockyard offering a random selection of ships for commission (spend `Salvage`). Separately, the Mothership's research team surfaces a randomized set of doctrines and tech discoveries for the player to adopt (spend `Tech`). Offers refresh every jump, drawn from a weighted pool — the same ship type or doctrine can appear on multiple jumps. Scarcity comes from randomness and budget, not depletion.
 
 1. **Dockyard** — randomized selection of ships available to commission this jump, organized by hull class tier. Spend `Salvage` to add a ship to the fleet, or salvage an existing ship to recoup resources. Reroll any tier's offer by spending `Salvage`.
 
@@ -41,7 +47,7 @@ Ships are the primary combo pieces. Doctrines are the synergizers — they activ
    - **Corvette / Fighter**: 5 offers
 
    TODO: playtest and tune dockyard offer counts, ship tonnage values, and Salvage costs per hull class once the loop is end-to-end. Numbers above are first-pass guesses.
-2. **Research** — spend `Tech` across four tracks:
+2. **Research** — spend `Tech` across four tracks. Tech is earned from victories only — losses decimate the population, halting research. A player is expected to go deep on 1–2 tracks per run, not touch all four. Each track should feel meaningfully progressed within 3–4 Tech purchases. Winning more battles gives more Tech and therefore more choices — specialization depth is the reward for winning.
    - **Mothership upgrades** — hangar capacity, Mothership weapons/armor. Permanent; always available.
    - **Doctrines** — role/fleet-scoped passive bonuses (e.g. all Fighters +10% speed). Randomized table per jump, rerollable with `Tech`.
    - **Role equipment** — rarer, higher-magnitude role-scoped items (e.g. all `Missile`-role ships gain shield regen). Randomized table, rerollable with `Tech`.
@@ -49,12 +55,12 @@ Ships are the primary combo pieces. Doctrines are the synergizers — they activ
 
 ### Battle phase
 
-3. Face a curated opponent fleet matched to your current jump number and win/loss ratio. Opponent fleets are hand-authored fleet JSON files shipped with the game, organized by difficulty tier. When the server exists, real player fleets replace them — the fleet JSON format is the bridge.
+3. Encounter a rival colony fleet contesting the same system. Rival fleets are hand-authored fleet JSON files shipped with the game, organized by difficulty tier and matched to the current jump number and win/loss ratio. When the server exists, real player fleets replace the hand-authored ones — the fleet JSON format is the bridge.
 4. Your fleet warps in from the left; the opponent warps in from the right.
-5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. At 120 seconds both fleets warp out — draw.
+5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. The attrition design goal is to always crown a victor — escalating damage should eliminate at least one Mothership before 120 seconds in all realistic cases. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
 6. Earn resources based on outcome:
-   - `Salvage` — earned from enemy ships destroyed during the battle
-   - `Tech` — earned from victories (rarer)
+   - `Salvage` — earned for every rival ship destroyed during the battle, win or lose. Prevents death spirals — a struggling player still recovers resources from the ships they killed.
+   - `Tech` — earned from victories only (rarer). No Tech on a loss or draw.
 
 ### Between jumps
 
@@ -160,7 +166,7 @@ Each tick executes phases in this exact order — order is part of the determini
 7. Advance projectiles — move, check hits, check fizzle
 8. Resolve beam damage — all active beams deal damage to ships in path
 9. Apply damage — shields absorb first, then armor reduction, then hull HP
-10. Check victory condition — Mothership at 0 HP ends battle
+10. Check end condition — either Mothership at 0 HP ends the battle. Winner = fleet whose Mothership is still standing. If both reach 0 HP in the same tick, result is `"draw"` — treated as a loss for the player in the run loop.
 11. Apply attrition if tick > 1800 (60s × 30 Hz) — 1% max HP damage per second, increasing 1% per second
 12. Write state snapshot + events to battle log
 
@@ -441,7 +447,11 @@ TODO: define faction names and visual identity once more than one faction is nee
 - `AdmiralSelect.tscn` — run start; player picks an admiral, sees starting fleet and passive bonus. Transitions to `Dockyard.tscn` on confirm.
 - `Dockyard.tscn` — between every battle; randomized ship offers by tier (5/3/2/1), research/doctrine track, salvage and heal decisions. Transitions to `Battle.tscn` on launch.
 - `Battle.tscn` — battle playback. Transitions to `Dockyard.tscn` on next jump, or to `RunEnd.tscn` on 3rd loss or completing jump 8.
-- `RunEnd.tscn` — run result screen. Victory: the colony wins the race to a new frontier world — the Mothership finds a habitable planet and the survivors make landfall. Defeat: the colony falls short, crew lost, no world found. Shows run stats (battles won/lost, ships built, doctrines acquired). Returns to `AdmiralSelect.tscn` for a new run. TODO: flesh out victory/defeat narrative and art direction once core loop is playtested.
+- `RunEnd.tscn` — run result screen. Three endings:
+  - **True victory** (beat the hidden 9th encounter): claimed the prime homeworld. The rival fleet is defeated; the colony makes landfall on the best available world.
+  - **Standard victory** (completed 8 jumps, no flawless run): the colony reaches the frontier and settles a second-rate system — safe, but not the prize.
+  - **Defeat** (3 losses): the colony falls short. Too few survivors remain to continue the journey.
+  Shows run stats (battles won/lost, ships built, doctrines acquired, score). Returns to `AdmiralSelect.tscn` for a new run. TODO: flesh out narrative text and art direction per ending once core loop is playtested.
 
 The existing `FleetBuilder.tscn` is superseded by `Dockyard.tscn` — rename and extend rather than rewrite. `FleetBuilderUi.cs` buy/salvage logic carries over directly.
 
