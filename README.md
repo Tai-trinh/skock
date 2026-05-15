@@ -12,6 +12,18 @@ make install-win
 
 This installs: Visual Studio C++ build tools, Rust (stable), .NET 8 SDK, Godot 4 (Mono/C# edition), and restores NuGet packages for the client.
 
+## Common tasks
+
+| Task | Command |
+|------|---------|
+| Build sim (Windows) | `make win-build-sim` |
+| Build C# client (Windows) | `make win-build-godot` |
+| Open Godot editor | `make start-godot` |
+| Run determinism tests | `make det` |
+| Build sim (Docker) | `make docker-build-sim` |
+| Build C# client (Docker) | `make docker-build-godot` |
+| Interactive Docker shell | `make docker-run` |
+
 ## Running the Godot client
 
 ### 1. Build the sim binary
@@ -19,41 +31,39 @@ This installs: Visual Studio C++ build tools, Rust (stable), .NET 8 SDK, Godot 4
 The Godot client launches the sim as a subprocess. Build it first:
 
 ```bash
-make win-build
+make win-build-sim
 ```
 
 Output: `target/release/skock-sim.exe`
 
 ### 2. Open the project in Godot
 
-1. Launch **Godot Engine (.NET)** — the Mono edition installed by `install-win`
-2. Click **Import** → navigate to `client/` → select `project.godot` → **Open**
-3. Godot will import assets and open the editor
+```bash
+make start-godot
+```
+
+This finds the Godot Mono executable installed by winget and opens the project directly. On first launch Godot will import assets before opening the editor.
 
 ### 3. Build the C# project
 
-In the Godot editor toolbar: **Build** (the hammer icon, top-right) or press **Alt+B**.
-
-If the build fails with "missing NuGet packages", open a terminal in `client/` and run:
-
 ```bash
-dotnet restore
+make win-build-godot
 ```
 
-Then build again in the editor.
+Or inside the Godot editor: **Build** (hammer icon, top-right) / **Alt+B**.
 
 ### 4. Run
 
 Press **F5** (or the Play button) to run the Battle scene.
 
-The renderer will launch the sim binary with a test seed, parse the battle log, and play back the battle at 30 ticks/sec with interpolation.
+The renderer launches the sim binary with a test seed, parses the battle log, and plays back the battle at 30 ticks/sec with interpolation.
 
 ### Controls
 
 | Key | Action |
 |-----|--------|
 | Space | Toggle 1× / 4× playback speed |
-| F1 | Toggle debug overlay (raw tick state for selected ship) |
+| F1 | Toggle debug overlay |
 
 ## Running the sim directly
 
@@ -70,6 +80,16 @@ make det
 ```
 
 Hashes a fixed corpus of battles and asserts against golden SHA-256 values. Run after any sim logic change.
+
+## Docker
+
+```bash
+make docker-engine-start   # start Docker daemon (WSL)
+make docker-image          # build the image (first time or after Dockerfile changes)
+make docker-run            # interactive shell with GPU and display forwarding
+make docker-build-sim      # cargo build --release inside container
+make docker-build-godot    # dotnet build inside container
+```
 
 ## Code layout
 
