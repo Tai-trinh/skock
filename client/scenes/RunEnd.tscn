@@ -1,0 +1,62 @@
+[gd_scene load_steps=2 format=3 uid="uid://skock_runend"]
+
+[ext_resource type="Script" path="res://src/meta/RunEndUi.cs" id="1_end"]
+
+[node name="RunEnd" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_end")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 64
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 64
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+theme_override_font_sizes/font_size = 48
+
+[node name="HSep1" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="LoreLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+text = ""
+theme_override_font_sizes/font_size = 16
+
+[node name="HSep2" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+theme_override_font_sizes/font_size = 16
+
+[node name="Spacer" type="Control" parent="MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NewRunButton" type="Button" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "NEW RUN →"
+theme_override_font_sizes/font_size = 20

@@ -7,11 +7,15 @@ using Skock.Sim;
 
 namespace Skock.Meta;
 
+public enum RunEndReason { Defeat, Victory }
+
 // Autoload singleton — single source of truth for all in-run state.
 // Owns path resolution, save/load, scene transitions, and run-end logic.
 public partial class RunState : Node
 {
     public static RunState Instance { get; private set; } = null!;
+
+    public RunEndReason RunEndReason { get; private set; }
 
     // ── Path resolution ───────────────────────────────────────────────────────
 
@@ -126,16 +130,16 @@ public partial class RunState : Node
 
         if (IsRunOver)
         {
-            // TODO: transition to RunEnd (defeat).
-            GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
+            RunEndReason = RunEndReason.Defeat;
+            GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
 
         if (JumpNumber >= 8)
         {
             // TODO: check flawless run + top-10% score for hidden final encounter.
-            // TODO: transition to RunEnd (victory).
-            GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
+            RunEndReason = RunEndReason.Victory;
+            GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
 
