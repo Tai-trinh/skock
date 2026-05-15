@@ -40,12 +40,10 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
     let neighbor_radius_sq = neighbor_radius * neighbor_radius;
 
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
-    let mut forces: BTreeMap<ShipId, crate::state::Vec2> = BTreeMap::new();
-
-    for &id in &ship_ids {
-        let force = compute_forces(&state.ships[&id], &state.ships, neighbor_radius_sq);
-        forces.insert(id, force);
-    }
+    let forces: BTreeMap<ShipId, crate::state::Vec2> = ship_ids
+        .iter()
+        .map(|&id| (id, compute_forces(&state.ships[&id], &state.ships, neighbor_radius_sq)))
+        .collect();
 
     for &id in &ship_ids {
         let ship = state.ships.get_mut(&id).unwrap();

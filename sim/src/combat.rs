@@ -11,11 +11,7 @@ fn dist_sq(ax: I32F32, ay: I32F32, bx: I32F32, by: I32F32) -> I32F32 {
 }
 
 fn rng_frac(rng: &mut impl RngCore) -> I16F16 {
-    // Returns a value in [0, 1) from the RNG
-    let raw = rng.next_u64();
-    // Take top 32 bits, treat as 0..2^32, scale to [0,1)
-    let top = (raw >> 32) as u32;
-    I16F16::from_bits((top >> 16) as i32)
+    I16F16::from_bits((rng.next_u64() >> 48) as i32)
 }
 
 pub fn resolve_hitscan(state: &mut SimState) {
@@ -40,23 +36,18 @@ pub fn resolve_hitscan(state: &mut SimState) {
         };
 
         // Find nearest enemy in range
-        let target_id = {
-            let mut nearest: Option<(I32F32, ShipId)> = None;
-            for (other_id, other) in &state.ships {
-                if other.fleet == fleet {
-                    continue;
-                }
+        let Some(target_id) = state
+            .ships
+            .iter()
+            .filter(|(_, other)| other.fleet != fleet)
+            .filter_map(|(other_id, other)| {
                 let d = dist_sq(pos_x, pos_y, other.pos.x, other.pos.y);
-                if d <= range_sq {
-                    if nearest.is_none() || d < nearest.unwrap().0 {
-                        nearest = Some((d, *other_id));
-                    }
-                }
-            }
-            match nearest {
-                Some((_, tid)) => tid,
-                None => continue,
-            }
+                (d <= range_sq).then_some((d, *other_id))
+            })
+            .min_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap())
+            .map(|(_, id)| id)
+        else {
+            continue;
         };
 
         // Roll miss chance
@@ -99,9 +90,8 @@ pub fn resolve_hitscan(state: &mut SimState) {
 }
 
 fn apply_damage(state: &mut SimState, target_id: ShipId, raw_damage: I16F16, _source_id: ShipId) {
-    let ship = match state.ships.get_mut(&target_id) {
-        Some(s) => s,
-        None => return,
+    let Some(ship) = state.ships.get_mut(&target_id) else {
+        return;
     };
 
     // Shields absorb first

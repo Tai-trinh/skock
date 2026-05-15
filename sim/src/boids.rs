@@ -65,7 +65,7 @@ pub fn compute_forces(
             }
         } else {
             // Track nearest enemy for seek_enemy and maintain_range
-            if nearest_enemy.is_none() || d_sq < nearest_enemy.unwrap().0 {
+            if nearest_enemy.map_or(true, |(d, _)| d_sq < d) {
                 nearest_enemy = Some((d_sq, other));
             }
         }
