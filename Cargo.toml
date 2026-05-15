@@ -1,0 +1,3 @@
+[workspace]
+members = ["types", "sim"]
+resolver = "2"

@@ -1,0 +1,13 @@
+{
+  "tick_rate": 30,
+  "battlefield_half_width": 500,
+  "battlefield_half_height": 500,
+  "fleet_a_spawn_x": -400,
+  "fleet_b_spawn_x": 400,
+  "spawn_noise": 20.0,
+  "boid_neighbor_radius": 150.0,
+  "attrition_start_tick": 1800,
+  "attrition_base_damage_per_second": 0.01,
+  "attrition_ramp_per_second": 0.01,
+  "max_ticks": 3600
+}
