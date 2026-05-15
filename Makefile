@@ -1,11 +1,20 @@
 MOUNTS = -v $$(pwd):/app
+DISPLAY_ENV = \
+	-e DISPLAY=$$DISPLAY \
+	-e WAYLAND_DISPLAY=$$WAYLAND_DISPLAY \
+	-e XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir \
+	-e PULSE_SERVER=$$PULSE_SERVER
+DISPLAY_MOUNTS = \
+	-v /tmp/.X11-unix:/tmp/.X11-unix \
+	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt-check det win-build win-build-godot start_godot
+.PHONY: install-win install-docker docker-image docker-run fmt-check det win-build-sim win-build-godot start-godot docker-engine-start docker-build-sim docker-build-godot
 
 install-win:
 	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
 
 install-docker:
+	sudo apt-get install -y x11-xserver-utils
 	sudo apt-get update
 	sudo apt-get install -y ca-certificates curl gnupg lsb-release
 	sudo install -m 0755 -d /etc/apt/keyrings
@@ -23,22 +32,32 @@ install-docker:
 	sudo service docker restart
 	@echo "Done. Re-login or run: newgrp docker"
 
+docker-engine-start:
+	sudo service docker start
+
 docker-image:
 	docker build -t skock .
 
 docker-run:
-	docker run --rm -it --gpus all $(MOUNTS) -w /app skock bash
+	docker run --rm -it --gpus all $(MOUNTS) $(DISPLAY_ENV) $(DISPLAY_MOUNTS) \
+		-w /app skock bash
+
+docker-build-sim:
+	docker run --rm $(MOUNTS) -w /app skock cargo build -p sim --release
+
+docker-build-godot:
+	docker run --rm $(MOUNTS) -w /app skock dotnet build client/skock.csproj
 
 det:
 	cargo test --test determinism
 
-win-build:
+win-build-sim:
 	cargo.exe build -p sim --release
 
 win-build-godot:
 	dotnet.exe build client/skock.csproj
 
-start_godot:
+start-godot:
 	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
 
 fmt-check:
