@@ -10,11 +10,12 @@ config_version=5
 
 [application]
 
-run/main_scene="res://scenes/AdmiralSelect.tscn"
+run/main_scene="res://scenes/MainMenu.tscn"
 
 [autoload]
 
 RunState="*res://src/meta/RunState.cs"
+OptionsOverlay="*res://scenes/OptionsOverlay.tscn"
 config/features=PackedStringArray("4.6", "C#")
 
 [configuration]

@@ -46,6 +46,7 @@ public partial class BattleRenderer : Node2D
 		_debugLabel.Text = "Loading sim...";
 
 		var run = RunState.Instance;
+		run.IsBattleActive = true;
 		var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
 		var fleetB = Path.GetFullPath(Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json"));
 
@@ -173,7 +174,10 @@ public partial class BattleRenderer : Node2D
 		if (Input.IsActionJustPressed("ui_accept"))
 		{
 			if (_playback.IsFinished)
+			{
+				RunState.Instance.IsBattleActive = false;
 				RunState.Instance.RecordBattleResult(_playback.Result ?? new BattleResult());
+			}
 			else
 				_playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
 		}

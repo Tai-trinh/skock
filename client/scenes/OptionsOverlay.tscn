@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://skock_options"]
+
+[ext_resource type="Script" path="res://src/meta/OptionsOverlay.cs" id="1_opts"]
+
+[node name="OptionsOverlay" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_opts")

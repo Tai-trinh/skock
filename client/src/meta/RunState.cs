@@ -24,6 +24,10 @@ public partial class RunState : Node
     public string PlayerFleetPath { get; private set; } = "";
     public string FallbackFleetPath { get; private set; } = "";
 
+    // ── Settings ──────────────────────────────────────────────────────────────
+
+    public UserSettings Settings { get; private set; } = new();
+
     // ── Run state ─────────────────────────────────────────────────────────────
 
     public int Salvage { get; set; } = 50;
@@ -37,6 +41,10 @@ public partial class RunState : Node
     public int UsedTonnage => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
     public int FreeTonnage => HangarCapacity - UsedTonnage;
     public bool IsRunOver => LossCount >= 3;
+    public bool HasActiveRun { get; private set; }
+    public bool IsBattleActive { get; set; }
+
+    private bool _runComplete;
 
     // ── Godot lifecycle ───────────────────────────────────────────────────────
 
@@ -49,6 +57,8 @@ public partial class RunState : Node
         SimBinaryPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe"));
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json"));
+        Settings = UserSettings.Load(SettingsPath());
+        Settings.Apply();
         LoadOrDefault();
     }
 
@@ -65,8 +75,11 @@ public partial class RunState : Node
             JumpNumber = JumpNumber,
             LossCount = LossCount,
             AdmiralId = AdmiralId,
+            IsComplete = _runComplete,
         }, JsonOptions));
     }
+
+    public void SaveSettings() => Settings.Save(SettingsPath());
 
     private void LoadOrDefault()
     {
@@ -88,6 +101,7 @@ public partial class RunState : Node
             LossCount = saved.LossCount;
             AdmiralId = saved.AdmiralId;
             Fleet = fleet;
+            HasActiveRun = !saved.IsComplete;
         }
         catch
         {
@@ -97,6 +111,9 @@ public partial class RunState : Node
 
     private string StatePath() =>
         Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_state.json"));
+
+    private string SettingsPath() =>
+        Path.GetFullPath(Path.Combine(ProjectDir, "..", "user_settings.json"));
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
@@ -109,7 +126,24 @@ public partial class RunState : Node
         LossCount = 0;
         AdmiralId = admiral.Id;
         Fleet = admiral.StartingFleet;
+        HasActiveRun = true;
+        _runComplete = false;
         Save();
+    }
+
+    public void AbandonCurrentRun()
+    {
+        HasActiveRun = false;
+        _runComplete = false;
+        AdmiralId = "";
+        if (File.Exists(StatePath())) File.Delete(StatePath());
+        if (File.Exists(PlayerFleetPath)) File.Delete(PlayerFleetPath);
+    }
+
+    public void SaveAndQuitToMenu()
+    {
+        Save();
+        GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
     // ── Battle result + scene transitions ─────────────────────────────────────
@@ -126,11 +160,12 @@ public partial class RunState : Node
         if (playerWon)
             Tech += 1;
 
-        Save();
-
         if (IsRunOver)
         {
             RunEndReason = RunEndReason.Defeat;
+            HasActiveRun = false;
+            _runComplete = true;
+            Save();
             GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
@@ -139,11 +174,15 @@ public partial class RunState : Node
         {
             // TODO: check flawless run + top-10% score for hidden final encounter.
             RunEndReason = RunEndReason.Victory;
+            HasActiveRun = false;
+            _runComplete = true;
+            Save();
             GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
 
         JumpNumber++;
+        Save();
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
     }
 
@@ -187,5 +226,6 @@ public partial class RunState : Node
         public int JumpNumber { get; set; }
         public int LossCount { get; set; }
         public string AdmiralId { get; set; } = "";
+        public bool IsComplete { get; set; }
     }
 }
