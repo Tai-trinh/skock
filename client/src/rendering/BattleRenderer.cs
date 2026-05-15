@@ -1,32 +1,25 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 using Skock.Sim;
+using Skock.UI;
 
 namespace Skock.Rendering;
 
-/// <summary>
-/// Root scene script for battle playback. Attach to the Battle scene root node.
-///
-/// Call LoadFromFile() or LoadFromSimRun() before the scene becomes visible.
-/// The renderer interpolates ship positions between sim ticks at display framerate.
-/// </summary>
 public partial class BattleRenderer : Node2D
 {
-    // ── Exported paths (set in Godot editor or via code) ─────────────────────
-
-    [Export]
-    public string SimBinaryPath { get; set; } = "res://../../target/debug/skock-sim";
-
     [Export]
     public int TickRate { get; set; } = 30;
 
-    // ── Scene children (assigned in _Ready) ──────────────────────────────────
+    // ── Scene children ────────────────────────────────────────────────────────
 
     private Camera2D _camera = null!;
     private Node2D _shipsContainer = null!;
     private Label _debugLabel = null!;
     private Label _resultLabel = null!;
+    private DebugOverlay _debugOverlay = null!;
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -44,9 +37,28 @@ public partial class BattleRenderer : Node2D
         _shipsContainer = GetNode<Node2D>("Ships");
         _debugLabel = GetNode<Label>("DebugUI/DebugLabel");
         _resultLabel = GetNode<Label>("DebugUI/ResultLabel");
+        _debugOverlay = GetNode<DebugOverlay>("DebugOverlay");
 
         FitCamera();
         _resultLabel.Visible = false;
+
+        // Paths are relative to the project dir (client/); sim lives one level up.
+        var projectDir = ProjectSettings.GlobalizePath("res://");
+        var simBin = Path.Combine(projectDir, "..", "target", "release", "skock-sim.exe");
+        var fleetA = Path.Combine(projectDir, "..", "sim", "test_data", "fleet_a.json");
+        var fleetB = Path.Combine(projectDir, "..", "sim", "test_data", "fleet_b.json");
+
+        Task.Run(() =>
+        {
+            try
+            {
+                LoadFromSimRun(42, fleetA, fleetB, simBin);
+            }
+            catch (SimRunException e)
+            {
+                Callable.From(() => _debugLabel.Text = $"Sim error: {e.Message}").CallDeferred();
+            }
+        });
     }
 
     public override void _Process(double delta)
@@ -64,27 +76,18 @@ public partial class BattleRenderer : Node2D
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    /// <summary>Load a battle log that was already written to disk (--debug flag).</summary>
     public void LoadFromFile(string msgpackPath)
     {
-        var bytes = FileAccess.GetFileAsBytes(msgpackPath);
+        var bytes = Godot.FileAccess.GetFileAsBytes(msgpackPath);
         var log = BattleLogParser.Parse(bytes);
         var result = new BattleResult { Winner = "unknown", Ticks = (uint)log.Ticks.Length, Reason = "loaded_from_file" };
         Initialize(log, result);
     }
 
-    /// <summary>
-    /// Spawns the sim binary, waits for it to finish, then loads the resulting log.
-    /// Call from a background thread to avoid blocking the main thread.
-    /// </summary>
-    public void LoadFromSimRun(ulong seed, string fleetAPath, string fleetBPath, string? configPath = null)
+    public void LoadFromSimRun(ulong seed, string fleetAPath, string fleetBPath, string simBinPath, string? configPath = null)
     {
-        var (logBytes, result) = SimRunner.Run(
-            ProjectSettings.GlobalizePath(SimBinaryPath),
-            seed, fleetAPath, fleetBPath, configPath
-        );
+        var (logBytes, result) = SimRunner.Run(simBinPath, seed, fleetAPath, fleetBPath, configPath);
         var log = BattleLogParser.Parse(logBytes);
-        // Marshal back to main thread before touching Godot nodes.
         Callable.From(() => Initialize(log, result)).CallDeferred();
     }
 
@@ -96,10 +99,6 @@ public partial class BattleRenderer : Node2D
         RebuildShipNodes(log);
     }
 
-    // Godot callable for cross-thread init (called via CallDeferred).
-    private void InitializeDeferred(BattleLog log, BattleResult result) =>
-        Initialize(log, result);
-
     private void RebuildShipNodes(BattleLog log)
     {
         foreach (var node in _shipNodes.Values)
@@ -109,7 +108,6 @@ public partial class BattleRenderer : Node2D
         if (log.Ticks.Length == 0)
             return;
 
-        // Discover all ships from the first tick and build nodes for them.
         foreach (var snapshot in log.Ticks[0].Ships)
         {
             var node = new ShipNode();
@@ -126,12 +124,10 @@ public partial class BattleRenderer : Node2D
 
         var (tickA, tickB, t) = _playback.CurrentFrame();
 
-        // Index snapshot B by id for quick lookup.
         var snapshotsB = new Dictionary<uint, ShipSnapshot>(tickB.Ships.Length);
         foreach (var s in tickB.Ships)
             snapshotsB[s.Id] = s;
 
-        // Show/hide nodes based on which ships are alive this tick.
         var aliveIds = new HashSet<uint>(tickA.Ships.Length);
         foreach (var snap in tickA.Ships)
             aliveIds.Add(snap.Id);
@@ -139,7 +135,6 @@ public partial class BattleRenderer : Node2D
         foreach (var (id, node) in _shipNodes)
             node.Visible = aliveIds.Contains(id);
 
-        // Interpolate position and heading for each alive ship.
         foreach (var snapA in tickA.Ships)
         {
             if (!_shipNodes.TryGetValue(snapA.Id, out var node))
@@ -157,7 +152,7 @@ public partial class BattleRenderer : Node2D
             }
             else
             {
-                posB = posA; // ship died by tick B — hold last position
+                posB = posA;
                 headingRad = snapA.HeadingRad;
             }
 
@@ -165,6 +160,7 @@ public partial class BattleRenderer : Node2D
         }
 
         UpdateDebugLabel(tickA);
+        _debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
     }
 
     private void HandleInput()
@@ -203,7 +199,6 @@ public partial class BattleRenderer : Node2D
 
     private void FitCamera()
     {
-        // Fit the 1000×1000 sim battlefield into the viewport.
         var viewport = GetViewport().GetVisibleRect().Size;
         var zoom = Mathf.Min(viewport.X, viewport.Y) / 1000f * 0.9f;
         _camera.Zoom = new Vector2(zoom, zoom);
