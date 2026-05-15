@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
+using Skock.Meta;
 using Skock.Sim;
 using Skock.UI;
 
@@ -47,12 +48,11 @@ public partial class BattleRenderer : Node2D
 		// Paths are relative to the project dir (client/); sim lives one level up.
 		var projectDir = ProjectSettings.GlobalizePath("res://");
 		var simBin = Path.GetFullPath(Path.Combine(projectDir, "..", "target", "release", "skock-sim.exe"));
-		var fleetA = Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_a.json"));
+		var playerFleet = PlayerState.FleetPath(projectDir);
+		var fleetA = File.Exists(playerFleet)
+			? playerFleet
+			: Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_a.json"));
 		var fleetB = Path.GetFullPath(Path.Combine(projectDir, "..", "sim", "test_data", "fleet_b.json"));
-
-		GD.Print($"[sim] bin:    {simBin}  exists={File.Exists(simBin)}");
-		GD.Print($"[sim] fleetA: {fleetA}  exists={File.Exists(fleetA)}");
-		GD.Print($"[sim] fleetB: {fleetB}  exists={File.Exists(fleetB)}");
 
 		Task.Run(() =>
 		{
@@ -176,7 +176,12 @@ public partial class BattleRenderer : Node2D
 			return;
 
 		if (Input.IsActionJustPressed("ui_accept"))
-			_playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
+		{
+			if (_playback.IsFinished)
+				GetTree().ChangeSceneToFile("res://scenes/FleetBuilder.tscn");
+			else
+				_playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
+		}
 	}
 
 	private void UpdateDebugLabel(TickRecord tick)
@@ -200,8 +205,8 @@ public partial class BattleRenderer : Node2D
 
 		_resultLabel.Visible = true;
 		_resultLabel.Text = result.Winner == "draw"
-			? "DRAW — time limit reached"
-			: $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)";
+			? "DRAW — time limit reached\n\n[Space] Back to fleet"
+			: $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)\n\n[Space] Back to fleet";
 	}
 
 	private void FitCamera()

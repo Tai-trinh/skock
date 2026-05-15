@@ -8,3 +8,7 @@ client/skock.csproj.old
 
 # dotnet
 *.user
+
+# Player save files (generated at runtime)
+player_fleet.json
+player_state.json
