@@ -9,9 +9,6 @@ public partial class FleetBuilderUi : Control
     private VBoxContainer _shopContainer = null!;
     private Label _statusLabel = null!;
 
-    private PlayerState _state = null!;
-    private string _projectDir = "";
-
     public override void _Ready()
     {
         _resourcesLabel = GetNode<Label>("MarginContainer/VBox/Header/ResourcesLabel");
@@ -19,24 +16,23 @@ public partial class FleetBuilderUi : Control
         _shopContainer = GetNode<VBoxContainer>("MarginContainer/VBox/Main/ShopPanel/ShopScroll/ShopContainer");
         _statusLabel = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
         GetNode<Button>("MarginContainer/VBox/Footer/BattleButton").Pressed += OnBattlePressed;
-
-        _projectDir = ProjectSettings.GlobalizePath("res://");
-        _state = PlayerState.LoadOrDefault(_projectDir);
         Refresh();
     }
 
     private void Refresh()
     {
+        var run = RunState.Instance;
         _resourcesLabel.Text =
-            $"Salvage: {_state.Salvage}   Tech: {_state.Tech}   " +
-            $"Tonnage: {_state.UsedTonnage} / {_state.HangarCapacity}";
+            $"Salvage: {run.Salvage}   Tech: {run.Tech}   " +
+            $"Tonnage: {run.UsedTonnage} / {run.HangarCapacity}   " +
+            $"Jump: {run.JumpNumber} / 8   Losses: {run.LossCount} / 3";
 
         foreach (var child in _fleetContainer.GetChildren())
             child.QueueFree();
 
-        for (var i = 0; i < _state.Fleet.Ships.Count; i++)
+        for (var i = 0; i < run.Fleet.Ships.Count; i++)
         {
-            var ship = _state.Fleet.Ships[i];
+            var ship = run.Fleet.Ships[i];
             var index = i;
             var yield = ship.HullClass.Tonnage() * 3;
             var btn = new Button
@@ -52,8 +48,8 @@ public partial class FleetBuilderUi : Control
 
         foreach (var bp in BlueprintCatalog.All)
         {
-            var canAfford = _state.Salvage >= bp.SalvageCost;
-            var fits = _state.FreeTonnage >= bp.Tonnage;
+            var canAfford = run.Salvage >= bp.SalvageCost;
+            var fits = run.FreeTonnage >= bp.Tonnage;
             var btn = new Button
             {
                 Text = $"{bp.DisplayName}  [{bp.Tonnage}T  {bp.SalvageCost} salvage]",
@@ -67,39 +63,42 @@ public partial class FleetBuilderUi : Control
 
     private void SalvageShip(int index)
     {
-        if (index >= _state.Fleet.Ships.Count)
+        var run = RunState.Instance;
+        if (index >= run.Fleet.Ships.Count)
             return;
-        var ship = _state.Fleet.Ships[index];
+        var ship = run.Fleet.Ships[index];
         var yield = ship.HullClass.Tonnage() * 3;
-        _state.Fleet.Ships.RemoveAt(index);
-        _state.Salvage += yield;
+        run.Fleet.Ships.RemoveAt(index);
+        run.Salvage += yield;
         _statusLabel.Text = $"Salvaged {ShipDisplay.NameFor(ship)} for {yield} salvage.";
         Refresh();
     }
 
     private void BuyShip(Blueprint bp)
     {
-        if (_state.Salvage < bp.SalvageCost)
+        var run = RunState.Instance;
+        if (run.Salvage < bp.SalvageCost)
             return;
-        if (_state.FreeTonnage < bp.Tonnage)
+        if (run.FreeTonnage < bp.Tonnage)
         {
             _statusLabel.Text = "Not enough hangar space.";
             return;
         }
-        _state.Fleet.Ships.Add(bp.Instantiate());
-        _state.Salvage -= bp.SalvageCost;
+        run.Fleet.Ships.Add(bp.Instantiate());
+        run.Salvage -= bp.SalvageCost;
         _statusLabel.Text = $"Built {bp.DisplayName}.";
         Refresh();
     }
 
     private void OnBattlePressed()
     {
-        if (_state.Fleet.Ships.Count == 0)
+        var run = RunState.Instance;
+        if (run.Fleet.Ships.Count == 0)
         {
             _statusLabel.Text = "Need at least one ship to battle.";
             return;
         }
-        _state.Save(_projectDir);
+        run.Save();
         GetTree().ChangeSceneToFile("res://scenes/Battle.tscn");
     }
 }
