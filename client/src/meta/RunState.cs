@@ -66,6 +66,7 @@ public partial class RunState : Node
 
     public void Save()
     {
+        // TODO (online mode): also sync run state to server after writing locally.
         File.WriteAllText(PlayerFleetPath, JsonSerializer.Serialize(Fleet, JsonOptions));
         File.WriteAllText(StatePath(), JsonSerializer.Serialize(new SerializedState
         {
@@ -83,6 +84,8 @@ public partial class RunState : Node
 
     private void LoadOrDefault()
     {
+        // TODO (online mode): fetch run state from server by Run ID instead of trusting the local file.
+        // Server is authoritative; local save is only a cache. See CONTEXT.md § "Run state (online mode)".
         var statePath = StatePath();
         if (!File.Exists(statePath) || !File.Exists(PlayerFleetPath))
             return;
