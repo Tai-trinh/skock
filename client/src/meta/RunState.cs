@@ -113,7 +113,7 @@ public partial class RunState : Node
         if (IsRunOver)
         {
             // TODO: transition to RunEnd (defeat).
-            GetTree().ChangeSceneToFile("res://scenes/FleetBuilder.tscn");
+            GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
             return;
         }
 
@@ -121,13 +121,12 @@ public partial class RunState : Node
         {
             // TODO: check flawless run + top-10% score for hidden final encounter.
             // TODO: transition to RunEnd (victory).
-            GetTree().ChangeSceneToFile("res://scenes/FleetBuilder.tscn");
+            GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
             return;
         }
 
         JumpNumber++;
-        // TODO: transition to Dockyard once built; FleetBuilder is a placeholder.
-        GetTree().ChangeSceneToFile("res://scenes/FleetBuilder.tscn");
+        GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
     }
 
     // ── Defaults ──────────────────────────────────────────────────────────────

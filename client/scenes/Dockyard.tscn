@@ -1,0 +1,101 @@
+[gd_scene load_steps=2 format=3 uid="uid://skock_dockyard"]
+
+[ext_resource type="Script" path="res://src/meta/DockUi.cs" id="1_dock"]
+
+[node name="Dockyard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dock")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "DOCKYARD"
+theme_override_font_sizes/font_size = 24
+
+[node name="ResourcesLabel" type="Label" parent="MarginContainer/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 2
+text = ""
+
+[node name="HSep1" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="Main" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FleetPanel" type="VBoxContainer" parent="MarginContainer/VBox/Main"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FleetLabel" type="Label" parent="MarginContainer/VBox/Main/FleetPanel"]
+layout_mode = 2
+text = "YOUR FLEET  (click to salvage)"
+theme_override_font_sizes/font_size = 16
+
+[node name="FleetScroll" type="ScrollContainer" parent="MarginContainer/VBox/Main/FleetPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FleetContainer" type="VBoxContainer" parent="MarginContainer/VBox/Main/FleetPanel/FleetScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VSep" type="VSeparator" parent="MarginContainer/VBox/Main"]
+layout_mode = 2
+
+[node name="DockPanel" type="VBoxContainer" parent="MarginContainer/VBox/Main"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DockLabel" type="Label" parent="MarginContainer/VBox/Main/DockPanel"]
+layout_mode = 2
+text = "DOCKYARD  (click to commission)"
+theme_override_font_sizes/font_size = 16
+
+[node name="DockScroll" type="ScrollContainer" parent="MarginContainer/VBox/Main/DockPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DockContainer" type="VBoxContainer" parent="MarginContainer/VBox/Main/DockPanel/DockScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSep2" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBox/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+
+[node name="BattleButton" type="Button" parent="MarginContainer/VBox/Footer"]
+layout_mode = 2
+text = "LAUNCH →"
