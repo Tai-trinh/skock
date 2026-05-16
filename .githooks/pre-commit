@@ -3,8 +3,8 @@
 # Partial staging (git add -p) is a known caveat: formatter re-stages the whole file.
 set -e
 
-CARGO=$(command -v cargo.exe || command -v cargo)
-DOTNET=$(command -v dotnet.exe || command -v dotnet)
+CARGO=$(command -v cargo.exe &>/dev/null && echo cargo.exe || echo cargo)
+CSHARPIER=$(command -v csharpier.exe &>/dev/null && echo csharpier.exe || echo csharpier)
 
 STAGED_RS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)
 STAGED_CS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cs$' || true)
@@ -16,7 +16,7 @@ if [ -n "$STAGED_RS" ]; then
 fi
 
 if [ -n "$STAGED_CS" ]; then
-    $DOTNET csharpier client/
+    $CSHARPIER format client/
     # shellcheck disable=SC2086
     git add $STAGED_CS
 fi

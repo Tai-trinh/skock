@@ -65,15 +65,15 @@ test-godot:
 
 fmt:
 	cargo fmt
-	dotnet csharpier client/
+	csharpier format client/
 
 fmt-check:
 	cargo fmt --check
-	dotnet csharpier --check client/
+	csharpier check client/
 
 win-fmt:
 	cargo.exe fmt
-	dotnet.exe csharpier client/
+	csharpier.exe format client/
 
 install-hooks:
 	git config core.hooksPath .githooks

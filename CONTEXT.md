@@ -59,14 +59,14 @@ Ships are the primary combo pieces. Doctrines are the synergizers — they activ
 4. Your fleet warps in from the left; the opponent warps in from the right.
 5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. The attrition design goal is to always crown a victor — escalating damage should eliminate at least one Mothership before 120 seconds in all realistic cases. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
 6. Earn resources based on outcome:
-   - `Salvage` — earned for every rival ship destroyed during the battle, win or lose. Prevents death spirals — a struggling player still recovers resources from the ships they killed.
-   - `Tech` — earned from victories only (rarer). No Tech on a loss or draw.
+   - `Salvage` — flat payout every battle regardless of outcome: `JumpNumber × 10`. Victory adds a flat bonus: `JumpNumber × 15`. Scaling with jump number keeps the payout meaningful as costs grow; the base payout prevents death spirals — a losing player always recovers enough to rebuild. TODO: tune multipliers via playtesting.
+   - `Tech` — victories only. Scales with JumpNumber: 1 Tech (jumps 1–3), 2 Tech (jumps 4–6), 3 Tech (jumps 7–8). TODO: tune via playtesting.
 
 ### Between jumps
 
-All ships auto-heal to full HP for free. The player may optionally skip healing a ship to receive `Salvage` instead — a trade of combat effectiveness for resources. Ships that reach 0 HP during battle survive at 1 HP minimum; no ship is permanently destroyed by combat. Ships below full HP fight with proportionally deteriorated stats (speed, damage, turn rate, etc.).
+All ships auto-heal to full HP for free between jumps — no player choice, no UI. Ships that reach 0 HP during battle survive at 1 HP minimum; no ship is permanently destroyed by combat. Ships below full HP fight with proportionally deteriorated stats (speed, damage, turn rate, etc.) during the battle, but the slate is wiped clean before the next jump.
 
-The only way to permanently remove a ship is to manually salvage it in the shop. Salvage yield is proportional to current HP — a damaged ship returns less, preventing a skip-heal-then-salvage farming loop. The Mothership cannot be salvaged — it is not part of the fleet roster and losing it ends the run immediately.
+The only way to permanently remove a ship is to manually salvage it in the dockyard. Salvage yield = `Tonnage × 3`, always at full HP (since ships are always healed before the dockyard phase). The Mothership cannot be salvaged — it is not part of the fleet roster and losing it ends the run immediately.
 
 Ships that reach 0 HP during battle explode and are removed from the sim that tick (`ship_destroyed` event). They do not appear in subsequent state snapshots. After the battle, the fleet roster restores all destroyed ships to 1 HP — the player does not lose them permanently. This keeps battles visually dramatic without punishing the player with forced repurchases.
 
