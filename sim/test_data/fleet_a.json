@@ -27,7 +27,7 @@
   },
   "ships": [
     {
-      "blueprint_drawing_id": "fighter_a",
+      "blueprint_drawing_id": "corvette_a",
       "hull_class": "Corvette",
       "role": "Fighter",
       "hp": 60,
@@ -50,7 +50,7 @@
       }
     },
     {
-      "blueprint_drawing_id": "fighter_a",
+      "blueprint_drawing_id": "corvette_a",
       "hull_class": "Corvette",
       "role": "Fighter",
       "hp": 60,
@@ -73,7 +73,7 @@
       }
     },
     {
-      "blueprint_drawing_id": "fighter_a",
+      "blueprint_drawing_id": "corvette_a",
       "hull_class": "Corvette",
       "role": "Fighter",
       "hp": 60,
