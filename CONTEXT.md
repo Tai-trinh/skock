@@ -184,7 +184,11 @@ Godot reads stderr after sim exit, finds the `RESULT:` line, and inspects it. If
 
 ### Effect resolution
 
-At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. Proc-based effects (on_hit, on_kill) will be event-driven and layered on top of pre-resolved stats when implemented. TODO: add conditional trigger effects that activate on sim state conditions — e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. These are evaluated each tick against sim state, not pre-resolved.
+At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. The sim owns all effect resolution — this is the authoritative design.
+
+**Current exception (temporary):** `admiral_effects` in the fleet JSON sent to the sim is always `[]`. Admiral bonuses are pre-applied in C# by `BuildFleetForSim()` using code-defined lambdas in `AdmiralEffectsRegistry`, because the shared effect vocabulary interpreter is not yet built. Once it is, admiral effects move into the `admiral_effects` array and the C# pre-application is deleted — the sim becomes the sole owner. See ADR-0008.
+
+Proc-based effects (on_hit, on_kill) will be event-driven and layered on top of pre-resolved stats when implemented. TODO: add conditional trigger effects that activate on sim state conditions — e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. These are evaluated each tick against sim state, not pre-resolved.
 
 ### Fixed-point type assignments
 
@@ -250,7 +254,7 @@ The server re-runs the sim binary as a subprocess for anti-cheat verification, s
 | RNG | xoshiro256+ (`rand_xoshiro` crate), explicit state (4× u64), no globals |
 | Containers (sim) | `BTreeMap` / `BTreeSet` / arrays-by-ID only — see ADR-0001 |
 | Replays | Seed + value-snapshot of both fleets at battle start |
-| Anti-cheat | Server re-simulates sampled battles using the same sim binary |
+| Anti-cheat | Honor system — client reports results; server re-simulates all battles in dev, sample-based (anomaly detection + leaderboard review) in production. See ADR-0005. |
 
 ## Sim ↔ client interface
 

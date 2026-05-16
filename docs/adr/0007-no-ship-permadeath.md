@@ -22,7 +22,7 @@ Visual drama is preserved: ships still explode and are absent from subsequent si
 
 - Salvage yield is always calculated at full HP (ships are auto-healed before the dockyard phase), so it is always `Tonnage × 3` regardless of battle outcome.
 - `ApplySurvivorHp` in `RunState` must handle ships absent from the survivor list by restoring them to 1 HP, not removing them.
-- Ships below full HP fight with proportionally degraded stats — the consequence of losing is degraded performance in the *next* battle, not unit loss.
+- Ships fight with proportionally degraded stats as they take damage *within* a battle — the consequence is intra-battle performance loss, not carry-over to the next battle. Ships auto-heal to full between jumps; the slate is wiped clean.
 - Save format must never write `hp: 0` for a player ship — minimum is 1 after post-battle restore.
 
 ## Trade-off rejected
