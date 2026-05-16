@@ -101,6 +101,7 @@ public partial class RunState : Node
 
     // ── Dockyard actions ──────────────────────────────────────────────────────
 
+    public ulong GetBattleSeed()                    => _store.GetBattleSeed();
     public bool CommissionShip(Blueprint bp)        => _store.CommissionShip(bp);
     public int  SalvageShip(int index)              => _store.SalvageShip(index);
     public bool RerollTier(int tierIndex, int cost) => _store.RerollTier(tierIndex, cost);

@@ -18,6 +18,10 @@ public interface IRunStore
 
     void StartRun(Admiral admiral);
 
+    // ── Battle ────────────────────────────────────────────────────────────────
+
+    ulong GetBattleSeed(); // Online: server assigns seed so anti-cheat re-sim matches exactly.
+
     // ── Dockyard actions ──────────────────────────────────────────────────────
     // Each method is the single seam for a server round-trip in online mode.
     // Online: POST action to server, await confirmation, then mutate RunState.

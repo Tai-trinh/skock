@@ -94,6 +94,15 @@ public sealed class LocalRunStore : IRunStore
         Save();
     }
 
+    // ── Battle ────────────────────────────────────────────────────────────────
+
+    public ulong GetBattleSeed()
+    {
+        // TODO (online mode): POST /runs/{RunId}/battles to get a server-assigned seed.
+        // Server stores the seed so anti-cheat re-simulation uses the identical value.
+        return (ulong)Random.Shared.NextInt64();
+    }
+
     // ── Dockyard actions ──────────────────────────────────────────────────────
 
     public bool CommissionShip(Blueprint bp)
