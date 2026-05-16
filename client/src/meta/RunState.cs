@@ -38,7 +38,8 @@ public partial class RunState : Node
     public int          LossCount      { get; set; } = 0;
     public string       AdmiralId      { get; set; } = "";
     public FleetJsonData Fleet         { get; set; } = DefaultFleet();
-    public int[]        TierRerolls    { get; internal set; } = new int[4];
+    public int[]        TierRerolls       { get; internal set; } = new int[4];
+    public Dictionary<string, int> UpgradePurchases { get; set; } = new();
 
     public int  UsedTonnage  => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
     public int  FreeTonnage  => HangarCapacity - UsedTonnage;
@@ -86,9 +87,10 @@ public partial class RunState : Node
     public void AbandonCurrentRun()
     {
         _store.DeleteSave();
-        HasActiveRun   = false;
-        IsRunComplete  = false;
-        AdmiralId      = "";
+        HasActiveRun      = false;
+        IsRunComplete     = false;
+        AdmiralId         = "";
+        UpgradePurchases  = new();
     }
 
     public void SaveAndQuitToMenu()
@@ -99,9 +101,10 @@ public partial class RunState : Node
 
     // ── Dockyard actions ──────────────────────────────────────────────────────
 
-    public bool CommissionShip(Blueprint bp)    => _store.CommissionShip(bp);
-    public int  SalvageShip(int index)          => _store.SalvageShip(index);
+    public bool CommissionShip(Blueprint bp)        => _store.CommissionShip(bp);
+    public int  SalvageShip(int index)              => _store.SalvageShip(index);
     public bool RerollTier(int tierIndex, int cost) => _store.RerollTier(tierIndex, cost);
+    public bool BuyUpgrade(string upgradeId)        => _store.BuyUpgrade(upgradeId);
 
     // ── Battle result + scene transitions ─────────────────────────────────────
 

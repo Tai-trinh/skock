@@ -88,6 +88,20 @@ size_flags_horizontal = 3
 [node name="HSep2" type="HSeparator" parent="MarginContainer/VBox"]
 layout_mode = 2
 
+[node name="ResearchSection" type="VBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="ResearchLabel" type="Label" parent="MarginContainer/VBox/ResearchSection"]
+layout_mode = 2
+text = "RESEARCH  (spend Tech)"
+theme_override_font_sizes/font_size = 16
+
+[node name="ResearchContainer" type="HBoxContainer" parent="MarginContainer/VBox/ResearchSection"]
+layout_mode = 2
+
+[node name="HSep3" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
 [node name="Footer" type="HBoxContainer" parent="MarginContainer/VBox"]
 layout_mode = 2
 

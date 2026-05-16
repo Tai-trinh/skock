@@ -26,4 +26,5 @@ public interface IRunStore
     bool CommissionShip(Blueprint bp);        // false if precondition fails
     int  SalvageShip(int index);              // returns Salvage yield, or -1 on failure
     bool RerollTier(int tierIndex, int cost); // false if can't afford
+    bool BuyUpgrade(string upgradeId);        // false if can't afford or maxed
 }

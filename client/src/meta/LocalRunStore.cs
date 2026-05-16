@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace Skock.Meta;
@@ -38,8 +40,9 @@ public sealed class LocalRunStore : IRunStore
             _run.AdmiralId     = saved.AdmiralId;
             fleet.Mothership.IsMothership = true;
             _run.Fleet         = fleet;
-            _run.TierRerolls   = saved.TierRerolls ?? new int[4];
-            _run.HasActiveRun  = !saved.IsComplete;
+            _run.TierRerolls       = saved.TierRerolls ?? new int[4];
+            _run.UpgradePurchases  = saved.UpgradePurchases ?? new Dictionary<string, int>();
+            _run.HasActiveRun      = !saved.IsComplete;
         }
         catch
         {
@@ -53,14 +56,15 @@ public sealed class LocalRunStore : IRunStore
         File.WriteAllText(_run.PlayerFleetPath, JsonSerializer.Serialize(_run.Fleet, JsonOptions));
         File.WriteAllText(StatePath(), JsonSerializer.Serialize(new SavedState
         {
-            Salvage        = _run.Salvage,
-            Tech           = _run.Tech,
-            HangarCapacity = _run.HangarCapacity,
-            JumpNumber     = _run.JumpNumber,
-            LossCount      = _run.LossCount,
-            AdmiralId      = _run.AdmiralId,
-            TierRerolls    = _run.TierRerolls,
-            IsComplete     = _run.IsRunComplete,
+            Salvage           = _run.Salvage,
+            Tech              = _run.Tech,
+            HangarCapacity    = _run.HangarCapacity,
+            JumpNumber        = _run.JumpNumber,
+            LossCount         = _run.LossCount,
+            AdmiralId         = _run.AdmiralId,
+            TierRerolls       = _run.TierRerolls,
+            UpgradePurchases  = _run.UpgradePurchases,
+            IsComplete        = _run.IsRunComplete,
         }, JsonOptions));
     }
 
@@ -82,9 +86,10 @@ public sealed class LocalRunStore : IRunStore
         _run.JumpNumber     = 1;
         _run.LossCount      = 0;
         _run.AdmiralId      = admiral.Id;
-        _run.Fleet          = admiral.StartingFleet;
-        _run.TierRerolls    = new int[4];
-        _run.HasActiveRun   = true;
+        _run.Fleet            = admiral.StartingFleet;
+        _run.TierRerolls      = new int[4];
+        _run.UpgradePurchases = new Dictionary<string, int>();
+        _run.HasActiveRun     = true;
         _run.IsRunComplete  = false;
         Save();
     }
@@ -129,6 +134,21 @@ public sealed class LocalRunStore : IRunStore
         return true;
     }
 
+    public bool BuyUpgrade(string upgradeId)
+    {
+        // TODO (online mode): POST /runs/{RunId}/actions/research — server validates before applying.
+        var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
+        if (upgrade is null) return false;
+        if (_run.Tech < upgrade.TechCost) return false;
+        var purchases = _run.UpgradePurchases.GetValueOrDefault(upgradeId);
+        if (upgrade.MaxPurchases > 0 && purchases >= upgrade.MaxPurchases) return false;
+        _run.Tech -= upgrade.TechCost;
+        _run.UpgradePurchases[upgradeId] = purchases + 1;
+        upgrade.Apply(_run);
+        Save();
+        return true;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private string StatePath() =>
@@ -136,13 +156,14 @@ public sealed class LocalRunStore : IRunStore
 
     private sealed class SavedState
     {
-        public int      Salvage        { get; set; }
-        public int      Tech           { get; set; }
-        public int      HangarCapacity { get; set; }
-        public int      JumpNumber     { get; set; }
-        public int      LossCount      { get; set; }
-        public string   AdmiralId      { get; set; } = "";
-        public int[]?   TierRerolls    { get; set; }
-        public bool     IsComplete     { get; set; }
+        public int                          Salvage          { get; set; }
+        public int                          Tech             { get; set; }
+        public int                          HangarCapacity   { get; set; }
+        public int                          JumpNumber       { get; set; }
+        public int                          LossCount        { get; set; }
+        public string                       AdmiralId        { get; set; } = "";
+        public int[]?                       TierRerolls      { get; set; }
+        public Dictionary<string, int>?     UpgradePurchases { get; set; }
+        public bool                         IsComplete       { get; set; }
     }
 }

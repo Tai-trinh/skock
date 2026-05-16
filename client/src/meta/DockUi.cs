@@ -11,6 +11,7 @@ public partial class DockUi : Control
     private Label _resourcesLabel = null!;
     private VBoxContainer _fleetContainer = null!;
     private VBoxContainer _dockContainer = null!;
+    private HBoxContainer _researchContainer = null!;
     private Label _statusLabel = null!;
 
     private const int RerollCost = 5;
@@ -28,9 +29,10 @@ public partial class DockUi : Control
     {
         _titleLabel     = GetNode<Label>("MarginContainer/VBox/Header/TitleLabel");
         _resourcesLabel = GetNode<Label>("MarginContainer/VBox/Header/ResourcesLabel");
-        _fleetContainer = GetNode<VBoxContainer>("MarginContainer/VBox/Main/FleetPanel/FleetScroll/FleetContainer");
-        _dockContainer  = GetNode<VBoxContainer>("MarginContainer/VBox/Main/DockPanel/DockScroll/DockContainer");
-        _statusLabel    = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
+        _fleetContainer    = GetNode<VBoxContainer>("MarginContainer/VBox/Main/FleetPanel/FleetScroll/FleetContainer");
+        _dockContainer     = GetNode<VBoxContainer>("MarginContainer/VBox/Main/DockPanel/DockScroll/DockContainer");
+        _researchContainer = GetNode<HBoxContainer>("MarginContainer/VBox/ResearchSection/ResearchContainer");
+        _statusLabel       = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
         GetNode<Button>("MarginContainer/VBox/Footer/BattleButton").Pressed += OnBattlePressed;
         Refresh();
     }
@@ -47,6 +49,7 @@ public partial class DockUi : Control
             $"Losses: {run.LossCount} / 3";
         RebuildFleet();
         RebuildDock();
+        RebuildResearch();
     }
 
     // ── Fleet panel ───────────────────────────────────────────────────────────
@@ -148,6 +151,41 @@ public partial class DockUi : Control
         if (!RunState.Instance.CommissionShip(bp))
             return;
         _statusLabel.Text = $"Commissioned {bp.DisplayName}.";
+        Refresh();
+    }
+
+    // ── Research panel ────────────────────────────────────────────────────────
+
+    private void RebuildResearch()
+    {
+        foreach (var child in _researchContainer.GetChildren())
+            child.QueueFree();
+
+        var run = RunState.Instance;
+        foreach (var upgrade in ResearchCatalog.All)
+        {
+            var purchases = run.UpgradePurchases.GetValueOrDefault(upgrade.Id);
+            var maxed     = purchases >= upgrade.MaxPurchases;
+            var countText = $" ({purchases}/{upgrade.MaxPurchases})";
+            var btn = new Button
+            {
+                Text = $"{upgrade.DisplayName}\n{upgrade.Description}\n[{upgrade.TechCost} Tech]{countText}" +
+                       (maxed ? "\nMAXED" : ""),
+                Disabled            = run.Tech < upgrade.TechCost || maxed,
+                CustomMinimumSize   = new Godot.Vector2(170, 0),
+            };
+            var id = upgrade.Id;
+            btn.Pressed += () => OnBuyUpgrade(id);
+            _researchContainer.AddChild(btn);
+        }
+    }
+
+    private void OnBuyUpgrade(string upgradeId)
+    {
+        var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
+        if (upgrade is null || !RunState.Instance.BuyUpgrade(upgradeId))
+            return;
+        _statusLabel.Text = $"Researched: {upgrade.DisplayName}.";
         Refresh();
     }
 
