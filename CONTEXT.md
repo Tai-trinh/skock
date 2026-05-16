@@ -413,7 +413,7 @@ TODO: revisit proc-based effects (`on_hit_received`, `on_kill`, `on_low_hp`, etc
 
 Meshes are looked up from a client-side dictionary at battle log load time. `blueprint_drawing_id` is an override for unique/named ships (e.g. the player's Mothership) that bypass the procedural assembly. Normal ships are fully assembled from components. This gives visual readability — you can see what a ship is armed with at a glance.
 
-**Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Start with one faction; add more as art and balance allows.
+**Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Start with one faction; add more as art and balance allows. Admirals belong to a faction (`FactionId` on the `Admiral` type). Faction and admiral data live in `client/data/factions.json` and `client/data/admirals.json`; add new admirals or factions by editing those files — no C# changes required for data-only additions. Admiral ship effects (e.g. "+15% Fighter speed") are currently defined as code in `AdmiralEffectsRegistry`; they will migrate to the `admiral_effects` data-driven vocabulary once the effect interpreter is built (see ADR-0008).
 
 **Admiral:** the first decision of every run. The player picks one admiral from a selection screen before jump 1. Each admiral comes with a small starting fleet (2–3 ships that match their archetype) and a permanent passive bonus via `admiral_effects`. The starting fleet and bonus telegraph a build direction — the player knows their initial angle and hunts the dockyard and research for cards that complete the combo. `admiral_id` is opaque to the sim; the client uses it to look up the admiral's portrait (2D anime front-facing art) and starting fleet definition. Locked for the full run once chosen.
 
@@ -452,10 +452,11 @@ Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape. P
 **Run state (online mode, planned post-offline):** the server owns a server-side Run ID assigned at run start. All run choices (fleet, Salvage, Tech, JumpNumber, LossCount) are stored in the server DB and fetched on login — local save is only a cache. If the local save and server record diverge, server wins. Matchmaking for opponent fleets uses JumpNumber + LossCount as the progress dimensions: a player at Jump 4 / 1 loss is matched against fleets submitted by other players (or curated by the dev team) at the same bracket. The opponent fleet DB is seeded with hand-authored curated fleets organised by these brackets. Future: curated fleets are benchmarked against each other via the deterministic sim (seeded batch runs) so each bracket contains vetted, calibrated opponents.
 
 **Online design principle — always design for online, build offline first:** Every stateful client class that has a plausible online counterpart is coded against an interface from day one. The offline adapter is the only implementation today; the online adapter slots in without touching the rest of the codebase. Current seams:
-- `IRunStore` / `LocalRunStore` — run lifecycle and dockyard actions. Online: `ServerRunStore` validates each action via REST before mutating RunState.
-- `IStatsStore` / `LocalStatsStore` — per-run jump history and lifetime counters. Online: `ServerStatsStore` POSTs `BattleInputs` (seed + fleet JSONs) to the server for anti-cheat storage and retroactive re-simulation (see ADR-0005).
+- `IRunStore` / `LocalRunStore` — run lifecycle and dockyard actions. Online: `ServerRunStore` validates each action via REST before mutating RunState (server-authoritative).
+- `IStatsStore` / `LocalStatsStore` — per-run jump history and lifetime counters. Online: `ServerStatsStore` POSTs `BattleInputs` (seed + fleet JSONs) to the server for anti-cheat storage and retroactive re-simulation (honor system — see ADR-0005 and ADR-0006).
+- `IAdmiralStore` / `LocalAdmiralStore` — admiral and faction catalog. Reads `client/data/admirals.json` and `client/data/factions.json`. Online: `ServerAdmiralStore` fetches from REST API, enabling server-curated or rotating admiral pools.
 
-The swap is a one-line change in `RunState._Ready()`. Anti-cheat model: honor system — client reports results, server trusts by default and verifies retroactively. Triggers: anomaly detection heuristics and leaderboard review. During development, every submitted battle is re-simulated.
+The swap for each is a one-line change in `RunState._Ready()`. Anti-cheat model: honor system — client reports results, server trusts by default and verifies retroactively. Triggers: anomaly detection heuristics and leaderboard review. During development, every submitted battle is re-simulated.
 
 **Run reset:** every run starts fresh from the chosen admiral's starting fleet. No ships, doctrines, or equipment carry over between runs. The combo-hunting feel depends on a blank slate — a persistent fleet collapses into one optimal build. The admiral selection screen is the only persistent choice a player makes at run start.
 
@@ -468,6 +469,7 @@ The swap is a one-line change in `RunState._Ready()`. Anti-cheat model: honor sy
 - `src/meta/` — `RunState`, shop logic, admiral definitions, dockyard logic
 - `src/ui/` — pure UI nodes, display only; call into `meta/` or `sim/` via signals, never the reverse
 - `src/rendering/` — battle renderer, ship sprite assembly, effect triggers
+- `data/` — JSON data files loaded at startup by local store adapters: `admirals.json`, `factions.json`. Accessible as `res://data/` in Godot. Add new admirals or factions here without touching C#.
 
 **Scenes:**
 - `AdmiralSelect.tscn` — run start; player picks an admiral, sees starting fleet and passive bonus. Transitions to `Dockyard.tscn` on confirm.
