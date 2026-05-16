@@ -131,6 +131,9 @@ pub struct SimState {
     pub events: Vec<Event>,
     pub low_hp_flagged: BTreeMap<ShipId, bool>,
     pub attrition_started: bool,
+    // Statistics — accumulated during the battle, emitted in RESULT JSON.
+    pub killed: Vec<(Fleet, HullClass, bool)>, // (fleet of dead ship, hull_class, is_mothership)
+    pub damage_dealt: [I32F32; 2],             // [fleet_a_dealt, fleet_b_dealt]
 }
 
 impl SimState {
@@ -143,6 +146,8 @@ impl SimState {
             events: Vec::new(),
             low_hp_flagged: BTreeMap::new(),
             attrition_started: false,
+            killed: Vec::new(),
+            damage_dealt: [I32F32::ZERO, I32F32::ZERO],
         }
     }
 

@@ -108,6 +108,8 @@ public sealed class LocalRunStore : IRunStore
         _run.UpgradePurchases = new Dictionary<string, int>();
         _run.HasActiveRun = true;
         _run.IsRunComplete = false;
+        _run.JumpHistory = [];
+        _run.CurrentOpponentFleet = null;
         Save();
     }
 
@@ -129,6 +131,9 @@ public sealed class LocalRunStore : IRunStore
             return false;
         _run.Fleet.Ships.Add(bp.Instantiate());
         _run.Salvage -= bp.SalvageCost;
+        _run.Lifetime.TotalSalvageSpent += bp.SalvageCost;
+        if (bp.Template.HullClass is HullClass.Battlecruiser or HullClass.Dreadnought)
+            _run.Lifetime.TotalCapitalShipsBought++;
         Save();
         return true;
     }
@@ -155,6 +160,7 @@ public sealed class LocalRunStore : IRunStore
         if (_run.Salvage < cost)
             return false;
         _run.Salvage -= cost;
+        _run.Lifetime.TotalSalvageSpent += cost;
         _run.TierRerolls[tierIndex]++;
         Save();
         return true;
@@ -172,6 +178,7 @@ public sealed class LocalRunStore : IRunStore
         if (upgrade.MaxPurchases > 0 && purchases >= upgrade.MaxPurchases)
             return false;
         _run.Tech -= upgrade.TechCost;
+        _run.Lifetime.TotalTechSpent += upgrade.TechCost;
         _run.UpgradePurchases[upgradeId] = purchases + 1;
         upgrade.Apply(_run);
         Save();

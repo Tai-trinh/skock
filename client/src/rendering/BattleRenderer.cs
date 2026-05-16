@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Godot;
 using Skock.Meta;
@@ -27,6 +28,9 @@ public partial class BattleRenderer : Node2D
 
     private PlaybackState? _playback;
     private readonly Dictionary<uint, ShipNode> _shipNodes = [];
+    private Control? _inspectorOverlay;
+
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     // Sim world → Godot world: 1 sim unit = SimScale pixels, y-axis flipped.
     private const float SimScale = 1f;
@@ -48,16 +52,31 @@ public partial class BattleRenderer : Node2D
         var run = RunState.Instance;
         run.IsBattleActive = true;
         var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
-        var fleetB = Path.GetFullPath(
+        var fleetBPath = Path.GetFullPath(
             Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json")
         );
+
+        // Load opponent fleet for the Fleet Inspector and JumpRecord snapshot.
+        try
+        {
+            var fleetBJson = File.ReadAllText(fleetBPath);
+            run.CurrentOpponentFleet = JsonSerializer.Deserialize<FleetJsonData>(
+                fleetBJson,
+                JsonOptions
+            );
+            if (run.CurrentOpponentFleet is not null)
+                run.CurrentOpponentFleet.Mothership.IsMothership = true;
+        }
+        catch
+        { /* fleet inspector shows empty if file unreadable */
+        }
 
         var seed = run.GetBattleSeed();
         Task.Run(() =>
         {
             try
             {
-                LoadFromSimRun(seed, fleetA, fleetB, run.SimBinaryPath);
+                LoadFromSimRun(seed, fleetA, fleetBPath, run.SimBinaryPath);
             }
             catch (Exception e)
             {
@@ -226,14 +245,66 @@ public partial class BattleRenderer : Node2D
 
     private void ShowResult()
     {
-        if (_playback?.Result is not { } result)
+        if (_playback?.Result is not { } result || _inspectorOverlay is not null)
             return;
 
-        _resultLabel.Visible = true;
-        _resultLabel.Text =
+        _resultLabel.Visible = false;
+
+        var run = RunState.Instance;
+        var overlay = new PanelContainer();
+        overlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+
+        var outer = new VBoxContainer();
+        overlay.AddChild(outer);
+
+        // Result line
+        var resultText =
             result.Winner == "draw"
-                ? "DRAW — time limit reached\n\n[Space] Continue"
-                : $"{result.Winner.ToUpperInvariant()} wins  ({result.Ticks} ticks)\n\n[Space] Continue";
+                ? "DRAW — time limit reached"
+                : $"{result.Winner.ToUpperInvariant()} WINS  ({result.Ticks} ticks)";
+        outer.AddChild(
+            new Label { Text = resultText, HorizontalAlignment = HorizontalAlignment.Center }
+        );
+
+        // Stats line
+        var enemyKills = result.FleetBKilled.Count(k => !k.IsMothership);
+        var ownLost = result.FleetAKilled.Count(k => !k.IsMothership);
+        outer.AddChild(
+            new Label
+            {
+                Text =
+                    $"Enemies killed: {enemyKills}  |  Own ships lost: {ownLost}"
+                    + $"  |  Damage dealt: {result.FleetADamageDealt:0}  |  Damage taken: {result.FleetBDamageDealt:0}",
+                HorizontalAlignment = HorizontalAlignment.Center,
+            }
+        );
+
+        outer.AddChild(new HSeparator());
+
+        // Fleet panels side by side
+        var fleetsRow = new HBoxContainer();
+        fleetsRow.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+        outer.AddChild(fleetsRow);
+
+        var playerFleet = run.Fleet;
+        fleetsRow.AddChild(FleetInspector.Build(playerFleet, run.UpgradePurchases, true));
+
+        fleetsRow.AddChild(new VSeparator());
+
+        var opponentFleet = run.CurrentOpponentFleet ?? new FleetJsonData();
+        fleetsRow.AddChild(FleetInspector.Build(opponentFleet, null, false));
+
+        outer.AddChild(new HSeparator());
+        outer.AddChild(
+            new Label
+            {
+                Text = "[Space] Continue",
+                HorizontalAlignment = HorizontalAlignment.Center,
+            }
+        );
+
+        AddChild(overlay);
+        _inspectorOverlay = overlay;
     }
 
     private void FitCamera()

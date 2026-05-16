@@ -14,6 +14,12 @@ public sealed class ShipSurvivor
     public bool IsMothership { get; init; }
 }
 
+public sealed class KilledShip
+{
+    public string HullClass { get; init; } = "";
+    public bool IsMothership { get; init; }
+}
+
 public sealed class BattleResult
 {
     public string Winner { get; init; } = "";
@@ -21,6 +27,10 @@ public sealed class BattleResult
     public string Reason { get; init; } = "";
     public IReadOnlyList<ShipSurvivor> FleetASurvivors { get; init; } = [];
     public IReadOnlyList<ShipSurvivor> FleetBSurvivors { get; init; } = [];
+    public IReadOnlyList<KilledShip> FleetAKilled { get; init; } = [];
+    public IReadOnlyList<KilledShip> FleetBKilled { get; init; } = [];
+    public float FleetADamageDealt { get; init; }
+    public float FleetBDamageDealt { get; init; }
 }
 
 public sealed class SimRunException(string message) : Exception(message);
@@ -107,6 +117,14 @@ public static class SimRunner
             Reason = root.GetProperty("reason").GetString() ?? "",
             FleetASurvivors = ParseSurvivors(root, "fleet_a_survivors"),
             FleetBSurvivors = ParseSurvivors(root, "fleet_b_survivors"),
+            FleetAKilled = ParseKilled(root, "fleet_a_killed"),
+            FleetBKilled = ParseKilled(root, "fleet_b_killed"),
+            FleetADamageDealt = root.TryGetProperty("fleet_a_damage_dealt", out var ad)
+                ? ad.GetSingle()
+                : 0f,
+            FleetBDamageDealt = root.TryGetProperty("fleet_b_damage_dealt", out var bd)
+                ? bd.GetSingle()
+                : 0f,
         };
     }
 
@@ -122,6 +140,25 @@ public static class SimRunner
                 {
                     BlueprintDrawingId = item.GetProperty("blueprint_drawing_id").GetString() ?? "",
                     Hp = item.GetProperty("hp").GetSingle(),
+                    IsMothership =
+                        item.TryGetProperty("is_mothership", out var ms) && ms.GetBoolean(),
+                }
+            );
+        }
+        return list;
+    }
+
+    private static IReadOnlyList<KilledShip> ParseKilled(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var arr))
+            return [];
+        var list = new List<KilledShip>(arr.GetArrayLength());
+        foreach (var item in arr.EnumerateArray())
+        {
+            list.Add(
+                new KilledShip
+                {
+                    HullClass = item.GetProperty("hull_class").GetString() ?? "",
                     IsMothership =
                         item.TryGetProperty("is_mothership", out var ms) && ms.GetBoolean(),
                 }

@@ -54,6 +54,17 @@ public partial class RunState : Node
     // Read by LocalRunStore.Save() to write the IsComplete flag.
     internal bool IsRunComplete { get; set; }
 
+    // ── Statistics ────────────────────────────────────────────────────────────
+
+    // Per-jump records accumulated during the current run (in-memory only; not persisted yet).
+    public List<JumpRecord> JumpHistory { get; internal set; } = [];
+
+    // Cross-run lifetime counters (not yet persisted — see LifetimeStats for TODO).
+    public LifetimeStats Lifetime { get; } = new();
+
+    // Loaded by BattleRenderer before the battle and read by RecordBattleResult to snapshot it.
+    public FleetJsonData? CurrentOpponentFleet { get; set; }
+
     // ── Store ─────────────────────────────────────────────────────────────────
 
     private IRunStore _store = null!;
@@ -100,6 +111,8 @@ public partial class RunState : Node
         IsRunComplete = false;
         AdmiralId = "";
         UpgradePurchases = new();
+        JumpHistory = [];
+        CurrentOpponentFleet = null;
     }
 
     public void SaveAndQuitToMenu()
@@ -125,6 +138,38 @@ public partial class RunState : Node
     public void RecordBattleResult(BattleResult result)
     {
         var playerWon = result.Winner == "fleet_a";
+
+        // Snapshot fleets before any HP mutation.
+        var playerSnapshot = Fleet;
+        var opponentSnapshot = CurrentOpponentFleet ?? new FleetJsonData();
+
+        // Build kill counts by hull class.
+        var enemiesKilled = CountByHullClass(result.FleetBKilled);
+        var ownLost = CountByHullClass(result.FleetAKilled);
+
+        JumpHistory.Add(
+            new JumpRecord
+            {
+                JumpNumber = JumpNumber,
+                Won = playerWon,
+                DurationTicks = result.Ticks,
+                EnemiesKilledByHullClass = enemiesKilled,
+                OwnShipsLostByHullClass = ownLost,
+                DamageDealt = result.FleetADamageDealt,
+                DamageTaken = result.FleetBDamageDealt,
+                PlayerFleetSnapshot = playerSnapshot,
+                OpponentFleetSnapshot = opponentSnapshot,
+                PlayerUpgrades = new Dictionary<string, int>(UpgradePurchases),
+                PlayerAdmiralId = AdmiralId,
+            }
+        );
+
+        // Lifetime counters.
+        if (playerWon)
+            Lifetime.TotalBattlesWon++;
+        foreach (var (_, count) in enemiesKilled)
+            Lifetime.TotalEnemyShipsDestroyed += count;
+
         if (!playerWon)
             LossCount++;
 
@@ -158,6 +203,7 @@ public partial class RunState : Node
         {
             // TODO: check flawless run + top-10% score for hidden final encounter.
             RunEndReason = RunEndReason.Victory;
+            Lifetime.TotalRunVictories++;
             HasActiveRun = false;
             IsRunComplete = true;
             _store.Save();
@@ -199,6 +245,21 @@ public partial class RunState : Node
         Fleet.Mothership.Hp = Fleet.Mothership.MaxHp;
         foreach (var ship in Fleet.Ships)
             ship.Hp = ship.MaxHp;
+    }
+
+    // ── Statistics helpers ────────────────────────────────────────────────────
+
+    private static Dictionary<string, int> CountByHullClass(IReadOnlyList<KilledShip> killed)
+    {
+        var counts = new Dictionary<string, int>();
+        foreach (var ship in killed)
+        {
+            if (ship.IsMothership)
+                continue;
+            counts.TryGetValue(ship.HullClass, out var n);
+            counts[ship.HullClass] = n + 1;
+        }
+        return counts;
     }
 
     // ── Defaults ──────────────────────────────────────────────────────────────

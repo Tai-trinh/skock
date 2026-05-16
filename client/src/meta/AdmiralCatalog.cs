@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Skock.Meta;
 
@@ -77,6 +78,16 @@ public static class AdmiralCatalog
             ShipEffects = [],
         },
     ];
+
+    // Returns display name for any admiral ID, including NPC opponents.
+    public static string NameFor(string admiralId) =>
+        All.FirstOrDefault(a => a.Id == admiralId)?.Name
+        ?? admiralId switch
+        {
+            "bob" => "Admiral Bob",
+            "none" or "" => "Unknown",
+            _ => admiralId,
+        };
 
     private static FleetJsonData MakeFleet(string admiralId, params ShipDefData[] ships) =>
         new()

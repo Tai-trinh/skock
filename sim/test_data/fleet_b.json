@@ -1,6 +1,6 @@
 {
   "faction": "test",
-  "admiral_id": "none",
+  "admiral_id": "bob",
   "formation": "wedge",
   "mothership": {
     "blueprint_drawing_id": "mothership_b",

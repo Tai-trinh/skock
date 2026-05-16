@@ -2,7 +2,7 @@ use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use types::{ShipId, WeaponType};
 
-use crate::state::{Event, SimState};
+use crate::state::{Event, Fleet, SimState};
 
 fn dist_sq(ax: I32F32, ay: I32F32, bx: I32F32, by: I32F32) -> I32F32 {
     let dx = ax - bx;
@@ -63,7 +63,7 @@ pub fn resolve_hitscan(state: &mut SimState) {
             let crit_roll = rng_frac(&mut state.rng);
             let final_damage = if crit_roll < crit_chance { damage * crit_damage } else { damage };
 
-            apply_damage(state, target_id, final_damage, id);
+            apply_damage(state, target_id, final_damage, fleet);
 
             state.events.push(Event::HitscanFired {
                 source_id: id,
@@ -82,7 +82,12 @@ pub fn resolve_hitscan(state: &mut SimState) {
     }
 }
 
-fn apply_damage(state: &mut SimState, target_id: ShipId, raw_damage: I16F16, _source_id: ShipId) {
+fn apply_damage(
+    state: &mut SimState,
+    target_id: ShipId,
+    raw_damage: I16F16,
+    attacker_fleet: Fleet,
+) {
     let Some(ship) = state.ships.get_mut(&target_id) else {
         return;
     };
@@ -95,6 +100,13 @@ fn apply_damage(state: &mut SimState, target_id: ShipId, raw_damage: I16F16, _so
     // Armor reduces spillover
     let hull_damage = spillover * (I16F16::ONE - ship.armor);
     ship.hp -= hull_damage;
+
+    // Accumulate damage dealt by the attacking fleet
+    let attacker_idx = match attacker_fleet {
+        Fleet::A => 0,
+        Fleet::B => 1,
+    };
+    state.damage_dealt[attacker_idx] += fixed::types::I32F32::from_num(hull_damage);
 
     // Check low HP threshold (25%)
     let low_hp_threshold = ship.max_hp / I16F16::from_num(4);
@@ -109,6 +121,9 @@ fn apply_damage(state: &mut SimState, target_id: ShipId, raw_damage: I16F16, _so
     if ship.hp <= I16F16::ZERO {
         ship.hp = I16F16::ZERO;
         let fleet = ship.fleet;
+        let hull_class = ship.hull_class;
+        let is_mothership = ship.is_mothership;
+        state.killed.push((fleet, hull_class, is_mothership));
         state.events.push(Event::ShipDestroyed { id: target_id, fleet });
         state.ships.remove(&target_id);
     }

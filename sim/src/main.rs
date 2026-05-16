@@ -102,6 +102,19 @@ fn main() {
         .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>(), "is_mothership": s.is_mothership }))
         .collect();
 
+    let killed_a: Vec<_> = state
+        .killed
+        .iter()
+        .filter(|(f, _, _)| *f == Fleet::A)
+        .map(|(_, hc, ms)| json!({ "hull_class": hc, "is_mothership": ms }))
+        .collect();
+    let killed_b: Vec<_> = state
+        .killed
+        .iter()
+        .filter(|(f, _, _)| *f == Fleet::B)
+        .map(|(_, hc, ms)| json!({ "hull_class": hc, "is_mothership": ms }))
+        .collect();
+
     eprintln!(
         "RESULT:{}",
         json!({
@@ -110,6 +123,10 @@ fn main() {
             "reason": reason,
             "fleet_a_survivors": survivors_a,
             "fleet_b_survivors": survivors_b,
+            "fleet_a_killed": killed_a,
+            "fleet_b_killed": killed_b,
+            "fleet_a_damage_dealt": state.damage_dealt[0].to_num::<f32>(),
+            "fleet_b_damage_dealt": state.damage_dealt[1].to_num::<f32>(),
         })
     );
 }
