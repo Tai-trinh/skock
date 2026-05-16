@@ -137,7 +137,12 @@ public partial class BattleRenderer : Node2D
         {
             var node = new ShipNode();
             _shipsContainer.AddChild(node);
-            node.Init(snapshot.Id, snapshot.Fleet, snapshot.IsMothership);
+            node.Init(
+                snapshot.Id,
+                snapshot.Fleet,
+                snapshot.IsMothership,
+                snapshot.BlueprintDrawingId
+            );
             _shipNodes[snapshot.Id] = node;
         }
     }

@@ -25,7 +25,7 @@ public static class BlueprintCatalog
             SalvageCost = 10,
             Template = new ShipDefData
             {
-                BlueprintDrawingId = "fighter_a",
+                BlueprintDrawingId = "corvette_a",
                 HullClass = HullClass.Corvette,
                 Role = Role.Fighter,
                 Hp = 60,
@@ -57,7 +57,7 @@ public static class BlueprintCatalog
             SalvageCost = 25,
             Template = new ShipDefData
             {
-                BlueprintDrawingId = "fighter_a",
+                BlueprintDrawingId = "frigate_a",
                 HullClass = HullClass.Frigate,
                 Role = Role.Fighter,
                 Hp = 130,
@@ -89,7 +89,7 @@ public static class BlueprintCatalog
             SalvageCost = 45,
             Template = new ShipDefData
             {
-                BlueprintDrawingId = "fighter_a",
+                BlueprintDrawingId = "destroyer_a",
                 HullClass = HullClass.Destroyer,
                 Role = Role.Artillery,
                 Hp = 200,
