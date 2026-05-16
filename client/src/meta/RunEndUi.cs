@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Skock.UI;
@@ -30,11 +31,12 @@ public partial class RunEndUi : Control
             _ => "",
         };
 
+        var history = run.Stats.GetJumpHistory();
         var jumpsCompleted = reason == RunEndReason.Defeat ? run.JumpNumber - 1 : run.JumpNumber;
-        var totalKills = run.JumpHistory.Sum(j => j.EnemiesKilledByHullClass.Values.Sum());
-        var totalLost = run.JumpHistory.Sum(j => j.OwnShipsLostByHullClass.Values.Sum());
-        var totalDealt = run.JumpHistory.Sum(j => j.DamageDealt);
-        var totalTaken = run.JumpHistory.Sum(j => j.DamageTaken);
+        var totalKills = history.Sum(j => j.EnemiesKilledByHullClass.Values.Sum());
+        var totalLost = history.Sum(j => j.OwnShipsLostByHullClass.Values.Sum());
+        var totalDealt = history.Sum(j => j.DamageDealt);
+        var totalTaken = history.Sum(j => j.DamageTaken);
 
         // Per-run condition achievement hint.
         var untouchable = totalTaken < 1000f;
@@ -53,6 +55,7 @@ public partial class RunEndUi : Control
 
         BuildJumpTable(
             GetNode<VBoxContainer>("MarginContainer/VBox/JumpTableScroll/JumpTable"),
+            history,
             run
         );
 
@@ -61,9 +64,13 @@ public partial class RunEndUi : Control
 
     // ── Jump table with accordion ─────────────────────────────────────────────
 
-    private static void BuildJumpTable(VBoxContainer table, RunState run)
+    private static void BuildJumpTable(
+        VBoxContainer table,
+        IReadOnlyList<JumpRecord> history,
+        RunState run
+    )
     {
-        if (run.JumpHistory.Count == 0)
+        if (history.Count == 0)
         {
             table.AddChild(
                 new Label
@@ -88,7 +95,7 @@ public partial class RunEndUi : Control
 
         var currentJump = run.JumpNumber;
 
-        foreach (var record in run.JumpHistory)
+        foreach (var record in history)
         {
             var rowContainer = new VBoxContainer();
             table.AddChild(rowContainer);

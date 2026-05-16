@@ -72,6 +72,12 @@ public partial class BattleRenderer : Node2D
         }
 
         var seed = run.GetBattleSeed();
+        run.CurrentBattleInputs = new BattleInputs
+        {
+            Seed = seed,
+            FleetAJson = File.ReadAllText(fleetA),
+            FleetBJson = File.Exists(fleetBPath) ? File.ReadAllText(fleetBPath) : "",
+        };
         Task.Run(() =>
         {
             try
