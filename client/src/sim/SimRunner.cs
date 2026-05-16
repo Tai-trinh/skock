@@ -12,6 +12,7 @@ public sealed class ShipSurvivor
     public string BlueprintDrawingId { get; init; } = "";
     public float Hp { get; init; }
     public bool IsMothership { get; init; }
+    public int? FleetIndex { get; init; }
 }
 
 public sealed class KilledShip
@@ -142,6 +143,11 @@ public static class SimRunner
                     Hp = item.GetProperty("hp").GetSingle(),
                     IsMothership =
                         item.TryGetProperty("is_mothership", out var ms) && ms.GetBoolean(),
+                    FleetIndex =
+                        item.TryGetProperty("fleet_index", out var fi)
+                        && fi.ValueKind == JsonValueKind.Number
+                            ? fi.GetInt32()
+                            : null,
                 }
             );
         }

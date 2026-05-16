@@ -138,7 +138,11 @@ public partial class DockUi : Control
     private static List<Blueprint> GenerateOffers(List<Blueprint> pool, int slots, int tierIndex)
     {
         var run = RunState.Instance;
-        var rng = new Random(run.JumpNumber * 1000 + tierIndex * 100 + run.TierRerolls[tierIndex]);
+        // XOR run seed (per-run uniqueness, stable across save/load) with position in the run.
+        // System.Random seed is an int; fold the ulong down without discarding entropy.
+        var position = (ulong)(run.JumpNumber * 997 + tierIndex * 101 + run.TierRerolls[tierIndex]);
+        var seed = (int)((run.RunSeed ^ (run.RunSeed >> 32)) ^ position);
+        var rng = new Random(seed);
         var offers = new List<Blueprint>(slots);
         for (var i = 0; i < slots; i++)
             offers.Add(pool[rng.Next(pool.Count)]);

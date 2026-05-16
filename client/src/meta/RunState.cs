@@ -35,6 +35,8 @@ public partial class RunState : Node
 
     // ── Run state ─────────────────────────────────────────────────────────────
 
+    public ulong RunSeed { get; set; }
+
     public int Salvage { get; set; } = 50;
     public int Tech { get; set; } = 0;
     public int HangarCapacity { get; set; } = 10;
@@ -228,22 +230,20 @@ public partial class RunState : Node
 
     private void ApplySurvivorHp(IReadOnlyList<ShipSurvivor> survivors)
     {
-        // Build per-blueprint queues (BTreeMap order from sim ≈ spawn order for same hull class).
-        var hpQueues = new Dictionary<string, Queue<float>>();
-        foreach (var s in survivors)
-        {
-            if (s.IsMothership)
-                continue;
-            if (!hpQueues.TryGetValue(s.BlueprintDrawingId, out var q))
-                hpQueues[s.BlueprintDrawingId] = q = new Queue<float>();
-            q.Enqueue(s.Hp);
-        }
+        // Default all fleet ships to 1 HP — ships destroyed mid-battle survive at minimum.
         foreach (var ship in Fleet.Ships)
+            ship.Hp = 1.0;
+
+        foreach (var survivor in survivors)
         {
-            if (hpQueues.TryGetValue(ship.BlueprintDrawingId, out var q) && q.Count > 0)
-                ship.Hp = q.Dequeue();
-            else
-                ship.Hp = 1.0; // destroyed mid-battle — minimum survival HP
+            if (survivor.IsMothership)
+            {
+                Fleet.Mothership.Hp = survivor.Hp;
+                continue;
+            }
+            // fleet_index from the sim identifies the exact slot; no ambiguity for same-type ships.
+            if (survivor.FleetIndex is { } idx && idx >= 0 && idx < Fleet.Ships.Count)
+                Fleet.Ships[idx].Hp = survivor.Hp;
         }
     }
 

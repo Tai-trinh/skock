@@ -32,8 +32,8 @@ pub fn run_battle(
     let rng = Xoshiro256Plus::seed_from_u64(seed);
     let mut state = SimState::new(rng);
 
-    spawn::spawn_fleet(&mut state, fleet_a, Fleet::A, config);
-    spawn::spawn_fleet(&mut state, fleet_b, Fleet::B, config);
+    let _ = spawn::spawn_fleet(&mut state, fleet_a, Fleet::A, config);
+    let _ = spawn::spawn_fleet(&mut state, fleet_b, Fleet::B, config);
 
     let mut log_bytes: Vec<u8> = Vec::new();
     log::write_header(&mut log_bytes).expect("write header");

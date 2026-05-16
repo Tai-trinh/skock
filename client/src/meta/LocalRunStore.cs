@@ -38,6 +38,7 @@ public sealed class LocalRunStore : IRunStore
             if (saved is null || fleet is null)
                 return;
 
+            _run.RunSeed = saved.RunSeed;
             _run.Salvage = saved.Salvage;
             _run.Tech = saved.Tech;
             _run.HangarCapacity = saved.HangarCapacity;
@@ -68,6 +69,7 @@ public sealed class LocalRunStore : IRunStore
             JsonSerializer.Serialize(
                 new SavedState
                 {
+                    RunSeed = _run.RunSeed,
                     Salvage = _run.Salvage,
                     Tech = _run.Tech,
                     HangarCapacity = _run.HangarCapacity,
@@ -97,6 +99,7 @@ public sealed class LocalRunStore : IRunStore
     public void StartRun(Admiral admiral)
     {
         // TODO (online mode): POST /runs to create a server-side run record; receive Run ID.
+        _run.RunSeed = (ulong)Random.Shared.NextInt64();
         _run.Salvage = admiral.StartingSalvage;
         _run.Tech = admiral.StartingTech;
         _run.HangarCapacity = admiral.StartingHangarCapacity;
@@ -217,6 +220,7 @@ public sealed class LocalRunStore : IRunStore
 
     private sealed class SavedState
     {
+        public ulong RunSeed { get; set; }
         public int Salvage { get; set; }
         public int Tech { get; set; }
         public int HangarCapacity { get; set; }

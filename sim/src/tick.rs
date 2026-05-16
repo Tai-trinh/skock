@@ -46,7 +46,7 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
         .collect();
 
     for &id in &ship_ids {
-        let ship = state.ships.get_mut(&id).unwrap();
+        let ship = state.ships.get_mut(&id).expect("id from keys(), not yet removed");
         let force = forces[&id];
 
         // Apply force scaled by acceleration
@@ -105,26 +105,29 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
 
     if state.attrition_started {
         let ticks_since = state.tick - config.attrition_start_tick;
-        let ticks_per_sec = config.tick_rate as f64;
-        let seconds_elapsed = ticks_since as f64 / ticks_per_sec;
+        let tick_rate = I32F32::from_num(config.tick_rate);
+        let base = I32F32::from_num(config.attrition_base_damage_per_second);
+        let ramp = I32F32::from_num(config.attrition_ramp_per_second);
 
-        // Damage rate increases each second: base + ramp * seconds
-        let damage_rate = config.attrition_base_damage_per_second
-            + config.attrition_ramp_per_second * seconds_elapsed;
-        let damage_this_tick = damage_rate / ticks_per_sec;
+        // All arithmetic in fixed-point — no floats in sim code.
+        // seconds_elapsed = ticks_since / tick_rate
+        let seconds_elapsed = I32F32::from_num(ticks_since) / tick_rate;
+        // damage_fraction = fraction of max_hp dealt to each ship this tick
+        let damage_fraction = (base + ramp * seconds_elapsed) / tick_rate;
 
         let ids: Vec<ShipId> = state.ships.keys().copied().collect();
         for id in ids {
-            let damage = {
+            let (damage, hull_class, fleet, is_mothership) = {
                 let ship = &state.ships[&id];
-                I16F16::from_num(f64::from(ship.max_hp.to_num::<f32>()) * damage_this_tick)
+                let dmg = I16F16::from_num(I32F32::from_num(ship.max_hp) * damage_fraction);
+                (dmg, ship.hull_class, ship.fleet, ship.is_mothership)
             };
             // Apply directly to hull HP — attrition bypasses shields
-            let ship = state.ships.get_mut(&id).unwrap();
+            let ship = state.ships.get_mut(&id).expect("id from keys(), not yet removed");
             ship.hp -= damage;
             if ship.hp <= I16F16::ZERO {
                 ship.hp = I16F16::ZERO;
-                let fleet = ship.fleet;
+                state.killed.push((fleet, hull_class, is_mothership));
                 state.events.push(Event::ShipDestroyed { id, fleet });
                 state.ships.remove(&id);
             }

@@ -44,7 +44,7 @@ pub fn resolve_hitscan(state: &mut SimState) {
                 let d = dist_sq(pos_x, pos_y, other.pos.x, other.pos.y);
                 (d <= range_sq).then_some((d, *other_id))
             })
-            .min_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap())
+            .min_by(|(a, _), (b, _)| a.cmp(b))
             .map(|(_, id)| id)
         else {
             continue;
@@ -52,7 +52,10 @@ pub fn resolve_hitscan(state: &mut SimState) {
 
         // Roll miss chance
         let (damage, miss_chance, crit_chance, crit_damage) = {
-            let w = state.ships[&id].weapon.as_ref().unwrap();
+            let w = state.ships[&id]
+                .weapon
+                .as_ref()
+                .expect("hitscan ship has weapon; guarded by weapon-type match above");
             (w.damage, w.miss_chance, w.crit_chance, w.crit_damage)
         };
 
@@ -73,8 +76,8 @@ pub fn resolve_hitscan(state: &mut SimState) {
         }
 
         // Update cooldown and ammo
-        let ship = state.ships.get_mut(&id).unwrap();
-        let w = ship.weapon.as_mut().unwrap();
+        let ship = state.ships.get_mut(&id).expect("id present; retrieved same tick");
+        let w = ship.weapon.as_mut().expect("hitscan ship has weapon; guarded above");
         w.cooldown_remaining = w.cooldown_ticks;
         if let Some(ref mut ammo) = w.ammo {
             *ammo -= 1;

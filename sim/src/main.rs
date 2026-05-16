@@ -55,8 +55,8 @@ fn main() {
     let rng = Xoshiro256Plus::seed_from_u64(args.seed);
     let mut state = SimState::new(rng);
 
-    spawn_fleet(&mut state, &fleet_a, Fleet::A, &config);
-    spawn_fleet(&mut state, &fleet_b, Fleet::B, &config);
+    let fleet_a_idx = spawn_fleet(&mut state, &fleet_a, Fleet::A, &config);
+    let fleet_b_idx = spawn_fleet(&mut state, &fleet_b, Fleet::B, &config);
 
     let stdout = io::stdout();
     let mut out = BufWriter::new(stdout.lock());
@@ -93,13 +93,27 @@ fn main() {
         .ships
         .values()
         .filter(|s| s.fleet == Fleet::A)
-        .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>(), "is_mothership": s.is_mothership }))
+        .map(|s| {
+            json!({
+                "blueprint_drawing_id": s.blueprint_drawing_id,
+                "hp": s.hp.to_num::<f32>(),
+                "is_mothership": s.is_mothership,
+                "fleet_index": fleet_a_idx.get(&s.id).copied(),
+            })
+        })
         .collect();
     let survivors_b: Vec<_> = state
         .ships
         .values()
         .filter(|s| s.fleet == Fleet::B)
-        .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>(), "is_mothership": s.is_mothership }))
+        .map(|s| {
+            json!({
+                "blueprint_drawing_id": s.blueprint_drawing_id,
+                "hp": s.hp.to_num::<f32>(),
+                "is_mothership": s.is_mothership,
+                "fleet_index": fleet_b_idx.get(&s.id).copied(),
+            })
+        })
         .collect();
 
     let killed_a: Vec<_> = state

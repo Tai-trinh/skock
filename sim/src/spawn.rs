@@ -1,6 +1,7 @@
 use fixed::types::I16F16;
 use rand_core::RngCore;
 use rand_xoshiro::Xoshiro256Plus;
+use std::collections::BTreeMap;
 use types::{FleetJson, HullClass, ShipDef, ShipId};
 
 use crate::{
@@ -8,24 +9,36 @@ use crate::{
     state::{BoidWeights, Fleet, Pos2, Ship, SimState, Vec2, WeaponState},
 };
 
-pub fn spawn_fleet(state: &mut SimState, fleet: &FleetJson, side: Fleet, config: &SimConfig) {
+// Returns a map from ShipId → original index in fleet.ships (not the mothership).
+// The client uses this to assign post-battle HP back to the correct fleet slot.
+pub fn spawn_fleet(
+    state: &mut SimState,
+    fleet: &FleetJson,
+    side: Fleet,
+    config: &SimConfig,
+) -> BTreeMap<ShipId, usize> {
     let spawn_x = match side {
         Fleet::A => config.fleet_a_spawn_x,
         Fleet::B => config.fleet_b_spawn_x,
     };
 
-    let mut ships: Vec<&ShipDef> = fleet.ships.iter().collect();
-    ships.sort_by_key(|s| hull_class_order(s.hull_class));
+    // Sort by hull class while keeping original indices so the client can map back.
+    let mut indexed: Vec<(usize, &ShipDef)> = fleet.ships.iter().enumerate().collect();
+    indexed.sort_by_key(|(_, s)| hull_class_order(s.hull_class));
 
-    for (i, def) in ships.iter().enumerate() {
-        let pos = wedge_pos(spawn_x, i, ships.len(), side, config, &mut state.rng);
+    let mut id_to_fleet_index: BTreeMap<ShipId, usize> = BTreeMap::new();
+    for (i, (original_idx, def)) in indexed.iter().enumerate() {
+        let pos = wedge_pos(spawn_x, i, indexed.len(), side, config, &mut state.rng);
         let ship = build_ship(state.alloc_ship_id(), def, side, pos, false);
+        id_to_fleet_index.insert(ship.id, *original_idx);
         state.ships.insert(ship.id, ship);
     }
 
     let ms_pos = Pos2::from_f64(spawn_x, 0.0);
     let ms = build_ship(state.alloc_ship_id(), &fleet.mothership, side, ms_pos, true);
     state.ships.insert(ms.id, ms);
+
+    id_to_fleet_index
 }
 
 fn hull_class_order(h: HullClass) -> u8 {
