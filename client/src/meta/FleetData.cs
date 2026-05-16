@@ -40,6 +40,10 @@ public sealed class FleetJsonData
 
 public sealed class ShipDefData
 {
+    // Not serialized — set after construction or load. Guards against salvage of the Mothership.
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsMothership { get; set; }
+
     [JsonPropertyName("blueprint_drawing_id")] public string BlueprintDrawingId { get; set; } = "";
     [JsonPropertyName("hull_class")] public HullClass HullClass { get; set; } = HullClass.Corvette;
     [JsonPropertyName("role")] public Role Role { get; set; } = Role.Fighter;
@@ -71,6 +75,7 @@ public sealed class ShipDefData
 
     public ShipDefData Clone() => new()
     {
+        IsMothership = IsMothership,
         BlueprintDrawingId = BlueprintDrawingId,
         HullClass = HullClass,
         Role = Role,

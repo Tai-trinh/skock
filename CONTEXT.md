@@ -66,7 +66,7 @@ Ships are the primary combo pieces. Doctrines are the synergizers — they activ
 
 All ships auto-heal to full HP for free. The player may optionally skip healing a ship to receive `Salvage` instead — a trade of combat effectiveness for resources. Ships that reach 0 HP during battle survive at 1 HP minimum; no ship is permanently destroyed by combat. Ships below full HP fight with proportionally deteriorated stats (speed, damage, turn rate, etc.).
 
-The only way to permanently remove a ship is to manually salvage it in the shop. Salvage yield is proportional to current HP — a damaged ship returns less, preventing a skip-heal-then-salvage farming loop.
+The only way to permanently remove a ship is to manually salvage it in the shop. Salvage yield is proportional to current HP — a damaged ship returns less, preventing a skip-heal-then-salvage farming loop. The Mothership cannot be salvaged — it is not part of the fleet roster and losing it ends the run immediately.
 
 Ships that reach 0 HP during battle explode and are removed from the sim that tick (`ship_destroyed` event). They do not appear in subsequent state snapshots. After the battle, the fleet roster restores all destroyed ships to 1 HP — the player does not lose them permanently. This keeps battles visually dramatic without punishing the player with forced repurchases.
 

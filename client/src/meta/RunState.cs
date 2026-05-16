@@ -148,6 +148,7 @@ public partial class RunState : Node
         Formation  = "wedge",
         Mothership = new ShipDefData
         {
+            IsMothership = true,
             BlueprintDrawingId = "mothership_a",
             HullClass = HullClass.Dreadnought,
             Role      = Role.Artillery,

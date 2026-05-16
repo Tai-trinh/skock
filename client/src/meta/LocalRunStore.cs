@@ -36,6 +36,7 @@ public sealed class LocalRunStore : IRunStore
             _run.JumpNumber    = Math.Max(1, saved.JumpNumber);
             _run.LossCount     = saved.LossCount;
             _run.AdmiralId     = saved.AdmiralId;
+            fleet.Mothership.IsMothership = true;
             _run.Fleet         = fleet;
             _run.TierRerolls   = saved.TierRerolls ?? new int[4];
             _run.HasActiveRun  = !saved.IsComplete;
@@ -105,6 +106,9 @@ public sealed class LocalRunStore : IRunStore
     {
         // TODO (online mode): POST /runs/{RunId}/actions/salvage — server validates before applying.
         if (index >= _run.Fleet.Ships.Count)
+            return -1;
+        // Mothership lives in Fleet.Mothership, never in Fleet.Ships — this is a defensive guard.
+        if (_run.Fleet.Ships[index].IsMothership)
             return -1;
         var ship = _run.Fleet.Ships[index];
         var yield = ship.HullClass.Tonnage() * 3;

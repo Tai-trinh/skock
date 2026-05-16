@@ -64,6 +64,7 @@ public static class AdmiralCatalog
 
     private static ShipDefData DefaultMothership() => new()
     {
+        IsMothership = true,
         BlueprintDrawingId = "mothership_a",
         HullClass = HullClass.Dreadnought,
         Role = Role.Artillery,
