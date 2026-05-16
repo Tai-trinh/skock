@@ -51,11 +51,12 @@ public partial class BattleRenderer : Node2D
 		var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
 		var fleetB = Path.GetFullPath(Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json"));
 
+		var seed = (ulong)Random.Shared.NextInt64();
 		Task.Run(() =>
 		{
 			try
 			{
-				LoadFromSimRun(42, fleetA, fleetB, run.SimBinaryPath);
+				LoadFromSimRun(seed, fleetA, fleetB, run.SimBinaryPath);
 			}
 			catch (Exception e)
 			{
