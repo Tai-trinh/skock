@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using Godot;
 using Skock.Sim;
 
@@ -9,8 +8,9 @@ namespace Skock.Meta;
 
 public enum RunEndReason { Defeat, Victory }
 
-// Autoload singleton — single source of truth for all in-run state.
-// Owns path resolution, save/load, scene transitions, and run-end logic.
+// Autoload singleton — in-memory run state + scene transitions.
+// All persistence/sync is delegated to IRunStore (_store).
+// Swap _store in _Ready() to switch between offline and online modes.
 public partial class RunState : Node
 {
     public static RunState Instance { get; private set; } = null!;
@@ -19,8 +19,8 @@ public partial class RunState : Node
 
     // ── Path resolution ───────────────────────────────────────────────────────
 
-    public string ProjectDir { get; private set; } = "";
-    public string SimBinaryPath { get; private set; } = "";
+    public string ProjectDir      { get; private set; } = "";
+    public string SimBinaryPath   { get; private set; } = "";
     public string PlayerFleetPath { get; private set; } = "";
     public string FallbackFleetPath { get; private set; } = "";
 
@@ -30,145 +30,94 @@ public partial class RunState : Node
 
     // ── Run state ─────────────────────────────────────────────────────────────
 
-    public int Salvage { get; set; } = 50;
-    public int Tech { get; set; } = 0;
-    public int HangarCapacity { get; set; } = 10;
-    public int JumpNumber { get; set; } = 1;
-    public int LossCount { get; set; } = 0;
-    public string AdmiralId { get; set; } = "";
-    public FleetJsonData Fleet { get; set; } = DefaultFleet();
+    public int          Salvage        { get; set; } = 50;
+    public int          Tech           { get; set; } = 0;
+    public int          HangarCapacity { get; set; } = 10;
+    public int          JumpNumber     { get; set; } = 1;
+    public int          LossCount      { get; set; } = 0;
+    public string       AdmiralId      { get; set; } = "";
+    public FleetJsonData Fleet         { get; set; } = DefaultFleet();
+    public int[]        TierRerolls    { get; internal set; } = new int[4];
 
-    public int UsedTonnage => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
-    public int FreeTonnage => HangarCapacity - UsedTonnage;
-    public bool IsRunOver => LossCount >= 3;
-    public bool HasActiveRun { get; private set; }
+    public int  UsedTonnage  => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
+    public int  FreeTonnage  => HangarCapacity - UsedTonnage;
+    public bool IsRunOver    => LossCount >= 3;
+    public bool HasActiveRun { get; internal set; }
     public bool IsBattleActive { get; set; }
 
-    private bool _runComplete;
+    // Read by LocalRunStore.Save() to write the IsComplete flag.
+    internal bool IsRunComplete { get; set; }
+
+    // ── Store ─────────────────────────────────────────────────────────────────
+
+    private IRunStore _store = null!;
 
     // ── Godot lifecycle ───────────────────────────────────────────────────────
-
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public override void _Ready()
     {
         Instance = this;
-        ProjectDir = ProjectSettings.GlobalizePath("res://");
-        SimBinaryPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe"));
+        ProjectDir      = ProjectSettings.GlobalizePath("res://");
+        SimBinaryPath   = Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe"));
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json"));
+
+        // Swap LocalRunStore for ServerRunStore here when online mode is implemented.
+        _store = new LocalRunStore(this);
+
         Settings = UserSettings.Load(SettingsPath());
         Settings.Apply();
-        LoadOrDefault();
+        _store.Load();
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
-    public void Save()
-    {
-        // TODO (online mode): also sync run state to server after writing locally.
-        File.WriteAllText(PlayerFleetPath, JsonSerializer.Serialize(Fleet, JsonOptions));
-        File.WriteAllText(StatePath(), JsonSerializer.Serialize(new SerializedState
-        {
-            Salvage = Salvage,
-            Tech = Tech,
-            HangarCapacity = HangarCapacity,
-            JumpNumber = JumpNumber,
-            LossCount = LossCount,
-            AdmiralId = AdmiralId,
-            IsComplete = _runComplete,
-        }, JsonOptions));
-    }
-
+    public void Save()         => _store.Save();
     public void SaveSettings() => Settings.Save(SettingsPath());
-
-    private void LoadOrDefault()
-    {
-        // TODO (online mode): fetch run state from server by Run ID instead of trusting the local file.
-        // Server is authoritative; local save is only a cache. See CONTEXT.md § "Run state (online mode)".
-        var statePath = StatePath();
-        if (!File.Exists(statePath) || !File.Exists(PlayerFleetPath))
-            return;
-
-        try
-        {
-            var saved = JsonSerializer.Deserialize<SerializedState>(File.ReadAllText(statePath), JsonOptions);
-            var fleet = JsonSerializer.Deserialize<FleetJsonData>(File.ReadAllText(PlayerFleetPath), JsonOptions);
-            if (saved is null || fleet is null)
-                return;
-
-            Salvage = saved.Salvage;
-            Tech = saved.Tech;
-            HangarCapacity = saved.HangarCapacity;
-            JumpNumber = Math.Max(1, saved.JumpNumber);
-            LossCount = saved.LossCount;
-            AdmiralId = saved.AdmiralId;
-            Fleet = fleet;
-            HasActiveRun = !saved.IsComplete;
-        }
-        catch
-        {
-            // corrupt save — keep defaults
-        }
-    }
-
-    private string StatePath() =>
-        Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_state.json"));
 
     private string SettingsPath() =>
         Path.GetFullPath(Path.Combine(ProjectDir, "..", "user_settings.json"));
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
-    public void StartRun(Admiral admiral)
-    {
-        Salvage = admiral.StartingSalvage;
-        Tech = admiral.StartingTech;
-        HangarCapacity = admiral.StartingHangarCapacity;
-        JumpNumber = 1;
-        LossCount = 0;
-        AdmiralId = admiral.Id;
-        Fleet = admiral.StartingFleet;
-        HasActiveRun = true;
-        _runComplete = false;
-        Save();
-    }
+    public void StartRun(Admiral admiral) => _store.StartRun(admiral);
 
     public void AbandonCurrentRun()
     {
-        HasActiveRun = false;
-        _runComplete = false;
-        AdmiralId = "";
-        if (File.Exists(StatePath())) File.Delete(StatePath());
-        if (File.Exists(PlayerFleetPath)) File.Delete(PlayerFleetPath);
+        _store.DeleteSave();
+        HasActiveRun   = false;
+        IsRunComplete  = false;
+        AdmiralId      = "";
     }
 
     public void SaveAndQuitToMenu()
     {
-        Save();
+        _store.Save();
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
+
+    // ── Dockyard actions ──────────────────────────────────────────────────────
+
+    public bool CommissionShip(Blueprint bp)    => _store.CommissionShip(bp);
+    public int  SalvageShip(int index)          => _store.SalvageShip(index);
+    public bool RerollTier(int tierIndex, int cost) => _store.RerollTier(tierIndex, cost);
 
     // ── Battle result + scene transitions ─────────────────────────────────────
 
     public void RecordBattleResult(BattleResult result)
     {
         var playerWon = result.Winner == "fleet_a";
-
-        if (!playerWon)
-            LossCount++;
-
+        if (!playerWon) LossCount++;
         // TODO: earn Salvage per enemy ship destroyed (needs kill count from BattleResult).
         // TODO: earn Tech on victory (amount TBD via playtesting).
-        if (playerWon)
-            Tech += 1;
+        if (playerWon) Tech += 1;
 
         if (IsRunOver)
         {
-            RunEndReason = RunEndReason.Defeat;
-            HasActiveRun = false;
-            _runComplete = true;
-            Save();
+            RunEndReason   = RunEndReason.Defeat;
+            HasActiveRun   = false;
+            IsRunComplete  = true;
+            _store.Save();
             GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
@@ -176,16 +125,17 @@ public partial class RunState : Node
         if (JumpNumber >= 8)
         {
             // TODO: check flawless run + top-10% score for hidden final encounter.
-            RunEndReason = RunEndReason.Victory;
-            HasActiveRun = false;
-            _runComplete = true;
-            Save();
+            RunEndReason   = RunEndReason.Victory;
+            HasActiveRun   = false;
+            IsRunComplete  = true;
+            _store.Save();
             GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
 
+        Array.Fill(TierRerolls, 0);
         JumpNumber++;
-        Save();
+        _store.Save();
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
     }
 
@@ -193,14 +143,14 @@ public partial class RunState : Node
 
     private static FleetJsonData DefaultFleet() => new()
     {
-        Faction = "player",
-        AdmiralId = "player",
-        Formation = "wedge",
+        Faction    = "player",
+        AdmiralId  = "player",
+        Formation  = "wedge",
         Mothership = new ShipDefData
         {
             BlueprintDrawingId = "mothership_a",
             HullClass = HullClass.Dreadnought,
-            Role = Role.Artillery,
+            Role      = Role.Artillery,
             Hp = 500, MaxHp = 500,
             Speed = 1, Acceleration = 0.3, TurnRate = 0.1,
             BoidWeights = new BoidWeightsData
@@ -220,15 +170,4 @@ public partial class RunState : Node
             BlueprintCatalog.All[0].Instantiate(),
         ],
     };
-
-    private sealed class SerializedState
-    {
-        public int Salvage { get; set; }
-        public int Tech { get; set; }
-        public int HangarCapacity { get; set; }
-        public int JumpNumber { get; set; }
-        public int LossCount { get; set; }
-        public string AdmiralId { get; set; } = "";
-        public bool IsComplete { get; set; }
-    }
 }

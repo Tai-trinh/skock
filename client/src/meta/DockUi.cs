@@ -13,10 +13,9 @@ public partial class DockUi : Control
     private VBoxContainer _dockContainer = null!;
     private Label _statusLabel = null!;
 
-    // Per-tier reroll counters — reset each visit, seeded into offer generation.
-    private readonly int[] _tierRerolls = new int[4];
     private const int RerollCost = 5;
 
+    // TODO: tweak slot counts, tonnage tiers, and costs once the loop is playtested.
     private static readonly (string Label, HullClass[] Classes, int Slots)[] Tiers =
     [
         ("Corvette / Fighter",  [HullClass.Corvette],                            5),
@@ -60,28 +59,22 @@ public partial class DockUi : Control
 
         for (var i = 0; i < run.Fleet.Ships.Count; i++)
         {
-            var ship = run.Fleet.Ships[i];
+            var ship  = run.Fleet.Ships[i];
             var index = i;
             var yield = ship.HullClass.Tonnage() * 3;
-            var btn = new Button
-            {
-                Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]",
-            };
-            btn.Pressed += () => SalvageShip(index);
+            var btn = new Button { Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]" };
+            btn.Pressed += () => OnSalvageShip(index);
             _fleetContainer.AddChild(btn);
         }
     }
 
-    private void SalvageShip(int index)
+    private void OnSalvageShip(int index)
     {
-        var run = RunState.Instance;
-        if (index >= run.Fleet.Ships.Count)
-            return;
-        var ship = run.Fleet.Ships[index];
-        var yield = ship.HullClass.Tonnage() * 3;
-        run.Fleet.Ships.RemoveAt(index);
-        run.Salvage += yield;
-        _statusLabel.Text = $"Salvaged {ShipDisplay.NameFor(ship)} for {yield} salvage.";
+        var run      = RunState.Instance;
+        var shipName = index < run.Fleet.Ships.Count ? ShipDisplay.NameFor(run.Fleet.Ships[index]) : "ship";
+        var yield    = run.SalvageShip(index);
+        if (yield < 0) return;
+        _statusLabel.Text = $"Salvaged {shipName} for {yield} salvage.";
         Refresh();
     }
 
@@ -100,73 +93,60 @@ public partial class DockUi : Control
                 continue;
 
             var offers = GenerateOffers(pool, slots, tierIndex);
-            var run = RunState.Instance;
+            var run    = RunState.Instance;
 
-            var header = new HBoxContainer();
+            var header    = new HBoxContainer();
             var tierLabel = new Label
             {
                 Text = $"── {label} ──",
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
             };
-            var rerollBtn = new Button { Text = $"Reroll [{RerollCost} salvage]" };
+            var rerollBtn    = new Button { Text = $"Reroll [{RerollCost} salvage]" };
             var capturedTier = tierIndex;
-            rerollBtn.Pressed += () => RerollTier(capturedTier);
+            rerollBtn.Pressed += () => OnRerollTier(capturedTier);
             header.AddChild(tierLabel);
             header.AddChild(rerollBtn);
             _dockContainer.AddChild(header);
 
             foreach (var bp in offers)
             {
-                var canAfford = run.Salvage >= bp.SalvageCost;
-                var fits = run.FreeTonnage >= bp.Tonnage;
                 var btn = new Button
                 {
-                    Text = $"{bp.DisplayName}  [{bp.Tonnage}T  {bp.SalvageCost} salvage]",
-                    Disabled = !canAfford || !fits,
+                    Text     = $"{bp.DisplayName}  [{bp.Tonnage}T  {bp.SalvageCost} salvage]",
+                    Disabled = run.Salvage < bp.SalvageCost || run.FreeTonnage < bp.Tonnage,
                 };
                 var captured = bp;
-                btn.Pressed += () => CommissionShip(captured);
+                btn.Pressed += () => OnCommissionShip(captured);
                 _dockContainer.AddChild(btn);
             }
         }
     }
 
-    private List<Blueprint> GenerateOffers(List<Blueprint> pool, int slots, int tierIndex)
+    private static List<Blueprint> GenerateOffers(List<Blueprint> pool, int slots, int tierIndex)
     {
-        var run = RunState.Instance;
-        var rng = new Random(run.JumpNumber * 1000 + tierIndex * 100 + _tierRerolls[tierIndex]);
+        var run  = RunState.Instance;
+        var rng  = new Random(run.JumpNumber * 1000 + tierIndex * 100 + run.TierRerolls[tierIndex]);
         var offers = new List<Blueprint>(slots);
         for (var i = 0; i < slots; i++)
             offers.Add(pool[rng.Next(pool.Count)]);
         return offers;
     }
 
-    private void RerollTier(int tierIndex)
+    private void OnRerollTier(int tierIndex)
     {
-        var run = RunState.Instance;
-        if (run.Salvage < RerollCost)
+        if (!RunState.Instance.RerollTier(tierIndex, RerollCost))
         {
             _statusLabel.Text = $"Need {RerollCost} salvage to reroll.";
             return;
         }
-        run.Salvage -= RerollCost;
-        _tierRerolls[tierIndex]++;
         _statusLabel.Text = "Dockyard updated.";
         Refresh();
     }
 
-    private void CommissionShip(Blueprint bp)
+    private void OnCommissionShip(Blueprint bp)
     {
-        var run = RunState.Instance;
-        if (run.Salvage < bp.SalvageCost)
+        if (!RunState.Instance.CommissionShip(bp))
             return;
-        if (run.FreeTonnage < bp.Tonnage)
-        {
-            _statusLabel.Text = "Not enough hangar space.";
-            return;
-        }
-        run.Fleet.Ships.Add(bp.Instantiate());
-        run.Salvage -= bp.SalvageCost;
         _statusLabel.Text = $"Commissioned {bp.DisplayName}.";
         Refresh();
     }
