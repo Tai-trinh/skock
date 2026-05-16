@@ -189,8 +189,7 @@ public sealed class LocalRunStore : IRunStore
 
     private FleetJsonData BuildFleetForSim()
     {
-        var effects =
-            AdmiralCatalog.All.FirstOrDefault(a => a.Id == _run.AdmiralId)?.ShipEffects ?? [];
+        var effects = _run.Catalog.FindAdmiral(_run.AdmiralId)?.ShipEffects ?? [];
 
         var clonedShips = _run
             .Fleet.Ships.Select(s =>

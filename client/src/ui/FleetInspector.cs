@@ -36,7 +36,9 @@ public static class FleetInspector
         admiralInfo.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         header.AddChild(admiralInfo);
 
-        admiralInfo.AddChild(new Label { Text = AdmiralCatalog.NameFor(fleet.AdmiralId) });
+        admiralInfo.AddChild(
+            new Label { Text = RunState.Instance.Catalog.NameFor(fleet.AdmiralId) }
+        );
         admiralInfo.AddChild(
             new Label
             {
@@ -47,7 +49,7 @@ public static class FleetInspector
 
         if (isPlayerFleet)
         {
-            var admiral = AdmiralCatalog.All.FirstOrDefault(a => a.Id == fleet.AdmiralId);
+            var admiral = RunState.Instance.Catalog.FindAdmiral(fleet.AdmiralId);
             if (admiral is not null)
                 admiralInfo.AddChild(
                     new Label
@@ -96,7 +98,7 @@ public static class FleetInspector
         };
         container.AddChild(bg);
 
-        var name = AdmiralCatalog.NameFor(admiralId);
+        var name = RunState.Instance.Catalog.NameFor(admiralId);
         var initial = name.Length > 0 ? name[0].ToString() : "?";
         var label = new Label
         {

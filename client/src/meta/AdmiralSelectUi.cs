@@ -14,7 +14,7 @@ public partial class AdmiralSelectUi : Control
 
     private void BuildCards()
     {
-        foreach (var admiral in AdmiralCatalog.All)
+        foreach (var admiral in RunState.Instance.Catalog.GetAdmirals())
         {
             var card = BuildCard(admiral);
             _admiralCards.AddChild(card);

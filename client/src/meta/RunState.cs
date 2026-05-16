@@ -54,6 +54,10 @@ public partial class RunState : Node
     // Read by LocalRunStore.Save() to write the IsComplete flag.
     internal bool IsRunComplete { get; set; }
 
+    // ── Admiral / faction catalog ─────────────────────────────────────────────
+
+    public IAdmiralStore Catalog { get; private set; } = null!;
+
     // ── Statistics ────────────────────────────────────────────────────────────
 
     // Per-run history and lifetime counters behind a swappable seam (see IStatsStore / ADR-0005).
@@ -83,6 +87,9 @@ public partial class RunState : Node
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")
         );
 
+        // Swap LocalAdmiralStore for ServerAdmiralStore here when online mode is implemented.
+        Catalog = new LocalAdmiralStore(Path.Combine(ProjectDir, "data"));
+        Catalog.Load();
         // Swap LocalStatsStore for ServerStatsStore here when online mode is implemented.
         Stats = new LocalStatsStore();
         // Swap LocalRunStore for ServerRunStore here when online mode is implemented.
