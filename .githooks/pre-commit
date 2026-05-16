@@ -3,17 +3,26 @@
 # Partial staging (git add -p) is a known caveat: formatter re-stages the whole file.
 set -e
 
+# Use .exe variants when running under WSL/Windows interop, plain names on Linux.
+if command -v cargo.exe &>/dev/null; then
+    CARGO=cargo.exe
+    DOTNET=dotnet.exe
+else
+    CARGO=cargo
+    DOTNET=dotnet
+fi
+
 STAGED_RS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)
 STAGED_CS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cs$' || true)
 
 if [ -n "$STAGED_RS" ]; then
-    cargo.exe fmt
+    $CARGO fmt
     # shellcheck disable=SC2086
     git add $STAGED_RS
 fi
 
 if [ -n "$STAGED_CS" ]; then
-    dotnet.exe csharpier client/
+    $DOTNET csharpier client/
     # shellcheck disable=SC2086
     git add $STAGED_CS
 fi
