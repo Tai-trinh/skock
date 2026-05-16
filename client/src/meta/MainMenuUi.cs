@@ -17,6 +17,7 @@ public partial class MainMenuUi : Control
         startBtn.Pressed += OnStartPressed;
         continueBtn.Pressed += () => GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
         optionsBtn.Pressed += OptionsOverlay.Instance.Open;
+        GetNode<Button>("MarginContainer/VBox/QuitButton").Pressed += () => GetTree().Quit();
 
         _newRunConfirm = new ConfirmationDialog
         {

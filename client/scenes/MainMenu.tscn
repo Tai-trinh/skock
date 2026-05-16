@@ -61,6 +61,11 @@ layout_mode = 2
 text = "OPTIONS"
 theme_override_font_sizes/font_size = 24
 
+[node name="QuitButton" type="Button" parent="MarginContainer/VBox"]
+layout_mode = 2
+text = "QUIT TO DESKTOP"
+theme_override_font_sizes/font_size = 24
+
 [node name="Spacer2" type="Control" parent="MarginContainer/VBox"]
 layout_mode = 2
 size_flags_vertical = 3

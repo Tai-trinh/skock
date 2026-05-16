@@ -38,7 +38,6 @@ public static class AdmiralCatalog
             StartingTech = 1,
             StartingHangarCapacity = 10,
             StartingFleet = MakeFleet("voss",
-                BlueprintCatalog.All[1].Instantiate(),  // Fighter Frigate
                 BlueprintCatalog.All[2].Instantiate()), // Artillery Destroyer
         },
         new Admiral
