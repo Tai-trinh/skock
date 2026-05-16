@@ -124,6 +124,9 @@ public partial class RunState : Node
         CurrentOpponentFleet = null;
     }
 
+    public string GetOpponentFleetPath() =>
+        Path.GetFullPath(Path.Combine(ProjectDir, "data", "opponents", $"jump_{JumpNumber}.json"));
+
     public void SaveAndQuitToMenu()
     {
         _store.Save();

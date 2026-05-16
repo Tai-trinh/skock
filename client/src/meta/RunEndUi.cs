@@ -60,6 +60,7 @@ public partial class RunEndUi : Control
         );
 
         GetNode<Button>("MarginContainer/VBox/NewRunButton").Pressed += OnNewRun;
+        GetNode<Button>("MarginContainer/VBox/MenuButton").Pressed += OnReturnToMenu;
     }
 
     // ── Jump table with accordion ─────────────────────────────────────────────
@@ -165,5 +166,10 @@ public partial class RunEndUi : Control
     private void OnNewRun()
     {
         GetTree().ChangeSceneToFile("res://scenes/AdmiralSelect.tscn");
+    }
+
+    private void OnReturnToMenu()
+    {
+        GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 }

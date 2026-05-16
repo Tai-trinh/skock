@@ -1,0 +1,149 @@
+{
+  "faction": "rival",
+  "admiral_id": "rival_4",
+  "formation": "wedge",
+  "mothership": {
+    "blueprint_drawing_id": "mothership_b",
+    "hull_class": "Dreadnought",
+    "role": "Artillery",
+    "hp": 550,
+    "max_hp": 550,
+    "speed": 1,
+    "acceleration": 0.3,
+    "turn_rate": 0.1,
+    "boid_weights": {
+      "separation": 2.0,
+      "cohesion": 0.0,
+      "alignment": 0.0,
+      "seek_enemy": 0.2,
+      "maintain_range": 1.0
+    },
+    "weapon": {
+      "type": "hitscan",
+      "damage": 28,
+      "range": 200,
+      "cooldown_ticks": 42
+    }
+  },
+  "ships": [
+    {
+      "blueprint_drawing_id": "frigate_b",
+      "hull_class": "Frigate",
+      "role": "Fighter",
+      "hp": 130,
+      "max_hp": 130,
+      "speed": 5,
+      "acceleration": 1.2,
+      "turn_rate": 0.8,
+      "boid_weights": {
+        "separation": 1.2,
+        "cohesion": 0.5,
+        "alignment": 0.4,
+        "seek_enemy": 1.5,
+        "maintain_range": 1.2
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 20,
+        "range": 100,
+        "cooldown_ticks": 20
+      }
+    },
+    {
+      "blueprint_drawing_id": "frigate_b",
+      "hull_class": "Frigate",
+      "role": "Fighter",
+      "hp": 130,
+      "max_hp": 130,
+      "speed": 5,
+      "acceleration": 1.2,
+      "turn_rate": 0.8,
+      "boid_weights": {
+        "separation": 1.2,
+        "cohesion": 0.5,
+        "alignment": 0.4,
+        "seek_enemy": 1.5,
+        "maintain_range": 1.2
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 20,
+        "range": 100,
+        "cooldown_ticks": 20
+      }
+    },
+    {
+      "blueprint_drawing_id": "corvette_b",
+      "hull_class": "Corvette",
+      "role": "Fighter",
+      "hp": 60,
+      "max_hp": 60,
+      "speed": 8,
+      "acceleration": 2.0,
+      "turn_rate": 1.2,
+      "boid_weights": {
+        "separation": 1.5,
+        "cohesion": 0.4,
+        "alignment": 0.3,
+        "seek_enemy": 2.0,
+        "maintain_range": 1.0
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 10,
+        "range": 80,
+        "cooldown_ticks": 15
+      }
+    },
+    {
+      "blueprint_drawing_id": "corvette_b",
+      "hull_class": "Corvette",
+      "role": "Fighter",
+      "hp": 60,
+      "max_hp": 60,
+      "speed": 8,
+      "acceleration": 2.0,
+      "turn_rate": 1.2,
+      "boid_weights": {
+        "separation": 1.5,
+        "cohesion": 0.4,
+        "alignment": 0.3,
+        "seek_enemy": 2.0,
+        "maintain_range": 1.0
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 10,
+        "range": 80,
+        "cooldown_ticks": 15
+      }
+    },
+    {
+      "blueprint_drawing_id": "corvette_b",
+      "hull_class": "Corvette",
+      "role": "Fighter",
+      "hp": 60,
+      "max_hp": 60,
+      "speed": 8,
+      "acceleration": 2.0,
+      "turn_rate": 1.2,
+      "boid_weights": {
+        "separation": 1.5,
+        "cohesion": 0.4,
+        "alignment": 0.3,
+        "seek_enemy": 2.0,
+        "maintain_range": 1.0
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 10,
+        "range": 80,
+        "cooldown_ticks": 15
+      }
+    }
+  ],
+  "doctrines": [],
+  "role_equipment": [],
+  "faction_effects": [],
+  "admiral_effects": []
+}

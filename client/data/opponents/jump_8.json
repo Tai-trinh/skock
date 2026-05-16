@@ -1,0 +1,149 @@
+{
+  "faction": "rival",
+  "admiral_id": "rival_8",
+  "formation": "wedge",
+  "mothership": {
+    "blueprint_drawing_id": "mothership_b",
+    "hull_class": "Dreadnought",
+    "role": "Artillery",
+    "hp": 700,
+    "max_hp": 700,
+    "speed": 1,
+    "acceleration": 0.3,
+    "turn_rate": 0.1,
+    "boid_weights": {
+      "separation": 2.0,
+      "cohesion": 0.0,
+      "alignment": 0.0,
+      "seek_enemy": 0.2,
+      "maintain_range": 1.0
+    },
+    "weapon": {
+      "type": "hitscan",
+      "damage": 38,
+      "range": 210,
+      "cooldown_ticks": 35
+    }
+  },
+  "ships": [
+    {
+      "blueprint_drawing_id": "destroyer_b",
+      "hull_class": "Destroyer",
+      "role": "Artillery",
+      "hp": 200,
+      "max_hp": 200,
+      "speed": 3,
+      "acceleration": 0.8,
+      "turn_rate": 0.5,
+      "boid_weights": {
+        "separation": 1.0,
+        "cohesion": 0.3,
+        "alignment": 0.3,
+        "seek_enemy": 0.8,
+        "maintain_range": 1.5
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 40,
+        "range": 150,
+        "cooldown_ticks": 45
+      }
+    },
+    {
+      "blueprint_drawing_id": "destroyer_b",
+      "hull_class": "Destroyer",
+      "role": "Artillery",
+      "hp": 200,
+      "max_hp": 200,
+      "speed": 3,
+      "acceleration": 0.8,
+      "turn_rate": 0.5,
+      "boid_weights": {
+        "separation": 1.0,
+        "cohesion": 0.3,
+        "alignment": 0.3,
+        "seek_enemy": 0.8,
+        "maintain_range": 1.5
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 40,
+        "range": 150,
+        "cooldown_ticks": 45
+      }
+    },
+    {
+      "blueprint_drawing_id": "destroyer_b",
+      "hull_class": "Destroyer",
+      "role": "Artillery",
+      "hp": 200,
+      "max_hp": 200,
+      "speed": 3,
+      "acceleration": 0.8,
+      "turn_rate": 0.5,
+      "boid_weights": {
+        "separation": 1.0,
+        "cohesion": 0.3,
+        "alignment": 0.3,
+        "seek_enemy": 0.8,
+        "maintain_range": 1.5
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 40,
+        "range": 150,
+        "cooldown_ticks": 45
+      }
+    },
+    {
+      "blueprint_drawing_id": "frigate_b",
+      "hull_class": "Frigate",
+      "role": "Fighter",
+      "hp": 130,
+      "max_hp": 130,
+      "speed": 5,
+      "acceleration": 1.2,
+      "turn_rate": 0.8,
+      "boid_weights": {
+        "separation": 1.2,
+        "cohesion": 0.5,
+        "alignment": 0.4,
+        "seek_enemy": 1.5,
+        "maintain_range": 1.2
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 20,
+        "range": 100,
+        "cooldown_ticks": 20
+      }
+    },
+    {
+      "blueprint_drawing_id": "frigate_b",
+      "hull_class": "Frigate",
+      "role": "Fighter",
+      "hp": 130,
+      "max_hp": 130,
+      "speed": 5,
+      "acceleration": 1.2,
+      "turn_rate": 0.8,
+      "boid_weights": {
+        "separation": 1.2,
+        "cohesion": 0.5,
+        "alignment": 0.4,
+        "seek_enemy": 1.5,
+        "maintain_range": 1.2
+      },
+      "weapon": {
+        "type": "hitscan",
+        "damage": 20,
+        "range": 100,
+        "cooldown_ticks": 20
+      }
+    }
+  ],
+  "doctrines": [],
+  "role_equipment": [],
+  "faction_effects": [],
+  "admiral_effects": []
+}

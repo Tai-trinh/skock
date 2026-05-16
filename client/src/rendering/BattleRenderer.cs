@@ -29,6 +29,7 @@ public partial class BattleRenderer : Node2D
     private PlaybackState? _playback;
     private readonly Dictionary<uint, ShipNode> _shipNodes = [];
     private Control? _inspectorOverlay;
+    private ConfirmationDialog _abandonConfirm = null!;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
@@ -49,12 +50,23 @@ public partial class BattleRenderer : Node2D
         _resultLabel.Visible = false;
         _debugLabel.Text = "Loading sim...";
 
+        _abandonConfirm = new ConfirmationDialog
+        {
+            Title = "Abandon Battle",
+            DialogText = "Abandon this battle? Your run will be lost.",
+        };
+        _abandonConfirm.Confirmed += OnAbandonConfirmed;
+        AddChild(_abandonConfirm);
+
         var run = RunState.Instance;
         run.IsBattleActive = true;
         var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
-        var fleetBPath = Path.GetFullPath(
-            Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json")
-        );
+        var opponentPath = run.GetOpponentFleetPath();
+        var fleetBPath = File.Exists(opponentPath)
+            ? opponentPath
+            : Path.GetFullPath(
+                Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json")
+            );
 
         // Load opponent fleet for the Fleet Inspector and JumpRecord snapshot.
         try
@@ -105,6 +117,26 @@ public partial class BattleRenderer : Node2D
 
         if (_playback.IsFinished)
             ShowResult();
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is not InputEventKey { Pressed: true, Echo: false } key)
+            return;
+        if (key.Keycode != Key.Escape)
+            return;
+        if (_playback is null || _playback.IsFinished)
+            return;
+
+        _abandonConfirm.PopupCentered();
+        GetViewport().SetInputAsHandled();
+    }
+
+    private void OnAbandonConfirmed()
+    {
+        RunState.Instance.IsBattleActive = false;
+        RunState.Instance.AbandonCurrentRun();
+        GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
