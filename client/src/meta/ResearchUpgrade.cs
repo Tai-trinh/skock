@@ -20,34 +20,34 @@ public static class ResearchCatalog
     [
         new ResearchUpgrade
         {
-            Id           = "hangar_expansion",
-            DisplayName  = "Hangar Expansion",
-            Description  = "+2T hangar capacity",
-            TechCost     = 1,
+            Id = "hangar_expansion",
+            DisplayName = "Hangar Expansion",
+            Description = "+2T hangar capacity",
+            TechCost = 1,
             MaxPurchases = 3,
-            Apply        = run => run.HangarCapacity += 2,
+            Apply = run => run.HangarCapacity += 2,
         },
         new ResearchUpgrade
         {
-            Id           = "reinforced_hull",
-            DisplayName  = "Reinforced Hull",
-            Description  = "Mothership +100 max HP",
-            TechCost     = 2,
+            Id = "reinforced_hull",
+            DisplayName = "Reinforced Hull",
+            Description = "Mothership +100 max HP",
+            TechCost = 2,
             MaxPurchases = 2,
-            Apply        = run =>
+            Apply = run =>
             {
                 run.Fleet.Mothership.MaxHp += 100;
-                run.Fleet.Mothership.Hp   += 100;
+                run.Fleet.Mothership.Hp += 100;
             },
         },
         new ResearchUpgrade
         {
-            Id           = "weapons_overcharge",
-            DisplayName  = "Weapons Overcharge",
-            Description  = "Mothership weapon +5 damage",
-            TechCost     = 2,
+            Id = "weapons_overcharge",
+            DisplayName = "Weapons Overcharge",
+            Description = "Mothership weapon +5 damage",
+            TechCost = 2,
             MaxPurchases = 2,
-            Apply        = run =>
+            Apply = run =>
             {
                 if (run.Fleet.Mothership.Weapon is not null)
                     run.Fleet.Mothership.Weapon.Damage += 5;

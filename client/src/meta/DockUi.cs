@@ -19,20 +19,26 @@ public partial class DockUi : Control
     // TODO: tweak slot counts, tonnage tiers, and costs once the loop is playtested.
     private static readonly (string Label, HullClass[] Classes, int Slots)[] Tiers =
     [
-        ("Corvette / Fighter",  [HullClass.Corvette],                            5),
-        ("Frigate",             [HullClass.Frigate],                             3),
-        ("Destroyer / Cruiser", [HullClass.Destroyer, HullClass.Cruiser],        2),
-        ("Capital",             [HullClass.Battlecruiser, HullClass.Dreadnought],1),
+        ("Corvette / Fighter", [HullClass.Corvette], 5),
+        ("Frigate", [HullClass.Frigate], 3),
+        ("Destroyer / Cruiser", [HullClass.Destroyer, HullClass.Cruiser], 2),
+        ("Capital", [HullClass.Battlecruiser, HullClass.Dreadnought], 1),
     ];
 
     public override void _Ready()
     {
-        _titleLabel     = GetNode<Label>("MarginContainer/VBox/Header/TitleLabel");
+        _titleLabel = GetNode<Label>("MarginContainer/VBox/Header/TitleLabel");
         _resourcesLabel = GetNode<Label>("MarginContainer/VBox/Header/ResourcesLabel");
-        _fleetContainer    = GetNode<VBoxContainer>("MarginContainer/VBox/Main/FleetPanel/FleetScroll/FleetContainer");
-        _dockContainer     = GetNode<VBoxContainer>("MarginContainer/VBox/Main/DockPanel/DockScroll/DockContainer");
-        _researchContainer = GetNode<HBoxContainer>("MarginContainer/VBox/ResearchSection/ResearchContainer");
-        _statusLabel       = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
+        _fleetContainer = GetNode<VBoxContainer>(
+            "MarginContainer/VBox/Main/FleetPanel/FleetScroll/FleetContainer"
+        );
+        _dockContainer = GetNode<VBoxContainer>(
+            "MarginContainer/VBox/Main/DockPanel/DockScroll/DockContainer"
+        );
+        _researchContainer = GetNode<HBoxContainer>(
+            "MarginContainer/VBox/ResearchSection/ResearchContainer"
+        );
+        _statusLabel = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
         GetNode<Button>("MarginContainer/VBox/Footer/BattleButton").Pressed += OnBattlePressed;
         Refresh();
     }
@@ -44,9 +50,9 @@ public partial class DockUi : Control
         var run = RunState.Instance;
         _titleLabel.Text = $"DOCKYARD — Jump {run.JumpNumber} / 8";
         _resourcesLabel.Text =
-            $"Salvage: {run.Salvage}   Tech: {run.Tech}   " +
-            $"Tonnage: {run.UsedTonnage} / {run.HangarCapacity}   " +
-            $"Losses: {run.LossCount} / 3";
+            $"Salvage: {run.Salvage}   Tech: {run.Tech}   "
+            + $"Tonnage: {run.UsedTonnage} / {run.HangarCapacity}   "
+            + $"Losses: {run.LossCount} / 3";
         RebuildFleet();
         RebuildDock();
         RebuildResearch();
@@ -62,7 +68,7 @@ public partial class DockUi : Control
 
         for (var i = 0; i < run.Fleet.Ships.Count; i++)
         {
-            var ship  = run.Fleet.Ships[i];
+            var ship = run.Fleet.Ships[i];
             var index = i;
             var yield = ship.HullClass.Tonnage() * 3;
             var btn = new Button { Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]" };
@@ -73,10 +79,12 @@ public partial class DockUi : Control
 
     private void OnSalvageShip(int index)
     {
-        var run      = RunState.Instance;
-        var shipName = index < run.Fleet.Ships.Count ? ShipDisplay.NameFor(run.Fleet.Ships[index]) : "ship";
-        var yield    = run.SalvageShip(index);
-        if (yield < 0) return;
+        var run = RunState.Instance;
+        var shipName =
+            index < run.Fleet.Ships.Count ? ShipDisplay.NameFor(run.Fleet.Ships[index]) : "ship";
+        var yield = run.SalvageShip(index);
+        if (yield < 0)
+            return;
         _statusLabel.Text = $"Salvaged {shipName} for {yield} salvage.";
         Refresh();
     }
@@ -91,20 +99,22 @@ public partial class DockUi : Control
         for (var tierIndex = 0; tierIndex < Tiers.Length; tierIndex++)
         {
             var (label, classes, slots) = Tiers[tierIndex];
-            var pool = BlueprintCatalog.All.Where(bp => classes.Contains(bp.Template.HullClass)).ToList();
+            var pool = BlueprintCatalog
+                .All.Where(bp => classes.Contains(bp.Template.HullClass))
+                .ToList();
             if (pool.Count == 0)
                 continue;
 
             var offers = GenerateOffers(pool, slots, tierIndex);
-            var run    = RunState.Instance;
+            var run = RunState.Instance;
 
-            var header    = new HBoxContainer();
+            var header = new HBoxContainer();
             var tierLabel = new Label
             {
                 Text = $"── {label} ──",
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
             };
-            var rerollBtn    = new Button { Text = $"Reroll [{RerollCost} salvage]" };
+            var rerollBtn = new Button { Text = $"Reroll [{RerollCost} salvage]" };
             var capturedTier = tierIndex;
             rerollBtn.Pressed += () => OnRerollTier(capturedTier);
             header.AddChild(tierLabel);
@@ -115,7 +125,7 @@ public partial class DockUi : Control
             {
                 var btn = new Button
                 {
-                    Text     = $"{bp.DisplayName}  [{bp.Tonnage}T  {bp.SalvageCost} salvage]",
+                    Text = $"{bp.DisplayName}  [{bp.Tonnage}T  {bp.SalvageCost} salvage]",
                     Disabled = run.Salvage < bp.SalvageCost || run.FreeTonnage < bp.Tonnage,
                 };
                 var captured = bp;
@@ -127,8 +137,8 @@ public partial class DockUi : Control
 
     private static List<Blueprint> GenerateOffers(List<Blueprint> pool, int slots, int tierIndex)
     {
-        var run  = RunState.Instance;
-        var rng  = new Random(run.JumpNumber * 1000 + tierIndex * 100 + run.TierRerolls[tierIndex]);
+        var run = RunState.Instance;
+        var rng = new Random(run.JumpNumber * 1000 + tierIndex * 100 + run.TierRerolls[tierIndex]);
         var offers = new List<Blueprint>(slots);
         for (var i = 0; i < slots; i++)
             offers.Add(pool[rng.Next(pool.Count)]);
@@ -165,14 +175,15 @@ public partial class DockUi : Control
         foreach (var upgrade in ResearchCatalog.All)
         {
             var purchases = run.UpgradePurchases.GetValueOrDefault(upgrade.Id);
-            var maxed     = purchases >= upgrade.MaxPurchases;
+            var maxed = purchases >= upgrade.MaxPurchases;
             var countText = $" ({purchases}/{upgrade.MaxPurchases})";
             var btn = new Button
             {
-                Text = $"{upgrade.DisplayName}\n{upgrade.Description}\n[{upgrade.TechCost} Tech]{countText}" +
-                       (maxed ? "\nMAXED" : ""),
-                Disabled            = run.Tech < upgrade.TechCost || maxed,
-                CustomMinimumSize   = new Godot.Vector2(170, 0),
+                Text =
+                    $"{upgrade.DisplayName}\n{upgrade.Description}\n[{upgrade.TechCost} Tech]{countText}"
+                    + (maxed ? "\nMAXED" : ""),
+                Disabled = run.Tech < upgrade.TechCost || maxed,
+                CustomMinimumSize = new Godot.Vector2(170, 0),
             };
             var id = upgrade.Id;
             btn.Pressed += () => OnBuyUpgrade(id);

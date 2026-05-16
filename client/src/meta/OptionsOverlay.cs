@@ -75,7 +75,11 @@ public partial class OptionsOverlay : CanvasLayer
         margin.AddChild(vbox);
 
         // Title
-        var title = new Label { Text = "OPTIONS", HorizontalAlignment = HorizontalAlignment.Center };
+        var title = new Label
+        {
+            Text = "OPTIONS",
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
         title.AddThemeFontSizeOverride("font_size", 32);
         vbox.AddChild(title);
         vbox.AddChild(new HSeparator());
@@ -86,24 +90,42 @@ public partial class OptionsOverlay : CanvasLayer
         vbox.AddChild(audioHeader);
 
         var s = RunState.Instance.Settings;
-        vbox.AddChild(SliderRow("Master", s.MasterVolume, v =>
-        {
-            RunState.Instance.Settings.MasterVolume = v;
-            RunState.Instance.Settings.Apply();
-            RunState.Instance.SaveSettings();
-        }));
-        vbox.AddChild(SliderRow("Music", s.MusicVolume, v =>
-        {
-            RunState.Instance.Settings.MusicVolume = v;
-            RunState.Instance.Settings.Apply();
-            RunState.Instance.SaveSettings();
-        }));
-        vbox.AddChild(SliderRow("SFX", s.SfxVolume, v =>
-        {
-            RunState.Instance.Settings.SfxVolume = v;
-            RunState.Instance.Settings.Apply();
-            RunState.Instance.SaveSettings();
-        }));
+        vbox.AddChild(
+            SliderRow(
+                "Master",
+                s.MasterVolume,
+                v =>
+                {
+                    RunState.Instance.Settings.MasterVolume = v;
+                    RunState.Instance.Settings.Apply();
+                    RunState.Instance.SaveSettings();
+                }
+            )
+        );
+        vbox.AddChild(
+            SliderRow(
+                "Music",
+                s.MusicVolume,
+                v =>
+                {
+                    RunState.Instance.Settings.MusicVolume = v;
+                    RunState.Instance.Settings.Apply();
+                    RunState.Instance.SaveSettings();
+                }
+            )
+        );
+        vbox.AddChild(
+            SliderRow(
+                "SFX",
+                s.SfxVolume,
+                v =>
+                {
+                    RunState.Instance.Settings.SfxVolume = v;
+                    RunState.Instance.Settings.Apply();
+                    RunState.Instance.SaveSettings();
+                }
+            )
+        );
 
         vbox.AddChild(new HSeparator());
 

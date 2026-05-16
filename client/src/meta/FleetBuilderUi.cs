@@ -12,8 +12,12 @@ public partial class FleetBuilderUi : Control
     public override void _Ready()
     {
         _resourcesLabel = GetNode<Label>("MarginContainer/VBox/Header/ResourcesLabel");
-        _fleetContainer = GetNode<VBoxContainer>("MarginContainer/VBox/Main/FleetPanel/FleetScroll/FleetContainer");
-        _shopContainer = GetNode<VBoxContainer>("MarginContainer/VBox/Main/ShopPanel/ShopScroll/ShopContainer");
+        _fleetContainer = GetNode<VBoxContainer>(
+            "MarginContainer/VBox/Main/FleetPanel/FleetScroll/FleetContainer"
+        );
+        _shopContainer = GetNode<VBoxContainer>(
+            "MarginContainer/VBox/Main/ShopPanel/ShopScroll/ShopContainer"
+        );
         _statusLabel = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
         GetNode<Button>("MarginContainer/VBox/Footer/BattleButton").Pressed += OnBattlePressed;
         Refresh();
@@ -23,9 +27,9 @@ public partial class FleetBuilderUi : Control
     {
         var run = RunState.Instance;
         _resourcesLabel.Text =
-            $"Salvage: {run.Salvage}   Tech: {run.Tech}   " +
-            $"Tonnage: {run.UsedTonnage} / {run.HangarCapacity}   " +
-            $"Jump: {run.JumpNumber} / 8   Losses: {run.LossCount} / 3";
+            $"Salvage: {run.Salvage}   Tech: {run.Tech}   "
+            + $"Tonnage: {run.UsedTonnage} / {run.HangarCapacity}   "
+            + $"Jump: {run.JumpNumber} / 8   Losses: {run.LossCount} / 3";
 
         foreach (var child in _fleetContainer.GetChildren())
             child.QueueFree();
@@ -35,10 +39,7 @@ public partial class FleetBuilderUi : Control
             var ship = run.Fleet.Ships[i];
             var index = i;
             var yield = ship.HullClass.Tonnage() * 3;
-            var btn = new Button
-            {
-                Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]",
-            };
+            var btn = new Button { Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]" };
             btn.Pressed += () => SalvageShip(index);
             _fleetContainer.AddChild(btn);
         }

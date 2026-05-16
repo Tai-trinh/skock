@@ -27,22 +27,28 @@ public sealed class LocalRunStore : IRunStore
 
         try
         {
-            var saved = JsonSerializer.Deserialize<SavedState>(File.ReadAllText(statePath), JsonOptions);
-            var fleet = JsonSerializer.Deserialize<FleetJsonData>(File.ReadAllText(_run.PlayerFleetPath), JsonOptions);
+            var saved = JsonSerializer.Deserialize<SavedState>(
+                File.ReadAllText(statePath),
+                JsonOptions
+            );
+            var fleet = JsonSerializer.Deserialize<FleetJsonData>(
+                File.ReadAllText(_run.PlayerFleetPath),
+                JsonOptions
+            );
             if (saved is null || fleet is null)
                 return;
 
-            _run.Salvage       = saved.Salvage;
-            _run.Tech          = saved.Tech;
+            _run.Salvage = saved.Salvage;
+            _run.Tech = saved.Tech;
             _run.HangarCapacity = saved.HangarCapacity;
-            _run.JumpNumber    = Math.Max(1, saved.JumpNumber);
-            _run.LossCount     = saved.LossCount;
-            _run.AdmiralId     = saved.AdmiralId;
+            _run.JumpNumber = Math.Max(1, saved.JumpNumber);
+            _run.LossCount = saved.LossCount;
+            _run.AdmiralId = saved.AdmiralId;
             fleet.Mothership.IsMothership = true;
-            _run.Fleet         = fleet;
-            _run.TierRerolls       = saved.TierRerolls ?? new int[4];
-            _run.UpgradePurchases  = saved.UpgradePurchases ?? new Dictionary<string, int>();
-            _run.HasActiveRun      = !saved.IsComplete;
+            _run.Fleet = fleet;
+            _run.TierRerolls = saved.TierRerolls ?? new int[4];
+            _run.UpgradePurchases = saved.UpgradePurchases ?? new Dictionary<string, int>();
+            _run.HasActiveRun = !saved.IsComplete;
         }
         catch
         {
@@ -53,26 +59,37 @@ public sealed class LocalRunStore : IRunStore
     public void Save()
     {
         // TODO (online mode): also sync run state to server after writing locally.
-        File.WriteAllText(_run.PlayerFleetPath, JsonSerializer.Serialize(_run.Fleet, JsonOptions));
-        File.WriteAllText(StatePath(), JsonSerializer.Serialize(new SavedState
-        {
-            Salvage           = _run.Salvage,
-            Tech              = _run.Tech,
-            HangarCapacity    = _run.HangarCapacity,
-            JumpNumber        = _run.JumpNumber,
-            LossCount         = _run.LossCount,
-            AdmiralId         = _run.AdmiralId,
-            TierRerolls       = _run.TierRerolls,
-            UpgradePurchases  = _run.UpgradePurchases,
-            IsComplete        = _run.IsRunComplete,
-        }, JsonOptions));
+        File.WriteAllText(
+            _run.PlayerFleetPath,
+            JsonSerializer.Serialize(BuildFleetForSim(), JsonOptions)
+        );
+        File.WriteAllText(
+            StatePath(),
+            JsonSerializer.Serialize(
+                new SavedState
+                {
+                    Salvage = _run.Salvage,
+                    Tech = _run.Tech,
+                    HangarCapacity = _run.HangarCapacity,
+                    JumpNumber = _run.JumpNumber,
+                    LossCount = _run.LossCount,
+                    AdmiralId = _run.AdmiralId,
+                    TierRerolls = _run.TierRerolls,
+                    UpgradePurchases = _run.UpgradePurchases,
+                    IsComplete = _run.IsRunComplete,
+                },
+                JsonOptions
+            )
+        );
     }
 
     public void DeleteSave()
     {
         // TODO (online mode): DELETE /runs/{RunId} on server.
-        if (File.Exists(StatePath()))        File.Delete(StatePath());
-        if (File.Exists(_run.PlayerFleetPath)) File.Delete(_run.PlayerFleetPath);
+        if (File.Exists(StatePath()))
+            File.Delete(StatePath());
+        if (File.Exists(_run.PlayerFleetPath))
+            File.Delete(_run.PlayerFleetPath);
     }
 
     // ── Run start ─────────────────────────────────────────────────────────────
@@ -80,17 +97,17 @@ public sealed class LocalRunStore : IRunStore
     public void StartRun(Admiral admiral)
     {
         // TODO (online mode): POST /runs to create a server-side run record; receive Run ID.
-        _run.Salvage        = admiral.StartingSalvage;
-        _run.Tech           = admiral.StartingTech;
+        _run.Salvage = admiral.StartingSalvage;
+        _run.Tech = admiral.StartingTech;
         _run.HangarCapacity = admiral.StartingHangarCapacity;
-        _run.JumpNumber     = 1;
-        _run.LossCount      = 0;
-        _run.AdmiralId      = admiral.Id;
-        _run.Fleet            = admiral.StartingFleet;
-        _run.TierRerolls      = new int[4];
+        _run.JumpNumber = 1;
+        _run.LossCount = 0;
+        _run.AdmiralId = admiral.Id;
+        _run.Fleet = admiral.StartingFleet;
+        _run.TierRerolls = new int[4];
         _run.UpgradePurchases = new Dictionary<string, int>();
-        _run.HasActiveRun     = true;
-        _run.IsRunComplete  = false;
+        _run.HasActiveRun = true;
+        _run.IsRunComplete = false;
         Save();
     }
 
@@ -147,10 +164,13 @@ public sealed class LocalRunStore : IRunStore
     {
         // TODO (online mode): POST /runs/{RunId}/actions/research — server validates before applying.
         var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
-        if (upgrade is null) return false;
-        if (_run.Tech < upgrade.TechCost) return false;
+        if (upgrade is null)
+            return false;
+        if (_run.Tech < upgrade.TechCost)
+            return false;
         var purchases = _run.UpgradePurchases.GetValueOrDefault(upgradeId);
-        if (upgrade.MaxPurchases > 0 && purchases >= upgrade.MaxPurchases) return false;
+        if (upgrade.MaxPurchases > 0 && purchases >= upgrade.MaxPurchases)
+            return false;
         _run.Tech -= upgrade.TechCost;
         _run.UpgradePurchases[upgradeId] = purchases + 1;
         upgrade.Apply(_run);
@@ -160,19 +180,45 @@ public sealed class LocalRunStore : IRunStore
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private FleetJsonData BuildFleetForSim()
+    {
+        var effects =
+            AdmiralCatalog.All.FirstOrDefault(a => a.Id == _run.AdmiralId)?.ShipEffects ?? [];
+
+        var clonedShips = _run
+            .Fleet.Ships.Select(s =>
+            {
+                var clone = s.Clone();
+                foreach (var effect in effects)
+                    if (effect.Matches(clone))
+                        effect.Apply(clone);
+                return clone;
+            })
+            .ToList();
+
+        return new FleetJsonData
+        {
+            Faction = _run.Fleet.Faction,
+            AdmiralId = _run.Fleet.AdmiralId,
+            Formation = _run.Fleet.Formation,
+            Mothership = _run.Fleet.Mothership.Clone(),
+            Ships = clonedShips,
+        };
+    }
+
     private string StatePath() =>
         Path.GetFullPath(Path.Combine(_run.ProjectDir, "..", "player_state.json"));
 
     private sealed class SavedState
     {
-        public int                          Salvage          { get; set; }
-        public int                          Tech             { get; set; }
-        public int                          HangarCapacity   { get; set; }
-        public int                          JumpNumber       { get; set; }
-        public int                          LossCount        { get; set; }
-        public string                       AdmiralId        { get; set; } = "";
-        public int[]?                       TierRerolls      { get; set; }
-        public Dictionary<string, int>?     UpgradePurchases { get; set; }
-        public bool                         IsComplete       { get; set; }
+        public int Salvage { get; set; }
+        public int Tech { get; set; }
+        public int HangarCapacity { get; set; }
+        public int JumpNumber { get; set; }
+        public int LossCount { get; set; }
+        public string AdmiralId { get; set; } = "";
+        public int[]? TierRerolls { get; set; }
+        public Dictionary<string, int>? UpgradePurchases { get; set; }
+        public bool IsComplete { get; set; }
     }
 }

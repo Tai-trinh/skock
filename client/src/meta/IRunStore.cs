@@ -10,9 +10,9 @@ public interface IRunStore
 {
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    void Load();        // hydrate RunState from the store on startup
-    void Save();        // persist current RunState to the store
-    void DeleteSave();  // destroy persisted state (run abandoned)
+    void Load(); // hydrate RunState from the store on startup
+    void Save(); // persist current RunState to the store
+    void DeleteSave(); // destroy persisted state (run abandoned)
 
     // ── Run start ─────────────────────────────────────────────────────────────
 
@@ -27,8 +27,8 @@ public interface IRunStore
     // Online: POST action to server, await confirmation, then mutate RunState.
     // Offline: validate locally, mutate RunState, persist.
 
-    bool CommissionShip(Blueprint bp);        // false if precondition fails
-    int  SalvageShip(int index);              // returns Salvage yield, or -1 on failure
+    bool CommissionShip(Blueprint bp); // false if precondition fails
+    int SalvageShip(int index); // returns Salvage yield, or -1 on failure
     bool RerollTier(int tierIndex, int cost); // false if can't afford
-    bool BuyUpgrade(string upgradeId);        // false if can't afford or maxed
+    bool BuyUpgrade(string upgradeId); // false if can't afford or maxed
 }

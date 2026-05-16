@@ -37,11 +37,9 @@ public partial class AdmiralSelectUi : Control
 
         vbox.AddChild(new HSeparator());
 
-        vbox.AddChild(new Label
-        {
-            Text = admiral.BonusText,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-        });
+        vbox.AddChild(
+            new Label { Text = admiral.BonusText, AutowrapMode = TextServer.AutowrapMode.WordSmart }
+        );
 
         vbox.AddChild(new HSeparator());
 
@@ -50,16 +48,21 @@ public partial class AdmiralSelectUi : Control
 
         foreach (var ship in admiral.StartingFleet.Ships)
         {
-            vbox.AddChild(new Label
-            {
-                Text = $"  • {ShipDisplay.NameFor(ship)}  [{ship.HullClass.Tonnage()}T]",
-            });
+            vbox.AddChild(
+                new Label
+                {
+                    Text = $"  • {ShipDisplay.NameFor(ship)}  [{ship.HullClass.Tonnage()}T]",
+                }
+            );
         }
 
-        vbox.AddChild(new Label
-        {
-            Text = $"\nSalvage: {admiral.StartingSalvage}   Tech: {admiral.StartingTech}   Hangar: {admiral.StartingHangarCapacity}T",
-        });
+        vbox.AddChild(
+            new Label
+            {
+                Text =
+                    $"\nSalvage: {admiral.StartingSalvage}   Tech: {admiral.StartingTech}   Hangar: {admiral.StartingHangarCapacity}T",
+            }
+        );
 
         var spacer = new Control { SizeFlagsVertical = SizeFlags.ExpandFill };
         vbox.AddChild(spacer);

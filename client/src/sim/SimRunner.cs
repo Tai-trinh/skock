@@ -49,7 +49,8 @@ public static class SimRunner
             CreateNoWindow = true,
         };
 
-        using var process = Process.Start(psi)
+        using var process =
+            Process.Start(psi)
             ?? throw new SimRunException($"Failed to start sim binary: {simBinaryPath}");
 
         byte[] logBytes = [];
@@ -78,10 +79,15 @@ public static class SimRunner
     }
 
     private static string? FindResultLine(string stderr) =>
-        Array.Find(
-            stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-            l => l.StartsWith(ResultPrefix)
-        )?[ResultPrefix.Length..];
+        Array
+            .Find(
+                stderr.Split(
+                    '\n',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+                ),
+                l => l.StartsWith(ResultPrefix)
+            )
+            ?[ResultPrefix.Length..];
 
     private static BattleResult ParseResult(string json)
     {
@@ -96,9 +102,9 @@ public static class SimRunner
 
         return new BattleResult
         {
-            Winner          = root.GetProperty("winner").GetString() ?? "",
-            Ticks           = root.GetProperty("ticks").GetUInt32(),
-            Reason          = root.GetProperty("reason").GetString() ?? "",
+            Winner = root.GetProperty("winner").GetString() ?? "",
+            Ticks = root.GetProperty("ticks").GetUInt32(),
+            Reason = root.GetProperty("reason").GetString() ?? "",
             FleetASurvivors = ParseSurvivors(root, "fleet_a_survivors"),
             FleetBSurvivors = ParseSurvivors(root, "fleet_b_survivors"),
         };
@@ -111,12 +117,15 @@ public static class SimRunner
         var list = new List<ShipSurvivor>(arr.GetArrayLength());
         foreach (var item in arr.EnumerateArray())
         {
-            list.Add(new ShipSurvivor
-            {
-                BlueprintDrawingId = item.GetProperty("blueprint_drawing_id").GetString() ?? "",
-                Hp                 = item.GetProperty("hp").GetSingle(),
-                IsMothership       = item.TryGetProperty("is_mothership", out var ms) && ms.GetBoolean(),
-            });
+            list.Add(
+                new ShipSurvivor
+                {
+                    BlueprintDrawingId = item.GetProperty("blueprint_drawing_id").GetString() ?? "",
+                    Hp = item.GetProperty("hp").GetSingle(),
+                    IsMothership =
+                        item.TryGetProperty("is_mothership", out var ms) && ms.GetBoolean(),
+                }
+            );
         }
         return list;
     }
