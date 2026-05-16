@@ -93,13 +93,13 @@ fn main() {
         .ships
         .values()
         .filter(|s| s.fleet == Fleet::A)
-        .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>() }))
+        .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>(), "is_mothership": s.is_mothership }))
         .collect();
     let survivors_b: Vec<_> = state
         .ships
         .values()
         .filter(|s| s.fleet == Fleet::B)
-        .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>() }))
+        .map(|s| json!({ "blueprint_drawing_id": s.blueprint_drawing_id, "hp": s.hp.to_num::<f32>(), "is_mothership": s.is_mothership }))
         .collect();
 
     eprintln!(

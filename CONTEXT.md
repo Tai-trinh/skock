@@ -429,6 +429,20 @@ All four effect sources (`doctrines`, `role_equipment`, `faction_effects`, `admi
 TODO: define art style guide for hull meshes per class (Corvette = slim/fast silhouette, Dreadnought = wide/blocky, etc.).
 TODO: define faction names and visual identity once more than one faction is needed.
 
+**Placeholder ship graphics (pre-art):** geometric shapes drawn in code until final 3D meshes are ready. Sized relative to hull class — larger classes are visually larger.
+
+| Hull class | Shape |
+|---|---|
+| Corvette | Triangle (pointing forward) |
+| Frigate | Diamond |
+| Destroyer | Square |
+| Cruiser | Rectangle (wider than tall) |
+| Battlecruiser | Rectangle with a forward-pointing tip |
+| Dreadnought | Rectangle with a forward-pointing tip and two triangular wing fins on the sides |
+| Mothership | Hexagon |
+
+Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape. Placeholder colors TBD during renderer development.
+
 **Run state (pre-server):** serialized to a local JSON save file via Godot's file API. Human-editable — save file tampering is the player's problem in single-player. Replaced by server run state once the server is built: the server becomes the source of truth for fleet JSON and all player choices between fights, making local save tampering irrelevant. No SQLite or local DB.
 
 **Run state (online mode, planned post-offline):** the server owns a server-side Run ID assigned at run start. All run choices (fleet, Salvage, Tech, JumpNumber, LossCount) are stored in the server DB and fetched on login — local save is only a cache. If the local save and server record diverge, server wins. Matchmaking for opponent fleets uses JumpNumber + LossCount as the progress dimensions: a player at Jump 4 / 1 loss is matched against fleets submitted by other players (or curated by the dev team) at the same bracket. The opponent fleet DB is seeded with hand-authored curated fleets organised by these brackets. Future: curated fleets are benchmarked against each other via the deterministic sim (seeded batch runs) so each bracket contains vetted, calibrated opponents.

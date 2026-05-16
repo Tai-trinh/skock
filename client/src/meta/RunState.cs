@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Godot;
@@ -104,13 +105,20 @@ public partial class RunState : Node
 
     // ── Battle result + scene transitions ─────────────────────────────────────
 
-    public void RecordBattleResult(BattleResult result)
+    public void RecordBattleResult(BattleResult result, int enemyKillCount)
     {
         var playerWon = result.Winner == "fleet_a";
         if (!playerWon) LossCount++;
-        // TODO: earn Salvage per enemy ship destroyed (needs kill count from BattleResult).
-        // TODO: earn Tech on victory (amount TBD via playtesting).
+        // TODO (playtesting): tune Tech per victory and salvage per kill.
         if (playerWon) Tech += 1;
+
+        // Restore fleet HP from battle survivors; destroyed ships survive at 1 HP minimum.
+        ApplySurvivorHp(result.FleetASurvivors);
+        // Auto-heal all ships between jumps. TODO: replace with per-ship heal choice in DockUi (skip-heal mechanic).
+        HealAllShips();
+
+        // Earn salvage for every enemy non-mothership ship destroyed (10 per kill — tune via playtesting).
+        Salvage += enemyKillCount * 10;
 
         if (IsRunOver)
         {
@@ -137,6 +145,35 @@ public partial class RunState : Node
         JumpNumber++;
         _store.Save();
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
+    }
+
+    // ── Battle result helpers ─────────────────────────────────────────────────
+
+    private void ApplySurvivorHp(IReadOnlyList<ShipSurvivor> survivors)
+    {
+        // Build per-blueprint queues (BTreeMap order from sim ≈ spawn order for same hull class).
+        var hpQueues = new Dictionary<string, Queue<float>>();
+        foreach (var s in survivors)
+        {
+            if (s.IsMothership) continue;
+            if (!hpQueues.TryGetValue(s.BlueprintDrawingId, out var q))
+                hpQueues[s.BlueprintDrawingId] = q = new Queue<float>();
+            q.Enqueue(s.Hp);
+        }
+        foreach (var ship in Fleet.Ships)
+        {
+            if (hpQueues.TryGetValue(ship.BlueprintDrawingId, out var q) && q.Count > 0)
+                ship.Hp = q.Dequeue();
+            else
+                ship.Hp = 1.0; // destroyed mid-battle — minimum survival HP
+        }
+    }
+
+    private void HealAllShips()
+    {
+        Fleet.Mothership.Hp = Fleet.Mothership.MaxHp;
+        foreach (var ship in Fleet.Ships)
+            ship.Hp = ship.MaxHp;
     }
 
     // ── Defaults ──────────────────────────────────────────────────────────────

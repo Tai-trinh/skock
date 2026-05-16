@@ -1,6 +1,6 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -27,6 +27,7 @@ public partial class BattleRenderer : Node2D
 
 	private PlaybackState? _playback;
 	private readonly Dictionary<uint, ShipNode> _shipNodes = [];
+	private int _enemyKillCount;
 
 	// Sim world → Godot world: 1 sim unit = SimScale pixels, y-axis flipped.
 	private const float SimScale = 1f;
@@ -89,8 +90,22 @@ public partial class BattleRenderer : Node2D
 
 	public void LoadFromSimRun(ulong seed, string fleetAPath, string fleetBPath, string simBinPath, string? configPath = null)
 	{
+		// Count enemy non-mothership ships before the battle to compute kills afterward.
+		var enemyShipCount = 0;
+		try
+		{
+			using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(fleetBPath));
+			if (doc.RootElement.TryGetProperty("ships", out var arr))
+				enemyShipCount = arr.GetArrayLength();
+		}
+		catch { /* fleet read failed — no kill salvage */ }
+
 		var (logBytes, result) = SimRunner.Run(simBinPath, seed, fleetAPath, fleetBPath, configPath);
 		var log = BattleLogParser.Parse(logBytes);
+
+		// TODO (playtesting): tune salvage per kill — currently flat 10 per ship destroyed.
+		_enemyKillCount = Math.Max(0, enemyShipCount - result.FleetBSurvivors.Count(s => !s.IsMothership));
+
 		Callable.From(() => Initialize(log, result)).CallDeferred();
 	}
 
@@ -176,7 +191,7 @@ public partial class BattleRenderer : Node2D
 			if (_playback.IsFinished)
 			{
 				RunState.Instance.IsBattleActive = false;
-				RunState.Instance.RecordBattleResult(_playback.Result ?? new BattleResult());
+				RunState.Instance.RecordBattleResult(_playback.Result ?? new BattleResult(), _enemyKillCount);
 			}
 			else
 				_playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
