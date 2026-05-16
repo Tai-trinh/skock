@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Formats staged Rust and C# files, then re-stages them.
+# Partial staging (git add -p) is a known caveat: formatter re-stages the whole file.
+set -e
+
+STAGED_RS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)
+STAGED_CS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cs$' || true)
+
+if [ -n "$STAGED_RS" ]; then
+    cargo.exe fmt
+    # shellcheck disable=SC2086
+    git add $STAGED_RS
+fi
+
+if [ -n "$STAGED_CS" ]; then
+    dotnet.exe csharpier client/
+    # shellcheck disable=SC2086
+    git add $STAGED_CS
+fi

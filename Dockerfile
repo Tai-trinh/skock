@@ -27,6 +27,10 @@ RUN apt-get update && apt-get install -y \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# CSharpier — C# code formatter
+RUN dotnet tool install --global csharpier
+ENV PATH="/root/.dotnet/tools:${PATH}"
+
 # Godot 4 Mono (Linux x86_64)
 RUN wget -q \
     "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip" \

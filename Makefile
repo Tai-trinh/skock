@@ -8,7 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt-check det win-build-sim win-build-godot start-godot docker-engine-start docker-build-sim docker-build-godot test-godot
+.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-godot install-hooks start-godot docker-engine-start docker-build-sim docker-build-godot test-godot
 
 install-win:
 	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
@@ -63,5 +63,17 @@ start-godot:
 test-godot:
 	powershell.exe -Command "& (Get-ChildItem '$$env:LOCALAPPDATA\Microsoft\WinGet\Packages' -Recurse -Filter 'Godot_v*mono*.exe' | Select-Object -First 1 -ExpandProperty FullName) --headless --path client/ --quit-after 300 2>&1"
 
+fmt:
+	cargo fmt
+	dotnet csharpier client/
+
 fmt-check:
 	cargo fmt --check
+	dotnet csharpier --check client/
+
+win-fmt:
+	cargo.exe fmt
+	dotnet.exe csharpier client/
+
+install-hooks:
+	git config core.hooksPath .githooks
