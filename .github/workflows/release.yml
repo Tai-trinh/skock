@@ -49,12 +49,8 @@ jobs:
       - name: Package release
         run: |
           mkdir -p dist
-          cp client/build/skock.exe dist/
-          cp client/build/skock.pck dist/
+          cp -r client/build/. dist/
           cp target/release/skock-sim.exe dist/
-          # Copy .NET assemblies Godot placed next to the exe
-          cp client/build/*.dll dist/ 2>/dev/null || true
-          cp client/build/*.pdb dist/ 2>/dev/null || true
         shell: bash
 
       - name: Zip
