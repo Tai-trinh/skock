@@ -54,6 +54,12 @@ private readonly Dictionary<uint, ShipNode> _shipNodes = [];
 
 Prefer `switch` expressions over `switch` statements when returning a value — they enforce exhaustiveness and read as data, not control flow.
 
+## Godot scene design
+
+Prefer composition over inheritance. Build behaviour by combining small, focused nodes rather than by extending a base class. A `ShipNode` that owns a `HealthBar` child is easier to reason about than a `ShipNode` that inherits from `HealthBarBase`. Inheritance is appropriate only for the Godot-required root (`Node2D`, `Control`, etc.) and for genuine is-a relationships — which are rare.
+
+Corollary: if two scene types share behaviour, extract it into a reusable child node or a plain C# helper class, not a shared base class.
+
 ## Naming
 
 Names are the first line of documentation. A well-named function needs no comment.
