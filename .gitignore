@@ -9,6 +9,9 @@ client/skock.csproj.old
 # dotnet
 *.user
 
+# Godot export output
+client/build/
+
 # Player save files (generated at runtime)
 player_fleet.json
 player_state.json

@@ -91,11 +91,32 @@ make docker-build-sim      # cargo build --release inside container
 make docker-build-godot    # dotnet build inside container
 ```
 
+## Releases
+
+Every push to `master` automatically builds and uploads a dev build to the [GitHub Releases page](../../releases/tag/dev) (tagged `dev`, marked pre-release). Download `skock-windows.zip`, extract, run `skock.exe`.
+
+To cut a versioned release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+GitHub Actions builds the release and creates a `v0.1.0` entry on the releases page.
+
+## CI
+
+Pull requests and pushes to `master` run:
+
+- `cargo fmt --check` + `cargo clippy -D warnings` + `cargo test` (includes determinism golden-hash tests)
+- `dotnet build` (C# type check)
+
 ## Code layout
 
 ```
-sim/        Rust — headless battle simulation (all game logic)
-types/      Rust — shared types between sim and server
-client/     Godot 4 + C# — renderer and future meta-layer (shop, fleet builder, run map)
-docs/adr/   Architectural decision records
+sim/                  Rust — headless battle simulation (all game logic)
+types/                Rust — shared types between sim and server
+client/               Godot 4 + C# — renderer and meta-layer (shop, fleet builder, run map)
+.github/workflows/    CI (ci.yml) and release pipeline (release.yml)
+docs/adr/             Architectural decision records
 ```

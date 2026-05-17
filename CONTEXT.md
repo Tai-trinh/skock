@@ -493,6 +493,23 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
 
 **Camera:** fixed, auto-fits battlefield bounds. Zoom and position calculated once from battle area so all ships are always visible. No player pan/zoom in initial build. TODO: add free camera if players request it.
 
+## CI / CD
+
+**Platform:** GitHub Actions. Two workflow files:
+
+- **`ci.yml`** — triggers on every PR and push to `master`. Two parallel jobs:
+  - `sim`: `cargo fmt --check` → `cargo clippy -D warnings` → `cargo test` (includes determinism golden-hash tests)
+  - `client`: `dotnet build` (type and syntax check; no Godot runtime)
+  - A merge to `master` requires both jobs green.
+
+- **`release.yml`** — triggers on push to `master` and on `v*` tags. Runs on a Windows runner. Builds `skock-sim.exe` (Rust release), exports the Godot client (Windows Desktop), packages both into `skock-windows.zip`, and uploads:
+  - **Master push** → overwrites the rolling `dev` pre-release on GitHub Releases. Permanent download link for playtesters.
+  - **`v*` tag** → creates a named versioned release alongside the dev slot.
+
+**Release package layout:** `skock.exe`, `skock.pck`, `skock-sim.exe`, and .NET assemblies — all flat in the same directory. `RunState` resolves the sim path as `skock-sim.exe` next to the Godot executable in exported builds (`OS.HasFeature("editor")` guard); in the editor it uses the Rust `target/release/` path as before.
+
+**Rust toolchain:** not pinned to a specific version (`@stable`). The determinism tests guard against unintended output changes regardless of cause. Pin when the server anti-cheat re-simulation must byte-match a specific build.
+
 ## Build order
 
 1. Headless deterministic boids sim in Rust. No graphics. Two fleets fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical. **First playable milestone:** two ship types (fighter + mothership), hitscan only, no status effects, no equipment, no doctrines. Watch the replay. Evaluate whether boids combat feels fun before building anything else.

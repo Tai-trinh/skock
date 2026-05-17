@@ -81,9 +81,11 @@ public partial class RunState : Node
     {
         Instance = this;
         ProjectDir = ProjectSettings.GlobalizePath("res://");
-        SimBinaryPath = Path.GetFullPath(
-            Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe")
-        );
+        // In an exported build the sim binary sits next to skock.exe.
+        // In the editor it lives in the Rust target directory.
+        SimBinaryPath = OS.HasFeature("editor")
+            ? Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe"))
+            : Path.Combine(Path.GetDirectoryName(OS.GetExecutablePath()) ?? "", "skock-sim.exe");
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")
