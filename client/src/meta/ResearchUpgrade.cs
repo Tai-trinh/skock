@@ -10,7 +10,7 @@ public sealed class ResearchUpgrade
     public required string Description { get; init; }
     public required int TechCost { get; init; }
     public required int MaxPurchases { get; init; }
-    public required Action<RunState> Apply { get; init; }
+    public required Action<IRunData> Apply { get; init; }
 }
 
 // TODO (playtesting): tune costs, caps, and magnitudes once the loop is tested.

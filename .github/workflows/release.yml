@@ -48,9 +48,9 @@ jobs:
 
       - name: Package release
         run: |
-          mkdir -p dist
+          mkdir -p dist/bin
           cp -r client/build/. dist/
-          cp target/release/skock-sim.exe dist/
+          cp target/release/skock-sim.exe dist/bin/
           cp -r client/data dist/data
         shell: bash
 

@@ -16,7 +16,7 @@ public enum RunEndReason
 // Autoload singleton — in-memory run state + scene transitions.
 // All persistence/sync is delegated to IRunStore (_store).
 // Swap _store in _Ready() to switch between offline and online modes.
-public partial class RunState : Node
+public partial class RunState : Node, IRunData
 {
     public static RunState Instance { get; private set; } = null!;
 
@@ -44,17 +44,15 @@ public partial class RunState : Node
     public int LossCount { get; set; } = 0;
     public string AdmiralId { get; set; } = "";
     public FleetJsonData Fleet { get; set; } = DefaultFleet();
-    public int[] TierRerolls { get; internal set; } = new int[4];
+    public int[] TierRerolls { get; set; } = new int[4];
     public Dictionary<string, int> UpgradePurchases { get; set; } = new();
 
     public int UsedTonnage => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
     public int FreeTonnage => HangarCapacity - UsedTonnage;
     public bool IsRunOver => LossCount >= 3;
-    public bool HasActiveRun { get; internal set; }
+    public bool HasActiveRun { get; set; }
     public bool IsBattleActive { get; set; }
-
-    // Read by LocalRunStore.Save() to write the IsComplete flag.
-    internal bool IsRunComplete { get; set; }
+    public bool IsRunComplete { get; set; }
 
     // ── Admiral / faction catalog ─────────────────────────────────────────────
 
@@ -81,11 +79,15 @@ public partial class RunState : Node
     {
         Instance = this;
         ProjectDir = ProjectSettings.GlobalizePath("res://");
-        // In an exported build the sim binary sits next to skock.exe.
+        // In an exported build the sim binary lives in bin/ next to skock.exe.
         // In the editor it lives in the Rust target directory.
         SimBinaryPath = OS.HasFeature("editor")
             ? Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe"))
-            : Path.Combine(Path.GetDirectoryName(OS.GetExecutablePath()) ?? "", "skock-sim.exe");
+            : Path.Combine(
+                Path.GetDirectoryName(OS.GetExecutablePath()) ?? "",
+                "bin",
+                "skock-sim.exe"
+            );
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")

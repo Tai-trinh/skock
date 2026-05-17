@@ -8,7 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-godot install-hooks start-godot docker-engine-start docker-build-sim docker-build-godot test-godot
+.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-godot install-hooks start-godot docker-engine-start docker-build-sim docker-build-godot test-godot test-cs
 
 install-win:
 	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
@@ -50,6 +50,9 @@ docker-build-godot:
 
 det:
 	cargo test --test determinism
+
+test-cs:
+	dotnet.exe test client.tests/skock.tests.csproj
 
 win-build-sim:
 	cargo.exe build -p sim --release

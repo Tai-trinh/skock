@@ -493,6 +493,16 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
 
 **Camera:** fixed, auto-fits battlefield bounds. Zoom and position calculated once from battle area so all ships are always visible. No player pan/zoom in initial build. TODO: add free camera if players request it.
 
+## C# testing
+
+**Test project:** `client.tests/` (xUnit, `Microsoft.NET.Sdk`) lives as a sibling to `client/` so the Godot editor never scans it. It references `client/skock.csproj` directly. See ADR-0010 for the trade-off vs. extracting a `client.core/` shared library.
+
+**What is testable:** any class with no `using Godot` import. This includes all store implementations (`LocalRunStore`, `LocalAdmiralStore`, `LocalStatsStore`), `SimRunner`, `BattleLogParser`, and all plain data/domain types.
+
+**Dependency injection seam:** `LocalRunStore` depends on `IRunData` (not `RunState`), so tests construct a `FakeRunData` without touching the Godot runtime. Similarly, `ResearchUpgrade.Apply` is `Action<IRunData>`. Test fakes live in `client.tests/Fakes/`.
+
+**What is not tested here:** anything that inherits from a Godot type (`RunState : Node`, UI scenes, `BattleRenderer`). Those require either a running Godot instance or a Godot-specific test harness — out of scope for this project at this stage.
+
 ## CI / CD
 
 **Platform:** GitHub Actions. Two workflow files:

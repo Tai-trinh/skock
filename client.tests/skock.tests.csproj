@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <!-- Godot's ScriptPathAttributeGenerator can't resolve GodotProjectDir outside the editor;
+         suppress the warning it emits when building this project via the test runner. -->
+    <NoWarn>CS8785</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TODO (testing): consider extracting client.core/ (pure C#, no Godot SDK) once the test
+         suite grows large enough that Godot SDK compile overhead or transitive dependency noise
+         becomes a problem. See ADR-0010 for the decision to defer this. -->
+    <ProjectReference Include="../client/skock.csproj" />
+  </ItemGroup>
+</Project>

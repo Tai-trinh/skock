@@ -11,9 +11,9 @@ namespace Skock.Meta;
 public sealed class LocalRunStore : IRunStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    private readonly RunState _run;
+    private readonly IRunData _run;
 
-    public LocalRunStore(RunState run) => _run = run;
+    public LocalRunStore(IRunData run) => _run = run;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 

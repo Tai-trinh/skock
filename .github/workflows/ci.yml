@@ -41,3 +41,4 @@ jobs:
           dotnet-version: "8.0.x"
 
       - run: dotnet build client/skock.csproj
+      - run: dotnet test client.tests/skock.tests.csproj --logger "console;verbosity=normal"
