@@ -1,4 +1,4 @@
-# ADR-0005: Honor-system anti-cheat with retroactive re-simulation
+# ADR-0003: Honor-system anti-cheat with retroactive re-simulation
 
 **Status:** Accepted
 

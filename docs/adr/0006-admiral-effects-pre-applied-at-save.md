@@ -1,4 +1,4 @@
-# ADR-0008: Admiral ship effects are pre-applied when writing fleet JSON for the sim
+# ADR-0006: Admiral ship effects are pre-applied when writing fleet JSON for the sim
 
 **Status:** Accepted
 

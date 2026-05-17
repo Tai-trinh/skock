@@ -76,7 +76,7 @@ Ships that reach 0 HP during battle explode and are removed from the sim that ti
 
 - **Hitscan** — damage resolves instantly at the tick fired. No sim entity created. Optional `miss_chance` (0.0–1.0): rolled via battle RNG each shot; on miss, a `hitscan_missed` event fires and no damage is applied.
 - **Projectile** — a first-class sim entity with position, velocity, target, and `ticks_remaining`. On expiry without a hit it fizzles (`projectile_fizzled`).
-- **Beam / ray** — continuous damage over a fixed tick duration. The beam entity persists in state snapshots while active (source, target, `ticks_remaining`). Damages everything in its path each tick — can hit multiple targets in a line. `Artillery`-role and `Battlecruiser`/`Dreadnought` hull class ships typically carry beams: slow charge time, high sustained damage, long cooldown.
+- **Beam / ray** — continuous damage over a fixed tick duration. The beam entity persists in state snapshots while active (source, target, `ticks_remaining`). Hits the first ship in its path each tick — single-target only. `Artillery`-role and `Battlecruiser` hull class ships typically carry beams: slow charge time, high sustained damage, long cooldown.
 
 ### Projectile subtypes
 
@@ -109,7 +109,9 @@ Ships are identified by two fields plus an optional weight designation. Display 
 `Corvette`, `Frigate`, `Destroyer`, `Cruiser`, `Battlecruiser`, `Dreadnought`
 
 **`role`** — weapon specialization and boid weight profile:
-`Fighter`, `Missile`, `Torpedo`, `Mine`, `PointDefense`, `Artillery`, `Plasma`, `Railgun`
+`Fighter`, `Missile`, `Torpedo`, `Mine`, `PointDefense`, `Artillery`, `Railgun`
+
+`Fighter` — short-range hitscan (autocannon). Fast, low HP. Boid weights favour swarming and closing distance.
 
 **`weight`** *(optional)* — `Light` or `Heavy`. Omitted = standard. Light = faster, less armor. Heavy = slower, more armor.
 
@@ -167,7 +169,7 @@ Each tick executes phases in this exact order — order is part of the determini
 8. Resolve beam damage — all active beams deal damage to ships in path
 9. Apply damage — shields absorb first, then armor reduction, then hull HP
 10. Check end condition — either Mothership at 0 HP ends the battle. Winner = fleet whose Mothership is still standing. If both reach 0 HP in the same tick, result is `"draw"` — treated as a loss for the player in the run loop.
-11. Apply attrition if tick > 1800 (60s × 30 Hz) — 1% max HP damage per second, increasing 1% per second
+11. Apply attrition if tick >= 1800 (60s × 30 Hz) — 1% max HP damage per second, increasing 1% per second
 12. Write state snapshot + events to battle log
 
 ## Sim code design
@@ -186,7 +188,7 @@ Godot reads stderr after sim exit, finds the `RESULT:` line, and inspects it. If
 
 At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. The sim owns all effect resolution — this is the authoritative design.
 
-**Current exception (temporary):** `admiral_effects` in the fleet JSON sent to the sim is always `[]`. Admiral bonuses are pre-applied in C# by `BuildFleetForSim()` using code-defined lambdas in `AdmiralEffectsRegistry`, because the shared effect vocabulary interpreter is not yet built. Once it is, admiral effects move into the `admiral_effects` array and the C# pre-application is deleted — the sim becomes the sole owner. See ADR-0008.
+**Current exception (temporary):** `admiral_effects` in the fleet JSON sent to the sim is always `[]`. Admiral bonuses are pre-applied in C# by `BuildFleetForSim()` using code-defined lambdas in `AdmiralEffectsRegistry`, because the shared effect vocabulary interpreter is not yet built. Once it is, admiral effects move into the `admiral_effects` array and the C# pre-application is deleted — the sim becomes the sole owner. See ADR-0006.
 
 Proc-based effects (on_hit, on_kill) will be event-driven and layered on top of pre-resolved stats when implemented. TODO: add conditional trigger effects that activate on sim state conditions — e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. These are evaluated each tick against sim state, not pre-resolved.
 
@@ -213,7 +215,7 @@ Point-in-radius per tick: projectile hits if `distance(projectile, target) <= hi
 
 ### Beam hit detection
 
-Ray from source toward the nearest valid target. Hits the first ship whose center is within `beam_width` of the ray (sorted by distance). Ray stops at the first hit — client draws the beam terminating at the hit ship. TODO: add `beam_pierce` weapon field to punch through multiple hulls once basic beams are playtested.
+Ray from source toward the nearest valid target. Hits the first ship whose center is within `beam_width` of the ray (sorted by distance). Ray stops at the first hit — client draws the beam terminating at the hit ship.
 
 ### Damage resolution
 
@@ -254,7 +256,7 @@ The server re-runs the sim binary as a subprocess for anti-cheat verification, s
 | RNG | xoshiro256+ (`rand_xoshiro` crate), explicit state (4× u64), no globals |
 | Containers (sim) | `BTreeMap` / `BTreeSet` / arrays-by-ID only — see ADR-0001 |
 | Replays | Seed + value-snapshot of both fleets at battle start |
-| Anti-cheat | Honor system — client reports results; server re-simulates all battles in dev, sample-based (anomaly detection + leaderboard review) in production. See ADR-0005. |
+| Anti-cheat | Honor system — client reports results; server re-simulates all battles in dev, sample-based (anomaly detection + leaderboard review) in production. See ADR-0003. |
 
 ## Sim ↔ client interface
 
@@ -417,7 +419,7 @@ TODO: revisit proc-based effects (`on_hit_received`, `on_kill`, `on_low_hp`, etc
 
 Meshes are looked up from a client-side dictionary at battle log load time. `blueprint_drawing_id` is an override for unique/named ships (e.g. the player's Mothership) that bypass the procedural assembly. Normal ships are fully assembled from components. This gives visual readability — you can see what a ship is armed with at a glance.
 
-**Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Start with one faction; add more as art and balance allows. Admirals belong to a faction (`FactionId` on the `Admiral` type). Faction and admiral data live in `client/data/factions.json` and `client/data/admirals.json`; add new admirals or factions by editing those files — no C# changes required for data-only additions. Admiral ship effects (e.g. "+15% Fighter speed") are currently defined as code in `AdmiralEffectsRegistry`; they will migrate to the `admiral_effects` data-driven vocabulary once the effect interpreter is built (see ADR-0008).
+**Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Start with one faction; add more as art and balance allows. Admirals belong to a faction (`FactionId` on the `Admiral` type). Faction and admiral data live in `client/data/factions.json` and `client/data/admirals.json`; add new admirals or factions by editing those files — no C# changes required for data-only additions. Admiral ship effects (e.g. "+15% Fighter speed") are currently defined as code in `AdmiralEffectsRegistry`; they will migrate to the `admiral_effects` data-driven vocabulary once the effect interpreter is built (see ADR-0006).
 
 **Admiral:** the first decision of every run. The player picks one admiral from a selection screen before jump 1. Each admiral comes with a small starting fleet (2–3 ships that match their archetype) and a permanent passive bonus via `admiral_effects`. The starting fleet and bonus telegraph a build direction — the player knows their initial angle and hunts the dockyard and research for cards that complete the combo. `admiral_id` is opaque to the sim; the client uses it to look up the admiral's portrait (2D anime front-facing art) and starting fleet definition. Locked for the full run once chosen.
 
@@ -457,7 +459,7 @@ Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape. P
 
 **Online design principle — always design for online, build offline first:** Every stateful client class that has a plausible online counterpart is coded against an interface from day one. The offline adapter is the only implementation today; the online adapter slots in without touching the rest of the codebase. Current seams:
 - `IRunStore` / `LocalRunStore` — run lifecycle and dockyard actions. Online: `ServerRunStore` validates each action via REST before mutating RunState (server-authoritative).
-- `IStatsStore` / `LocalStatsStore` — per-run jump history and lifetime counters. Online: `ServerStatsStore` POSTs `BattleInputs` (seed + fleet JSONs) to the server for anti-cheat storage and retroactive re-simulation (honor system — see ADR-0005 and ADR-0006).
+- `IStatsStore` / `LocalStatsStore` — per-run jump history and lifetime counters. Online: `ServerStatsStore` POSTs `BattleInputs` (seed + fleet JSONs) to the server for anti-cheat storage and retroactive re-simulation (honor system — see ADR-0003 and ADR-0004).
 - `IAdmiralStore` / `LocalAdmiralStore` — admiral and faction catalog. Reads `client/data/admirals.json` and `client/data/factions.json`. Online: `ServerAdmiralStore` fetches from REST API, enabling server-curated or rotating admiral pools.
 
 The swap for each is a one-line change in `RunState._Ready()`. Anti-cheat model: honor system — client reports results, server trusts by default and verifies retroactively. Triggers: anomaly detection heuristics and leaderboard review. During development, every submitted battle is re-simulated.
@@ -495,7 +497,7 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
 
 ## C# testing
 
-**Test project:** `client.tests/` (xUnit, `Microsoft.NET.Sdk`) lives as a sibling to `client/` so the Godot editor never scans it. It references `client/skock.csproj` directly. See ADR-0010 for the trade-off vs. extracting a `client.core/` shared library.
+**Test project:** `client.tests/` (xUnit, `Microsoft.NET.Sdk`) lives as a sibling to `client/` so the Godot editor never scans it. It references `client/skock.csproj` directly. See ADR-0008 for the trade-off vs. extracting a `client.core/` shared library.
 
 **What is testable:** any class with no `using Godot` import. This includes all store implementations (`LocalRunStore`, `LocalAdmiralStore`, `LocalStatsStore`), `SimRunner`, `BattleLogParser`, and all plain data/domain types.
 
@@ -516,7 +518,7 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
   - **Master push** → overwrites the rolling `dev` pre-release on GitHub Releases. Permanent download link for playtesters.
   - **`v*` tag** → creates a named versioned release alongside the dev slot.
 
-**Release package layout:** `skock.exe`, `skock.pck`, `skock-sim.exe`, and .NET assemblies — all flat in the same directory. `RunState` resolves the sim path as `skock-sim.exe` next to the Godot executable in exported builds (`OS.HasFeature("editor")` guard); in the editor it uses the Rust `target/release/` path as before.
+**Release package layout:** `skock.exe` and `skock.pck` at the root; `skock-sim.exe` in `bin/`; .NET assemblies in `data_skock_windows_x86_64/`; loose data files in `data/`. `RunState` resolves the sim path as `bin/skock-sim.exe` relative to the Godot executable in exported builds (`OS.HasFeature("editor")` guard); in the editor it uses the Rust `target/release/` path as before. See ADR-0007.
 
 **Rust toolchain:** not pinned to a specific version (`@stable`). The determinism tests guard against unintended output changes regardless of cause. Pin when the server anti-cheat re-simulation must byte-match a specific build.
 

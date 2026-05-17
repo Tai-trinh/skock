@@ -1,4 +1,4 @@
-# ADR-0006: IStatsStore is separate from IRunStore
+# ADR-0004: IStatsStore is separate from IRunStore
 
 **Status:** Accepted
 
@@ -11,7 +11,7 @@ Two seams handle server interaction in online mode: `IRunStore` (run lifecycle a
 Keep them separate. They have fundamentally different online semantics:
 
 - **`IRunStore`** is server-authoritative. Every action (commission, salvage, reroll, upgrade) must be validated by the server before being applied to RunState. The server can reject the action outright. A single source of truth; local state is a cache of the server record.
-- **`IStatsStore`** is honor-system with retroactive verification (see ADR-0005). The client reports results; the server trusts by default and re-simulates later. No round-trip required per battle. The server stores `BattleInputs` for retroactive checking, not as a prerequisite to accepting the report.
+- **`IStatsStore`** is honor-system with retroactive verification (see ADR-0003). The client reports results; the server trusts by default and re-simulates later. No round-trip required per battle. The server stores `BattleInputs` for retroactive checking, not as a prerequisite to accepting the report.
 
 Merging them into one interface would conflate these two models, forcing every future implementor to mix authoritative validation logic with fire-and-forget reporting logic in the same class.
 

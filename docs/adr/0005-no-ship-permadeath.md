@@ -1,4 +1,4 @@
-# ADR-0007: Ships have no permadeath — survive at 1 HP minimum
+# ADR-0005: Ships have no permadeath — survive at 1 HP minimum
 
 **Status:** Accepted
 
