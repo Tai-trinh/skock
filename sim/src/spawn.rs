@@ -1,4 +1,4 @@
-use fixed::types::I16F16;
+use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
@@ -18,8 +18,8 @@ pub fn spawn_fleet(
     config: &SimConfig,
 ) -> BTreeMap<ShipId, usize> {
     let spawn_x = match side {
-        Fleet::A => config.fleet_a_spawn_x,
-        Fleet::B => config.fleet_b_spawn_x,
+        Fleet::A => I32F32::from_num(config.fleet_a_spawn_x),
+        Fleet::B => I32F32::from_num(config.fleet_b_spawn_x),
     };
 
     // Sort by hull class while keeping original indices so the client can map back.
@@ -28,13 +28,13 @@ pub fn spawn_fleet(
 
     let mut id_to_fleet_index: BTreeMap<ShipId, usize> = BTreeMap::new();
     for (i, (original_idx, def)) in indexed.iter().enumerate() {
-        let pos = wedge_pos(spawn_x, i, indexed.len(), side, config, &mut state.rng);
+        let pos = wedge_pos(spawn_x, i, side, config, &mut state.rng);
         let ship = build_ship(state.alloc_ship_id(), def, side, pos, false);
         id_to_fleet_index.insert(ship.id, *original_idx);
         state.ships.insert(ship.id, ship);
     }
 
-    let ms_pos = Pos2::from_f64(spawn_x, 0.0);
+    let ms_pos = Pos2 { x: spawn_x, y: I32F32::ZERO };
     let ms = build_ship(state.alloc_ship_id(), &fleet.mothership, side, ms_pos, true);
     state.ships.insert(ms.id, ms);
 
@@ -53,36 +53,39 @@ fn hull_class_order(h: HullClass) -> u8 {
 }
 
 fn wedge_pos(
-    spawn_x: f64,
+    spawn_x: I32F32,
     index: usize,
-    _total: usize,
     side: Fleet,
     config: &SimConfig,
     rng: &mut Xoshiro256Plus,
 ) -> Pos2 {
-    let row = ((-1.0 + f64::sqrt(1.0 + 8.0 * index as f64)) / 2.0) as usize;
+    let discriminant = I32F32::ONE + I32F32::from_num(8 * index);
+    let row = ((cordic::sqrt(discriminant) - I32F32::ONE) / I32F32::from_num(2)).to_num::<usize>();
     let pos_in_row = index - row * (row + 1) / 2;
-    let row_width = (row + 1) as f64;
 
-    let row_spacing = 40.0;
-    let ship_spacing = 35.0;
+    let row_spacing = I32F32::from_num(40);
+    let ship_spacing = I32F32::from_num(35);
 
     let depth_sign = match side {
-        Fleet::A => 1.0,
-        Fleet::B => -1.0,
+        Fleet::A => I32F32::ONE,
+        Fleet::B => -I32F32::ONE,
     };
-    let depth = spawn_x + depth_sign * row as f64 * row_spacing;
-    let lateral = (pos_in_row as f64 - (row_width - 1.0) / 2.0) * ship_spacing;
+    let depth = spawn_x + depth_sign * I32F32::from_num(row) * row_spacing;
+    let row_width = I32F32::from_num(row + 1);
+    let lateral = (I32F32::from_num(pos_in_row) - (row_width - I32F32::ONE) / I32F32::from_num(2))
+        * ship_spacing;
 
-    let noise_x = noise_offset(rng, config.spawn_noise);
-    let noise_y = noise_offset(rng, config.spawn_noise);
+    let amplitude = I32F32::from_num(config.spawn_noise);
+    let noise_x = noise_offset(rng, amplitude);
+    let noise_y = noise_offset(rng, amplitude);
 
-    Pos2::from_f64(depth + noise_x, lateral + noise_y)
+    Pos2 { x: depth + noise_x, y: lateral + noise_y }
 }
 
-fn noise_offset(rng: &mut Xoshiro256Plus, amplitude: f64) -> f64 {
-    let raw = rng.next_u64() as f64 / u64::MAX as f64;
-    (raw - 0.5) * amplitude
+fn noise_offset(rng: &mut Xoshiro256Plus, amplitude: I32F32) -> I32F32 {
+    // Use the upper 32 bits so the result is in [0, 1) as an I32F32 fractional value.
+    let raw = I32F32::from_bits((rng.next_u64() >> 32) as i64);
+    (raw - I32F32::from_num(0.5)) * amplitude
 }
 
 pub fn build_ship(id: ShipId, def: &ShipDef, fleet: Fleet, pos: Pos2, is_mothership: bool) -> Ship {
