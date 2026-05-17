@@ -52,8 +52,12 @@ public partial class RunState : Node, IRunData
     public int FreeTonnage => HangarCapacity - UsedTonnage;
     public bool IsRunOver => LossCount >= 3;
     public bool HasActiveRun { get; set; }
-    public bool IsBattleActive { get; set; }
+    public bool IsBattleActive { get; private set; }
     public bool IsRunComplete { get; set; }
+
+    // Held for the duration of one battle; cleared when the battle ends.
+    private BattleInputs? _currentBattleInputs;
+    public FleetJsonData? CurrentOpponentFleet { get; private set; }
 
     // ── Admiral / faction catalog ─────────────────────────────────────────────
 
@@ -122,6 +126,9 @@ public partial class RunState : Node, IRunData
 
     public async Task AbandonCurrentRun()
     {
+        IsBattleActive = false;
+        _currentBattleInputs = null;
+        CurrentOpponentFleet = null;
         await _store.DeleteSave();
         HasActiveRun = false;
         IsRunComplete = false;
@@ -151,14 +158,25 @@ public partial class RunState : Node, IRunData
 
     public Task<bool> BuyUpgrade(string upgradeId) => _store.BuyUpgrade(upgradeId);
 
+    // ── Battle lifecycle ──────────────────────────────────────────────────────
+
+    public void BeginBattle(BattleInputs inputs, FleetJsonData? opponentFleet)
+    {
+        IsBattleActive = true;
+        _currentBattleInputs = inputs;
+        CurrentOpponentFleet = opponentFleet;
+    }
+
     // ── Battle result + scene transitions ─────────────────────────────────────
 
-    public async Task RecordBattleResult(
-        BattleResult result,
-        BattleInputs inputs,
-        FleetJsonData? opponentFleet
-    )
+    public async Task RecordBattleResult(BattleResult result)
     {
+        IsBattleActive = false;
+        var inputs = _currentBattleInputs ?? new BattleInputs();
+        var opponentFleet = CurrentOpponentFleet;
+        _currentBattleInputs = null;
+        CurrentOpponentFleet = null;
+
         var playerWon = result.Winner == "fleet_a";
 
         // Snapshot fleets before any HP mutation.
