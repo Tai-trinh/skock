@@ -34,7 +34,7 @@ pub fn compute_forces(
     let mut ali_count: i32 = 0;
     let mut nearest_enemy: Option<(I32F32, &Ship)> = None;
 
-    for (_, other) in ships {
+    for other in ships.values() {
         if other.id == ship.id {
             continue;
         }
@@ -62,7 +62,7 @@ pub fn compute_forces(
             }
         } else {
             // Track nearest enemy for seek_enemy and maintain_range
-            if nearest_enemy.map_or(true, |(d, _)| d_sq < d) {
+            if nearest_enemy.is_none_or(|(d, _)| d_sq < d) {
                 nearest_enemy = Some((d_sq, other));
             }
         }

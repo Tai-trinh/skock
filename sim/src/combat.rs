@@ -28,7 +28,7 @@ pub fn resolve_hitscan(state: &mut SimState) {
                 Some(w) if w.weapon_type == WeaponType::Hitscan && w.cooldown_remaining == 0 => w,
                 _ => continue,
             };
-            if !w.ammo.map_or(true, |a| a > 0) {
+            if w.ammo.is_some_and(|a| a == 0) {
                 continue;
             }
             let range = I32F32::from_num(w.range);
