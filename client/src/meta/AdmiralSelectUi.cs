@@ -75,9 +75,9 @@ public partial class AdmiralSelectUi : Control
         return panel;
     }
 
-    private void OnAdmiralSelected(Admiral admiral)
+    private async void OnAdmiralSelected(Admiral admiral)
     {
-        RunState.Instance.StartRun(admiral);
+        await RunState.Instance.StartRun(admiral);
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
     }
 }

@@ -163,10 +163,10 @@ public partial class OptionsOverlay : CanvasLayer
         _runSection.AddChild(runHeader);
 
         var saveQuitBtn = new Button { Text = "SAVE & QUIT TO MENU" };
-        saveQuitBtn.Pressed += () =>
+        saveQuitBtn.Pressed += async () =>
         {
             Visible = false;
-            RunState.Instance.SaveAndQuitToMenu();
+            await RunState.Instance.SaveAndQuitToMenu();
         };
         _runSection.AddChild(saveQuitBtn);
 
@@ -186,10 +186,10 @@ public partial class OptionsOverlay : CanvasLayer
             Title = "Abandon Run",
             DialogText = "Abandon this run? This cannot be undone.",
         };
-        _abandonConfirm.Confirmed += () =>
+        _abandonConfirm.Confirmed += async () =>
         {
             Visible = false;
-            RunState.Instance.AbandonCurrentRun();
+            await RunState.Instance.AbandonCurrentRun();
             GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
         };
         AddChild(_abandonConfirm);

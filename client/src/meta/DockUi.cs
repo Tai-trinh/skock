@@ -77,12 +77,12 @@ public partial class DockUi : Control
         }
     }
 
-    private void OnSalvageShip(int index)
+    private async void OnSalvageShip(int index)
     {
         var run = RunState.Instance;
         var shipName =
             index < run.Fleet.Ships.Count ? ShipDisplay.NameFor(run.Fleet.Ships[index]) : "ship";
-        var yield = run.SalvageShip(index);
+        var yield = await run.SalvageShip(index);
         if (yield < 0)
             return;
         _statusLabel.Text = $"Salvaged {shipName} for {yield} salvage.";
@@ -149,9 +149,9 @@ public partial class DockUi : Control
         return offers;
     }
 
-    private void OnRerollTier(int tierIndex)
+    private async void OnRerollTier(int tierIndex)
     {
-        if (!RunState.Instance.RerollTier(tierIndex, RerollCost))
+        if (!await RunState.Instance.RerollTier(tierIndex, RerollCost))
         {
             _statusLabel.Text = $"Need {RerollCost} salvage to reroll.";
             return;
@@ -160,9 +160,9 @@ public partial class DockUi : Control
         Refresh();
     }
 
-    private void OnCommissionShip(Blueprint bp)
+    private async void OnCommissionShip(Blueprint bp)
     {
-        if (!RunState.Instance.CommissionShip(bp))
+        if (!await RunState.Instance.CommissionShip(bp))
             return;
         _statusLabel.Text = $"Commissioned {bp.DisplayName}.";
         Refresh();
@@ -195,10 +195,10 @@ public partial class DockUi : Control
         }
     }
 
-    private void OnBuyUpgrade(string upgradeId)
+    private async void OnBuyUpgrade(string upgradeId)
     {
         var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
-        if (upgrade is null || !RunState.Instance.BuyUpgrade(upgradeId))
+        if (upgrade is null || !await RunState.Instance.BuyUpgrade(upgradeId))
             return;
         _statusLabel.Text = $"Researched: {upgrade.DisplayName}.";
         Refresh();
@@ -206,7 +206,7 @@ public partial class DockUi : Control
 
     // ── Battle ────────────────────────────────────────────────────────────────
 
-    private void OnBattlePressed()
+    private async void OnBattlePressed()
     {
         var run = RunState.Instance;
         if (run.Fleet.Ships.Count == 0)
@@ -214,7 +214,7 @@ public partial class DockUi : Control
             _statusLabel.Text = "Need at least one ship to battle.";
             return;
         }
-        run.Save();
+        await run.Save();
         GetTree().ChangeSceneToFile("res://scenes/Battle.tscn");
     }
 }

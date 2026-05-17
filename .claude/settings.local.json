@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet.exe build *)"
+      "Bash(dotnet.exe build *)",
+      "Bash(\"/mnt/c/Program Files/dotnet/dotnet.exe\" test \"C:/Users/Qinn/source/repos/skock/client.tests/skock.tests.csproj\" --no-build)"
     ]
   }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Skock.Meta;
 
@@ -10,7 +11,7 @@ namespace Skock.Meta;
 // To add online mode: implement this interface, assign it to RunState.Catalog at startup.
 public interface IAdmiralStore
 {
-    void Load(); // Offline: read JSON files. Online: fetch from server.
+    Task Load(); // Offline: read JSON files. Online: fetch from server.
 
     IReadOnlyList<Admiral> GetAdmirals();
     IReadOnlyList<Faction> GetFactions();

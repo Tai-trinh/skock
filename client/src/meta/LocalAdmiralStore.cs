@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace Skock.Meta;
 
@@ -23,10 +24,11 @@ public sealed class LocalAdmiralStore : IAdmiralStore
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    public void Load()
+    public Task Load()
     {
         _factions = LoadFactions();
         _admirals = LoadAdmirals();
+        return Task.CompletedTask;
     }
 
     // ── IAdmiralStore ─────────────────────────────────────────────────────────

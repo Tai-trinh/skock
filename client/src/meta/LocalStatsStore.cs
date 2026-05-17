@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Skock.Meta;
 
@@ -13,7 +14,7 @@ public sealed class LocalStatsStore : IStatsStore
 
     // ── Battle recording ──────────────────────────────────────────────────────
 
-    public void RecordBattle(JumpRecord record, BattleInputs inputs)
+    public Task RecordBattle(JumpRecord record, BattleInputs inputs)
     {
         // TODO (online mode): POST inputs to server. During dev re-sim all; in prod sample-based.
         _history.Add(record);
@@ -21,6 +22,7 @@ public sealed class LocalStatsStore : IStatsStore
             _lifetime.TotalBattlesWon++;
         foreach (var (_, count) in record.EnemiesKilledByHullClass)
             _lifetime.TotalEnemyShipsDestroyed += count;
+        return Task.CompletedTask;
     }
 
     // ── Resource spend tracking ────────────────────────────────────────────────

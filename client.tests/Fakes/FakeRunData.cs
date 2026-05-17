@@ -22,7 +22,6 @@ internal sealed class FakeRunData : IRunData
     public Dictionary<string, int> UpgradePurchases { get; set; } = new();
     public bool HasActiveRun { get; set; }
     public bool IsRunComplete { get; set; }
-    public FleetJsonData? CurrentOpponentFleet { get; set; }
 
     public int FreeTonnage => HangarCapacity - Fleet.Ships.Sum(s => s.HullClass.Tonnage());
 

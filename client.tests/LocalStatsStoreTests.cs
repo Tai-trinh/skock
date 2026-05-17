@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Skock.Meta;
 using Xunit;
 
@@ -41,53 +42,53 @@ public sealed class LocalStatsStoreTests
     // ── RecordBattle ──────────────────────────────────────────────────────────
 
     [Fact]
-    public void RecordBattle_AddsToHistory()
+    public async Task RecordBattle_AddsToHistory()
     {
         var store = new LocalStatsStore();
-        store.RecordBattle(WonBattle(), new BattleInputs());
+        await store.RecordBattle(WonBattle(), new BattleInputs());
         Assert.Single(store.GetJumpHistory());
     }
 
     [Fact]
-    public void RecordBattle_Win_IncrementsWinCount()
+    public async Task RecordBattle_Win_IncrementsWinCount()
     {
         var store = new LocalStatsStore();
-        store.RecordBattle(WonBattle(), new BattleInputs());
+        await store.RecordBattle(WonBattle(), new BattleInputs());
         Assert.Equal(1, store.GetLifetimeStats().TotalBattlesWon);
     }
 
     [Fact]
-    public void RecordBattle_Loss_DoesNotIncrementWinCount()
+    public async Task RecordBattle_Loss_DoesNotIncrementWinCount()
     {
         var store = new LocalStatsStore();
-        store.RecordBattle(LostBattle(), new BattleInputs());
+        await store.RecordBattle(LostBattle(), new BattleInputs());
         Assert.Equal(0, store.GetLifetimeStats().TotalBattlesWon);
     }
 
     [Fact]
-    public void RecordBattle_CountsEnemiesKilled()
+    public async Task RecordBattle_CountsEnemiesKilled()
     {
         var store = new LocalStatsStore();
-        store.RecordBattle(WonBattle(enemiesKilled: 3), new BattleInputs());
+        await store.RecordBattle(WonBattle(enemiesKilled: 3), new BattleInputs());
         Assert.Equal(3, store.GetLifetimeStats().TotalEnemyShipsDestroyed);
     }
 
     // ── Reset ─────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Reset_ClearsJumpHistory()
+    public async Task Reset_ClearsJumpHistory()
     {
         var store = new LocalStatsStore();
-        store.RecordBattle(WonBattle(), new BattleInputs());
+        await store.RecordBattle(WonBattle(), new BattleInputs());
         store.Reset();
         Assert.Empty(store.GetJumpHistory());
     }
 
     [Fact]
-    public void Reset_DoesNotClearLifetimeStats()
+    public async Task Reset_DoesNotClearLifetimeStats()
     {
         var store = new LocalStatsStore();
-        store.RecordBattle(WonBattle(), new BattleInputs());
+        await store.RecordBattle(WonBattle(), new BattleInputs());
         store.Reset();
         Assert.Equal(1, store.GetLifetimeStats().TotalBattlesWon);
     }

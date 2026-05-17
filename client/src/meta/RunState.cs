@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 using Skock.Sim;
 
@@ -60,14 +61,8 @@ public partial class RunState : Node, IRunData
 
     // ── Statistics ────────────────────────────────────────────────────────────
 
-    // Per-run history and lifetime counters behind a swappable seam (see IStatsStore / ADR-0005).
+    // Per-run history and lifetime counters behind a swappable seam (see IStatsStore / ADR-0003).
     public IStatsStore Stats { get; private set; } = null!;
-
-    // Captured in BattleRenderer._Ready() just before invoking the sim; consumed by RecordBattleResult.
-    public BattleInputs? CurrentBattleInputs { get; set; }
-
-    // Loaded by BattleRenderer before the battle and read by RecordBattleResult to snapshot it.
-    public FleetJsonData? CurrentOpponentFleet { get; set; }
 
     // ── Store ─────────────────────────────────────────────────────────────────
 
@@ -95,7 +90,6 @@ public partial class RunState : Node, IRunData
 
         // Swap LocalAdmiralStore for ServerAdmiralStore here when online mode is implemented.
         Catalog = new LocalAdmiralStore(Path.Combine(ProjectDir, "data"));
-        Catalog.Load();
         // Swap LocalStatsStore for ServerStatsStore here when online mode is implemented.
         Stats = new LocalStatsStore();
         // Swap LocalRunStore for ServerRunStore here when online mode is implemented.
@@ -103,12 +97,19 @@ public partial class RunState : Node, IRunData
 
         Settings = UserSettings.Load(SettingsPath());
         Settings.Apply();
-        _store.Load();
+        // Offline adapters complete synchronously; online adapters will need to be awaited.
+        _ = LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        await Catalog.Load();
+        await _store.Load();
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
-    public void Save() => _store.Save();
+    public Task Save() => _store.Save();
 
     public void SaveSettings() => Settings.Save(SettingsPath());
 
@@ -117,55 +118,58 @@ public partial class RunState : Node, IRunData
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
-    public void StartRun(Admiral admiral) => _store.StartRun(admiral);
+    public Task StartRun(Admiral admiral) => _store.StartRun(admiral);
 
-    public void AbandonCurrentRun()
+    public async Task AbandonCurrentRun()
     {
-        _store.DeleteSave();
+        await _store.DeleteSave();
         HasActiveRun = false;
         IsRunComplete = false;
         AdmiralId = "";
         UpgradePurchases = new();
         Stats.Reset();
-        CurrentOpponentFleet = null;
     }
 
     public string GetOpponentFleetPath() =>
         Path.GetFullPath(Path.Combine(ProjectDir, "data", "opponents", $"jump_{JumpNumber}.json"));
 
-    public void SaveAndQuitToMenu()
+    public async Task SaveAndQuitToMenu()
     {
-        _store.Save();
+        await _store.Save();
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
     // ── Dockyard actions ──────────────────────────────────────────────────────
 
-    public ulong GetBattleSeed() => _store.GetBattleSeed();
+    public Task<ulong> GetBattleSeed() => _store.GetBattleSeed();
 
-    public bool CommissionShip(Blueprint bp) => _store.CommissionShip(bp);
+    public Task<bool> CommissionShip(Blueprint bp) => _store.CommissionShip(bp);
 
-    public int SalvageShip(int index) => _store.SalvageShip(index);
+    public Task<int> SalvageShip(int index) => _store.SalvageShip(index);
 
-    public bool RerollTier(int tierIndex, int cost) => _store.RerollTier(tierIndex, cost);
+    public Task<bool> RerollTier(int tierIndex, int cost) => _store.RerollTier(tierIndex, cost);
 
-    public bool BuyUpgrade(string upgradeId) => _store.BuyUpgrade(upgradeId);
+    public Task<bool> BuyUpgrade(string upgradeId) => _store.BuyUpgrade(upgradeId);
 
     // ── Battle result + scene transitions ─────────────────────────────────────
 
-    public void RecordBattleResult(BattleResult result)
+    public async Task RecordBattleResult(
+        BattleResult result,
+        BattleInputs inputs,
+        FleetJsonData? opponentFleet
+    )
     {
         var playerWon = result.Winner == "fleet_a";
 
         // Snapshot fleets before any HP mutation.
         var playerSnapshot = Fleet;
-        var opponentSnapshot = CurrentOpponentFleet ?? new FleetJsonData();
+        var opponentSnapshot = opponentFleet ?? new FleetJsonData();
 
         // Build kill counts by hull class.
         var enemiesKilled = CountByHullClass(result.FleetBKilled);
         var ownLost = CountByHullClass(result.FleetAKilled);
 
-        Stats.RecordBattle(
+        await Stats.RecordBattle(
             new JumpRecord
             {
                 JumpNumber = JumpNumber,
@@ -180,7 +184,7 @@ public partial class RunState : Node, IRunData
                 PlayerUpgrades = new Dictionary<string, int>(UpgradePurchases),
                 PlayerAdmiralId = AdmiralId,
             },
-            CurrentBattleInputs ?? new BattleInputs()
+            inputs
         );
 
         if (!playerWon)
@@ -207,7 +211,7 @@ public partial class RunState : Node, IRunData
             RunEndReason = RunEndReason.Defeat;
             HasActiveRun = false;
             IsRunComplete = true;
-            _store.Save();
+            await _store.Save();
             GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
@@ -219,14 +223,14 @@ public partial class RunState : Node, IRunData
             Stats.RecordRunVictory();
             HasActiveRun = false;
             IsRunComplete = true;
-            _store.Save();
+            await _store.Save();
             GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
             return;
         }
 
         Array.Fill(TierRerolls, 0);
         JumpNumber++;
-        _store.Save();
+        await _store.Save();
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
     }
 

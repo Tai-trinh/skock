@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Skock.Meta;
 
@@ -17,13 +18,13 @@ public sealed class LocalRunStore : IRunStore
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    public void Load()
+    public Task Load()
     {
         // TODO (online mode): fetch run state from server by Run ID instead.
         // Server is authoritative; local file is a cache. See CONTEXT.md § "Run state (online mode)".
         var statePath = StatePath();
         if (!File.Exists(statePath) || !File.Exists(_run.PlayerFleetPath))
-            return;
+            return Task.CompletedTask;
 
         try
         {
@@ -36,7 +37,7 @@ public sealed class LocalRunStore : IRunStore
                 JsonOptions
             );
             if (saved is null || fleet is null)
-                return;
+                return Task.CompletedTask;
 
             _run.RunSeed = saved.RunSeed;
             _run.Salvage = saved.Salvage;
@@ -55,9 +56,11 @@ public sealed class LocalRunStore : IRunStore
         {
             // corrupt save — keep defaults
         }
+
+        return Task.CompletedTask;
     }
 
-    public void Save()
+    public Task Save()
     {
         // TODO (online mode): also sync run state to server after writing locally.
         File.WriteAllText(
@@ -83,20 +86,22 @@ public sealed class LocalRunStore : IRunStore
                 JsonOptions
             )
         );
+        return Task.CompletedTask;
     }
 
-    public void DeleteSave()
+    public Task DeleteSave()
     {
         // TODO (online mode): DELETE /runs/{RunId} on server.
         if (File.Exists(StatePath()))
             File.Delete(StatePath());
         if (File.Exists(_run.PlayerFleetPath))
             File.Delete(_run.PlayerFleetPath);
+        return Task.CompletedTask;
     }
 
     // ── Run start ─────────────────────────────────────────────────────────────
 
-    public void StartRun(Admiral admiral)
+    public async Task StartRun(Admiral admiral)
     {
         // TODO (online mode): POST /runs to create a server-side run record; receive Run ID.
         _run.RunSeed = (ulong)Random.Shared.NextInt64();
@@ -112,22 +117,21 @@ public sealed class LocalRunStore : IRunStore
         _run.HasActiveRun = true;
         _run.IsRunComplete = false;
         _run.Stats.Reset();
-        _run.CurrentOpponentFleet = null;
-        Save();
+        await Save();
     }
 
     // ── Battle ────────────────────────────────────────────────────────────────
 
-    public ulong GetBattleSeed()
+    public Task<ulong> GetBattleSeed()
     {
         // TODO (online mode): POST /runs/{RunId}/battles to get a server-assigned seed.
         // Server stores the seed so anti-cheat re-simulation uses the identical value.
-        return (ulong)Random.Shared.NextInt64();
+        return Task.FromResult((ulong)Random.Shared.NextInt64());
     }
 
     // ── Dockyard actions ──────────────────────────────────────────────────────
 
-    public bool CommissionShip(Blueprint bp)
+    public async Task<bool> CommissionShip(Blueprint bp)
     {
         // TODO (online mode): POST /runs/{RunId}/actions/commission — server validates before applying.
         if (_run.Salvage < bp.SalvageCost || _run.FreeTonnage < bp.Tonnage)
@@ -137,11 +141,11 @@ public sealed class LocalRunStore : IRunStore
         _run.Stats.RecordSalvageSpent(bp.SalvageCost);
         if (bp.Template.HullClass is HullClass.Battlecruiser or HullClass.Dreadnought)
             _run.Stats.RecordCapitalShipBought();
-        Save();
+        await Save();
         return true;
     }
 
-    public int SalvageShip(int index)
+    public async Task<int> SalvageShip(int index)
     {
         // TODO (online mode): POST /runs/{RunId}/actions/salvage — server validates before applying.
         if (index >= _run.Fleet.Ships.Count)
@@ -153,11 +157,11 @@ public sealed class LocalRunStore : IRunStore
         var yield = ship.HullClass.Tonnage() * 3;
         _run.Fleet.Ships.RemoveAt(index);
         _run.Salvage += yield;
-        Save();
+        await Save();
         return yield;
     }
 
-    public bool RerollTier(int tierIndex, int cost)
+    public async Task<bool> RerollTier(int tierIndex, int cost)
     {
         // TODO (online mode): POST /runs/{RunId}/actions/reroll — server validates before applying.
         if (_run.Salvage < cost)
@@ -165,11 +169,11 @@ public sealed class LocalRunStore : IRunStore
         _run.Salvage -= cost;
         _run.Stats.RecordSalvageSpent(cost);
         _run.TierRerolls[tierIndex]++;
-        Save();
+        await Save();
         return true;
     }
 
-    public bool BuyUpgrade(string upgradeId)
+    public async Task<bool> BuyUpgrade(string upgradeId)
     {
         // TODO (online mode): POST /runs/{RunId}/actions/research — server validates before applying.
         var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
@@ -184,7 +188,7 @@ public sealed class LocalRunStore : IRunStore
         _run.Stats.RecordTechSpent(upgrade.TechCost);
         _run.UpgradePurchases[upgradeId] = purchases + 1;
         upgrade.Apply(_run);
-        Save();
+        await Save();
         return true;
     }
 

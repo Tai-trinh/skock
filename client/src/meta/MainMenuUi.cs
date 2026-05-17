@@ -36,9 +36,9 @@ public partial class MainMenuUi : Control
             StartNewRun();
     }
 
-    private void StartNewRun()
+    private async void StartNewRun()
     {
-        RunState.Instance.AbandonCurrentRun();
+        await RunState.Instance.AbandonCurrentRun();
         GetTree().ChangeSceneToFile("res://scenes/AdmiralSelect.tscn");
     }
 }

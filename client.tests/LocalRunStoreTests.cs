@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Skock.Meta;
 using Skock.Tests.Fakes;
 using Xunit;
@@ -34,117 +35,117 @@ public sealed class LocalRunStoreTests : IDisposable
     // ── CommissionShip ────────────────────────────────────────────────────────
 
     [Fact]
-    public void CommissionShip_DeductsSalvage()
+    public async Task CommissionShip_DeductsSalvage()
     {
-        _store.CommissionShip(Corvette);
+        await _store.CommissionShip(Corvette);
         Assert.Equal(40, _run.Salvage);
     }
 
     [Fact]
-    public void CommissionShip_AddsShipToFleet()
+    public async Task CommissionShip_AddsShipToFleet()
     {
-        _store.CommissionShip(Corvette);
+        await _store.CommissionShip(Corvette);
         Assert.Single(_run.Fleet.Ships);
     }
 
     [Fact]
-    public void CommissionShip_ReturnsFalse_WhenInsufficientSalvage()
+    public async Task CommissionShip_ReturnsFalse_WhenInsufficientSalvage()
     {
         _run.Salvage = 5;
-        Assert.False(_store.CommissionShip(Corvette));
+        Assert.False(await _store.CommissionShip(Corvette));
         Assert.Empty(_run.Fleet.Ships);
     }
 
     [Fact]
-    public void CommissionShip_ReturnsFalse_WhenInsufficientTonnage()
+    public async Task CommissionShip_ReturnsFalse_WhenInsufficientTonnage()
     {
         _run.HangarCapacity = 1; // Corvette costs 2T
-        Assert.False(_store.CommissionShip(Corvette));
+        Assert.False(await _store.CommissionShip(Corvette));
         Assert.Empty(_run.Fleet.Ships);
     }
 
     // ── SalvageShip ───────────────────────────────────────────────────────────
 
     [Fact]
-    public void SalvageShip_ReturnsSalvageYield()
+    public async Task SalvageShip_ReturnsSalvageYield()
     {
-        _store.CommissionShip(Corvette);
+        await _store.CommissionShip(Corvette);
         var salvageBefore = _run.Salvage;
-        var yield = _store.SalvageShip(0);
+        var yield = await _store.SalvageShip(0);
         Assert.Equal(Corvette.Template.HullClass.Tonnage() * 3, yield);
         Assert.Equal(salvageBefore + yield, _run.Salvage);
     }
 
     [Fact]
-    public void SalvageShip_RemovesShipFromFleet()
+    public async Task SalvageShip_RemovesShipFromFleet()
     {
-        _store.CommissionShip(Corvette);
-        _store.SalvageShip(0);
+        await _store.CommissionShip(Corvette);
+        await _store.SalvageShip(0);
         Assert.Empty(_run.Fleet.Ships);
     }
 
     [Fact]
-    public void SalvageShip_ReturnsMinus1_WhenIndexOutOfRange()
+    public async Task SalvageShip_ReturnsMinus1_WhenIndexOutOfRange()
     {
-        Assert.Equal(-1, _store.SalvageShip(0));
+        Assert.Equal(-1, await _store.SalvageShip(0));
     }
 
     // ── RerollTier ────────────────────────────────────────────────────────────
 
     [Fact]
-    public void RerollTier_DeductsSalvage()
+    public async Task RerollTier_DeductsSalvage()
     {
-        _store.RerollTier(0, cost: 5);
+        await _store.RerollTier(0, cost: 5);
         Assert.Equal(45, _run.Salvage);
     }
 
     [Fact]
-    public void RerollTier_IncrementsTierRerollCount()
+    public async Task RerollTier_IncrementsTierRerollCount()
     {
-        _store.RerollTier(0, cost: 5);
+        await _store.RerollTier(0, cost: 5);
         Assert.Equal(1, _run.TierRerolls[0]);
     }
 
     [Fact]
-    public void RerollTier_ReturnsFalse_WhenInsufficientSalvage()
+    public async Task RerollTier_ReturnsFalse_WhenInsufficientSalvage()
     {
         _run.Salvage = 4;
-        Assert.False(_store.RerollTier(0, cost: 5));
+        Assert.False(await _store.RerollTier(0, cost: 5));
         Assert.Equal(4, _run.Salvage);
     }
 
     // ── BuyUpgrade ────────────────────────────────────────────────────────────
 
     [Fact]
-    public void BuyUpgrade_DeductsTech()
+    public async Task BuyUpgrade_DeductsTech()
     {
-        _store.BuyUpgrade("hangar_expansion");
+        await _store.BuyUpgrade("hangar_expansion");
         Assert.Equal(4, _run.Tech);
     }
 
     [Fact]
-    public void BuyUpgrade_AppliesEffect()
+    public async Task BuyUpgrade_AppliesEffect()
     {
         var capacityBefore = _run.HangarCapacity;
-        _store.BuyUpgrade("hangar_expansion");
+        await _store.BuyUpgrade("hangar_expansion");
         Assert.Equal(capacityBefore + 2, _run.HangarCapacity);
     }
 
     [Fact]
-    public void BuyUpgrade_ReturnsFalse_WhenInsufficientTech()
+    public async Task BuyUpgrade_ReturnsFalse_WhenInsufficientTech()
     {
         _run.Tech = 0;
-        Assert.False(_store.BuyUpgrade("hangar_expansion"));
+        Assert.False(await _store.BuyUpgrade("hangar_expansion"));
     }
 
     [Fact]
-    public void BuyUpgrade_ReturnsFalse_WhenMaxed()
+    public async Task BuyUpgrade_ReturnsFalse_WhenMaxed()
     {
         // hangar_expansion maxes at 3 purchases
         _run.Tech = 99;
-        _store.BuyUpgrade("hangar_expansion");
-        _store.BuyUpgrade("hangar_expansion");
-        _store.BuyUpgrade("hangar_expansion");
-        Assert.False(_store.BuyUpgrade("hangar_expansion"));
+        await _store.BuyUpgrade("hangar_expansion");
+        await _store.BuyUpgrade("hangar_expansion");
+        await _store.BuyUpgrade("hangar_expansion");
+        Assert.False(await _store.BuyUpgrade("hangar_expansion"));
     }
 }

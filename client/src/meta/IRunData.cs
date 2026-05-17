@@ -25,7 +25,6 @@ public interface IRunData
     Dictionary<string, int> UpgradePurchases { get; set; }
     bool HasActiveRun { get; set; }
     bool IsRunComplete { get; set; }
-    FleetJsonData? CurrentOpponentFleet { get; set; }
 
     // ── Computed ──────────────────────────────────────────────────────────────
 

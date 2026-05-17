@@ -30,6 +30,9 @@ public partial class BattleRenderer : Node2D
     private readonly Dictionary<uint, ShipNode> _shipNodes = [];
     private Control? _inspectorOverlay;
     private ConfirmationDialog _abandonConfirm = null!;
+    private Task? _recordTask;
+    private BattleInputs? _battleInputs;
+    private FleetJsonData? _opponentFleet;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
@@ -58,6 +61,11 @@ public partial class BattleRenderer : Node2D
         _abandonConfirm.Confirmed += OnAbandonConfirmed;
         AddChild(_abandonConfirm);
 
+        _ = InitBattleAsync();
+    }
+
+    private async Task InitBattleAsync()
+    {
         var run = RunState.Instance;
         run.IsBattleActive = true;
         var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
@@ -72,25 +80,22 @@ public partial class BattleRenderer : Node2D
         try
         {
             var fleetBJson = File.ReadAllText(fleetBPath);
-            run.CurrentOpponentFleet = JsonSerializer.Deserialize<FleetJsonData>(
-                fleetBJson,
-                JsonOptions
-            );
-            if (run.CurrentOpponentFleet is not null)
-                run.CurrentOpponentFleet.Mothership.IsMothership = true;
+            _opponentFleet = JsonSerializer.Deserialize<FleetJsonData>(fleetBJson, JsonOptions);
+            if (_opponentFleet is not null)
+                _opponentFleet.Mothership.IsMothership = true;
         }
         catch
         { /* fleet inspector shows empty if file unreadable */
         }
 
-        var seed = run.GetBattleSeed();
-        run.CurrentBattleInputs = new BattleInputs
+        var seed = await run.GetBattleSeed();
+        _battleInputs = new BattleInputs
         {
             Seed = seed,
             FleetAJson = File.ReadAllText(fleetA),
             FleetBJson = File.Exists(fleetBPath) ? File.ReadAllText(fleetBPath) : "",
         };
-        Task.Run(() =>
+        _ = Task.Run(() =>
         {
             try
             {
@@ -109,6 +114,9 @@ public partial class BattleRenderer : Node2D
     public override void _Process(double delta)
     {
         if (_playback is null || !_playback.IsLoaded)
+            return;
+        // Gate processing while RecordBattleResult is in flight; it handles the scene transition.
+        if (_recordTask is not null)
             return;
 
         HandleInput();
@@ -132,10 +140,10 @@ public partial class BattleRenderer : Node2D
         GetViewport().SetInputAsHandled();
     }
 
-    private void OnAbandonConfirmed()
+    private async void OnAbandonConfirmed()
     {
         RunState.Instance.IsBattleActive = false;
-        RunState.Instance.AbandonCurrentRun();
+        await RunState.Instance.AbandonCurrentRun();
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
@@ -260,7 +268,11 @@ public partial class BattleRenderer : Node2D
             if (_playback.IsFinished)
             {
                 RunState.Instance.IsBattleActive = false;
-                RunState.Instance.RecordBattleResult(_playback.Result ?? new BattleResult());
+                _recordTask = RunState.Instance.RecordBattleResult(
+                    _playback.Result ?? new BattleResult(),
+                    _battleInputs ?? new BattleInputs(),
+                    _opponentFleet
+                );
             }
             else
                 _playback.PlaybackSpeed = _playback.PlaybackSpeed == 1f ? 4f : 1f;
@@ -329,7 +341,7 @@ public partial class BattleRenderer : Node2D
 
         fleetsRow.AddChild(new VSeparator());
 
-        var opponentFleet = run.CurrentOpponentFleet ?? new FleetJsonData();
+        var opponentFleet = _opponentFleet ?? new FleetJsonData();
         fleetsRow.AddChild(FleetInspector.Build(opponentFleet, null, false));
 
         outer.AddChild(new HSeparator());

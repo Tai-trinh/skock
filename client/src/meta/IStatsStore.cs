@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Skock.Meta;
 
@@ -17,7 +18,7 @@ public interface IStatsStore
     // Called once per completed battle.
     // Online: also POST BattleInputs to the server for anti-cheat storage.
     // During development, server re-simulates every battle; in production, sample-based.
-    void RecordBattle(JumpRecord record, BattleInputs inputs);
+    Task RecordBattle(JumpRecord record, BattleInputs inputs);
 
     // ── Resource spend tracking ────────────────────────────────────────────────
     // Online: server compares these against run state deltas for anomaly detection.
