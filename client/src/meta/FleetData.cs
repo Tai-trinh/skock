@@ -24,7 +24,6 @@ public enum Role
     Mine,
     PointDefense,
     Artillery,
-    Plasma,
     Railgun,
 }
 

@@ -74,7 +74,7 @@ fn map_event(e: &Event) -> LogEvent {
 
 pub fn write_header(out: &mut impl Write) -> io::Result<()> {
     let header = LogHeader { schema_version: SCHEMA_VERSION };
-    let bytes = rmp_serde::to_vec_named(&header).expect("header serialization failed");
+    let bytes = rmp_serde::to_vec_named(&header).map_err(io::Error::other)?;
     out.write_all(&bytes)
 }
 
@@ -103,6 +103,6 @@ pub fn write_tick(out: &mut impl Write, state: &SimState) -> io::Result<()> {
 
     let record = TickRecord { tick: state.tick, ships, projectiles: vec![], beams: vec![], events };
 
-    let bytes = rmp_serde::to_vec_named(&record).expect("tick serialization failed");
+    let bytes = rmp_serde::to_vec_named(&record).map_err(io::Error::other)?;
     out.write_all(&bytes)
 }
