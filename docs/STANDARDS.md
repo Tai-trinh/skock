@@ -60,6 +60,18 @@ Prefer composition over inheritance. Build behaviour by combining small, focused
 
 Corollary: if two scene types share behaviour, extract it into a reusable child node or a plain C# helper class, not a shared base class.
 
+## When to extract shared code
+
+The default is repetition. The domain is still changing; an abstraction built on an unstable model becomes an anchor.
+
+**Extract when you see the same thing three times** — not two. Two similar functions is probably coincidence. Three is a pattern worth naming.
+
+But structural similarity alone doesn't count. The test: *would a single change to the underlying rule require updating all three places?* If yes, the duplication is real — extract it. If changing one doesn't obligate changing the others, they are incidentally similar and should stay separate.
+
+**Extracted code belongs to the layer that owns the concept.** Logic that touches run state lives in `src/meta/`. Logic that touches rendering lives in `src/rendering/`. If neither layer clearly owns the logic, that is a signal the concept needs a name and a home — not a `utils/` folder.
+
+**`utils/`, `helpers/`, and `common/` are banned.** These names skip the ownership question. Every extracted type or function belongs to a specific domain concept; name the file after the concept.
+
 ## Naming
 
 Names are the first line of documentation. A well-named function needs no comment.
