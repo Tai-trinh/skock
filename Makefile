@@ -8,10 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-godot install-hooks start-godot docker-engine-start docker-build-sim docker-build-godot test-godot test-cs
-
-install-win:
-	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
+.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs
 
 install-docker:
 	sudo apt-get install -y x11-xserver-utils
@@ -48,23 +45,8 @@ docker-build-sim:
 docker-build-godot:
 	docker run --rm $(MOUNTS) -w /app skock dotnet build client/skock.csproj
 
-det:
-	cargo test --test determinism
-
-test-cs:
-	dotnet.exe test client.tests/skock.tests.csproj
-
-win-build-sim:
-	cargo.exe build -p sim --release
-
-win-build-godot:
-	dotnet.exe build client/skock.csproj
-
-start-godot:
-	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
-
-test-godot:
-	powershell.exe -Command "& (Get-ChildItem '$$env:LOCALAPPDATA\Microsoft\WinGet\Packages' -Recurse -Filter 'Godot_v*mono*.exe' | Select-Object -First 1 -ExpandProperty FullName) --headless --path client/ --quit-after 300 2>&1"
+install-hooks:
+	git config core.hooksPath .githooks
 
 fmt:
 	cargo fmt
@@ -74,9 +56,31 @@ fmt-check:
 	cargo fmt --check
 	csharpier check client/
 
+det:
+	cargo test --test determinism
+
+## Windows targets:
+
+install-win:
+	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
+
+win-test-cs:
+	dotnet.exe test client.tests/skock.tests.csproj
+
+win-build-sim:
+	cargo.exe build -p sim --release
+
+win-test-rust:
+	cargo.exe test
+
+win-build-godot:
+	dotnet.exe build client/skock.csproj
+
 win-fmt:
 	cargo.exe fmt
 	csharpier.exe format client/
 
-install-hooks:
-	git config core.hooksPath .githooks
+win-start-godot:
+	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
+
+win-all: win-fmt win-build-sim win-build-godot win-test-rust win-test-cs
