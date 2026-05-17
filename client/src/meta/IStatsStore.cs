@@ -40,4 +40,7 @@ public interface IStatsStore
 
     // Reset per-run history (called at run start). Lifetime counters are not reset.
     void Reset();
+
+    // Restore jump history from a persisted save (called during Load).
+    void LoadHistory(IReadOnlyList<JumpRecord> records);
 }

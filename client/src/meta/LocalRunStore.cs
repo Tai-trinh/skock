@@ -51,6 +51,8 @@ public sealed class LocalRunStore : IRunStore
             _run.TierRerolls = saved.TierRerolls ?? new int[4];
             _run.UpgradePurchases = saved.UpgradePurchases ?? new Dictionary<string, int>();
             _run.HasActiveRun = !saved.IsComplete;
+            if (saved.JumpHistory is { Count: > 0 })
+                _run.Stats.LoadHistory(saved.JumpHistory);
         }
         catch
         {
@@ -82,6 +84,7 @@ public sealed class LocalRunStore : IRunStore
                     TierRerolls = _run.TierRerolls,
                     UpgradePurchases = _run.UpgradePurchases,
                     IsComplete = _run.IsRunComplete,
+                    JumpHistory = [.. _run.Stats.GetJumpHistory()],
                 },
                 JsonOptions
             )
@@ -234,5 +237,6 @@ public sealed class LocalRunStore : IRunStore
         public int[]? TierRerolls { get; set; }
         public Dictionary<string, int>? UpgradePurchases { get; set; }
         public bool IsComplete { get; set; }
+        public List<JumpRecord>? JumpHistory { get; set; }
     }
 }

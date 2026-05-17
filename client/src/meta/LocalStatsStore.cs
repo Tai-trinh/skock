@@ -46,4 +46,10 @@ public sealed class LocalStatsStore : IStatsStore
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     public void Reset() => _history.Clear();
+
+    public void LoadHistory(IReadOnlyList<JumpRecord> records)
+    {
+        _history.Clear();
+        _history.AddRange(records);
+    }
 }
