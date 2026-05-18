@@ -643,7 +643,7 @@ mod tests {
             let hangar_cap_before = run.hangar_cap;
             let expansion_bought = session.buy_research("hangar_expansion").ok;
             let expected_cap =
-                if expansion_bought { hangar_cap_before + 2 } else { hangar_cap_before };
+                if expansion_bought { hangar_cap_before + 4 } else { hangar_cap_before };
             assert_eq!(session.hangar_cap, expected_cap, "jump {jump}: hangar_cap mismatch");
 
             // Commission the cheapest available ship if there's room.
@@ -695,10 +695,10 @@ mod tests {
             run.win_battle(30, 3);
         }
 
-        // After 8 jumps: hangar expansion is maxed (5 purchases) so cap should be at least 10 + 10 = 20.
+        // After 8 jumps: hangar expansion is maxed (5 purchases) so cap should be at least 10 + 20 = 30.
         let expansions = run.upgrade_purchases.get("hangar_expansion").copied().unwrap_or(0);
         assert_eq!(expansions, 5, "hangar_expansion should be maxed after 8 jumps with 20+ tech");
-        assert_eq!(run.hangar_cap, 10 + expansions * 2);
+        assert_eq!(run.hangar_cap, 10 + expansions * 4);
         assert!(!run.fleet.is_empty(), "player should have commissioned at least one ship");
     }
 
@@ -709,9 +709,9 @@ mod tests {
 
         let resp = s.buy_research("hangar_expansion");
         assert!(resp.ok, "buy_research failed: {:?}", resp.error);
-        assert_eq!(s.hangar_cap, cap_before + 2);
+        assert_eq!(s.hangar_cap, cap_before + 4);
         // resource_state() must reflect the new cap so the UI can enable ship buttons.
-        assert_eq!(resp.state.unwrap().hangar_cap, cap_before + 2);
+        assert_eq!(resp.state.unwrap().hangar_cap, cap_before + 4);
     }
 
     #[test]
@@ -723,7 +723,7 @@ mod tests {
         s.buy_research("hangar_expansion");
 
         let delta = s.shopping_done().delta.unwrap();
-        assert_eq!(delta.hangar_cap_final, cap_before + 4);
+        assert_eq!(delta.hangar_cap_final, cap_before + 8);
         assert_eq!(delta.upgrades_purchased.iter().filter(|u| *u == "hangar_expansion").count(), 2);
     }
 }

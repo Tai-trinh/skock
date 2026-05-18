@@ -23,19 +23,19 @@ public static class ResearchCatalog
         {
             Id = "hangar_expansion",
             DisplayName = "Hangar Expansion",
-            Description = "+2T hangar capacity",
+            Description = "+4T hangar capacity",
             TechCost = 1,
             MaxPurchases = 5,
-            Apply = run => run.HangarCapacity += 2,
+            Apply = run => run.HangarCapacity += 4,
         },
         new ResearchUpgrade
         {
             Id = "expanded_hangar",
             DisplayName = "Expanded Hangar",
-            Description = "+4T hangar capacity",
+            Description = "+8T hangar capacity",
             TechCost = 2,
             MaxPurchases = 3,
-            Apply = run => run.HangarCapacity += 4,
+            Apply = run => run.HangarCapacity += 8,
         },
         new ResearchUpgrade
         {
