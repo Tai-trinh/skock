@@ -4,20 +4,8 @@
       "Bash(dotnet.exe build *)",
       "Bash(\"/mnt/c/Program Files/dotnet/dotnet.exe\" test \"C:/Users/Qinn/source/repos/skock/client.tests/skock.tests.csproj\" --no-build)",
       "Bash(cargo.exe test *)",
-      "Bash(dotnet.exe test *)"
-    ]
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -q '\"file_path\":.*\\.cs\"' || exit 0; roslynator.exe analyze \"C:/Users/Qinn/source/repos/skock/client/skock.csproj\" 2>&1"
-          }
-        ]
-      }
+      "Bash(dotnet.exe test *)",
+      "Bash(cargo.exe build *)"
     ]
   }
 }

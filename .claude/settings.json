@@ -36,6 +36,15 @@
             "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) dotnet.exe test client.tests/skock.tests.csproj 2>&1 ;; esac"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) roslynator.exe analyze client/skock.csproj 2>&1 ;; esac"
+          }
+        ]
       }
     ]
   }
