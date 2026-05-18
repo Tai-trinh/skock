@@ -1,4 +1,6 @@
-# C# test project layout: direct reference over client.core extraction
+# ADR-0008: C# test project layout — direct reference over client.core extraction
+
+**Status:** Accepted
 
 ## Decision
 

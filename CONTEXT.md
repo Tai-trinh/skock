@@ -1,6 +1,6 @@
 # Skock — Space Fleet Auto-Battler
 
-Skock is a roguelite where you command a fleet hyperspace-jumping from location to location to scavenge and survive — a homage to Gallforce and Homeworld. Each run consists of 8 encounters against opponent fleets. Battles are fully deterministic: replaying a battle with the same seed and fleet snapshots produces byte-identical results on any machine, enabling local replays and server-side anti-cheat verification. The multiplayer layer is simple: retrieve an opponent's fleet from the server and auto-battle it locally.
+Skock is a roguelite where you command a fleet hyperspace-jumping from location to location to scavenge and survive — a homage to Gallforce and Homeworld. A run spans 8 jump destinations; winning each one advances the Mothership toward the frontier. Battles are fully deterministic: replaying a battle with the same seed and fleet snapshots produces byte-identical results on any machine, enabling local replays and server-side anti-cheat verification. The multiplayer layer is simple: retrieve an opponent's fleet from the server and auto-battle it locally.
 
 ## Battlefield
 
@@ -511,7 +511,7 @@ The swap for each is a one-line change in `RunState._Ready()`. Anti-cheat model:
 **Scenes:**
 - `AdmiralSelect.tscn` — run start; player picks an admiral, sees starting fleet and passive bonus. Transitions to `Dockyard.tscn` on confirm.
 - `Dockyard.tscn` — between every battle; randomized ship offers by tier (5/3/2/1), research/doctrine track, salvage and heal decisions. Transitions to `Battle.tscn` on launch.
-- `Battle.tscn` — battle playback. Transitions to `Dockyard.tscn` on next jump, or to `RunEnd.tscn` on 3rd loss or completing jump 8.
+- `Battle.tscn` — battle playback. Transitions to `Dockyard.tscn` on win (next jump) or loss (retry same jump); transitions to `RunEnd.tscn` on winning jump 8 or on 3rd loss.
 - `RunEnd.tscn` — run result screen. Three endings:
   - **True victory** (beat the hidden 9th encounter): claimed the prime homeworld. The rival fleet is defeated; the colony makes landfall on the best available world.
   - **Standard victory** (completed 8 jumps, no flawless run): the colony reaches the frontier and settles a second-rate system — safe, but not the prize.
@@ -549,7 +549,7 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
   - **Master push** → overwrites the rolling `dev` pre-release on GitHub Releases. Permanent download link for playtesters.
   - **`v*` tag** → creates a named versioned release alongside the dev slot.
 
-**Release package layout:** `skock.exe` and `skock.pck` at the root; `skock-sim.exe` in `bin/`; .NET assemblies in `data_skock_windows_x86_64/`; loose data files in `data/`. `RunState` resolves the sim path as `bin/skock-sim.exe` relative to the Godot executable in exported builds (`OS.HasFeature("editor")` guard); in the editor it uses the Rust `target/release/` path as before. See ADR-0007.
+**Release package layout:** `skock.exe` and `skock.pck` at the root; `skock-sim.exe` and `skock-dockyard.exe` in `bin/`; .NET assemblies in `data_skock_windows_x86_64/`; loose data files in `data/`. `RunState` resolves binary paths as `bin/<name>.exe` relative to the Godot executable in exported builds (`OS.HasFeature("editor")` guard); in the editor it uses the Rust `target/release/` path. See ADR-0007.
 
 **Rust toolchain:** not pinned to a specific version (`@stable`). The determinism tests guard against unintended output changes regardless of cause. Pin when the server anti-cheat re-simulation must byte-match a specific build.
 

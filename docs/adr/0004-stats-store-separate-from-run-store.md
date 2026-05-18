@@ -4,23 +4,24 @@
 
 ## Context
 
-Two seams handle server interaction in online mode: `IRunStore` (run lifecycle and dockyard actions) and `IStatsStore` (battle history and lifetime counters). A single unified store was considered.
+Three seams handle server interaction in online mode: `IRunStore` (run lifecycle), `IDockyard` (dockyard session actions), and `IStatsStore` (battle history and lifetime counters). A single unified store was considered.
 
 ## Decision
 
-Keep them separate. They have fundamentally different online semantics:
+Keep them separate. Each interface has a distinct online contract:
 
-- **`IRunStore`** is server-authoritative. Every action (commission, salvage, reroll, upgrade) must be validated by the server before being applied to RunState. The server can reject the action outright. A single source of truth; local state is a cache of the server record.
-- **`IStatsStore`** is honor-system with retroactive verification (see ADR-0003). The client reports results; the server trusts by default and re-simulates later. No round-trip required per battle. The server stores `BattleInputs` for retroactive checking, not as a prerequisite to accepting the report.
+- **`IRunStore`** — run lifecycle only: `Load`, `Save`, `DeleteSave`, `StartRun`, `GetBattleSeed`. Server-authoritative for lifecycle events; local state is a cache of the server record.
+- **`IDockyard`** — dockyard session: `GetOffersAsync`, `CommissionAsync`, `SalvageFleetShipAsync`, `RerollTierAsync`, `RerollResearchAsync`, `BuyResearchAsync`, `ShoppingDoneAsync`. Server-authoritative per action — the Rust binary (or server-side equivalent) validates every purchase before applying it. See ADR-0009.
+- **`IStatsStore`** — honor-system with retroactive verification (see ADR-0003). The client reports results; the server trusts by default and re-simulates later. No round-trip required per battle.
 
-Merging them into one interface would conflate these two models, forcing every future implementor to mix authoritative validation logic with fire-and-forget reporting logic in the same class.
+Merging any two of these would conflate interfaces with different validation models, forcing every future implementor to mix authoritative validation logic with fire-and-forget reporting logic in the same class.
 
 ## Consequences
 
-- Two swap points in `RunState._Ready()` instead of one.
-- `ServerRunStore` and `ServerStatsStore` will be different classes with different HTTP verbs and error-handling contracts.
-- Adding a new dockyard action requires touching only `IRunStore`; adding a new stat requires touching only `IStatsStore`.
+- Three swap points in `RunState._Ready()` instead of one.
+- `ServerRunStore`, `ServerDockyardAdapter`, and `ServerStatsStore` will be different classes with different HTTP verbs and error-handling contracts.
+- Adding a new dockyard action requires touching only `IDockyard`; adding a new lifecycle event touches only `IRunStore`; adding a new stat touches only `IStatsStore`.
 
 ## Trade-off rejected
 
-A unified `IServerStore` would have one swap point but would force a single online model onto two concerns with different validation requirements. The seam would leak — either all stats go through server-authoritative round-trips (unnecessary latency) or all dockyard actions go through honor-system reporting (no server validation).
+A unified `IServerStore` would have one swap point but would force a single online model onto three concerns with different validation requirements. The seam would leak — either all stats go through server-authoritative round-trips (unnecessary latency) or all dockyard actions go through honor-system reporting (no server validation).
