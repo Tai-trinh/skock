@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -177,122 +176,35 @@ public partial class RunState : Node, IRunData
         _currentBattleInputs = null;
         CurrentOpponentFleet = null;
 
-        var playerWon = result.Winner == "fleet_a";
-
         // Snapshot fleets before any HP mutation.
         var playerSnapshot = Fleet;
         var opponentSnapshot = opponentFleet ?? new FleetJsonData();
 
-        // Build kill counts by hull class.
-        var enemiesKilled = CountByHullClass(result.FleetBKilled);
-        var ownLost = CountByHullClass(result.FleetAKilled);
-
-        await Stats.RecordBattle(
-            new JumpRecord
-            {
-                JumpNumber = JumpNumber,
-                Won = playerWon,
-                DurationTicks = result.Ticks,
-                EnemiesKilledByHullClass = enemiesKilled,
-                OwnShipsLostByHullClass = ownLost,
-                DamageDealt = result.FleetADamageDealt,
-                DamageTaken = result.FleetBDamageDealt,
-                PlayerFleetSnapshot = playerSnapshot,
-                OpponentFleetSnapshot = opponentSnapshot,
-                PlayerUpgrades = new Dictionary<string, int>(UpgradePurchases),
-                PlayerAdmiralId = AdmiralId,
-            },
-            inputs
+        var transition = await BattleOutcomeResolver.Resolve(
+            this,
+            result,
+            inputs,
+            playerSnapshot,
+            opponentSnapshot
         );
 
-        if (!playerWon)
-            LossCount++;
-
-        // Salvage: flat base every battle + flat win bonus, both scaling with JumpNumber.
-        // TODO (playtesting): tune multipliers.
-        Salvage += JumpNumber * 10;
-        if (playerWon)
-            Salvage += JumpNumber * 15;
-
-        // Tech on victory scales with JumpNumber: 1 (jumps 1–3), 2 (4–6), 3 (7–8).
-        // TODO (playtesting): tune Tech scaling.
-        if (playerWon)
-            Tech += (JumpNumber + 2) / 3;
-
-        // Restore fleet HP from battle survivors; destroyed ships survive at 1 HP minimum.
-        ApplySurvivorHp(result.FleetASurvivors);
-        // Auto-heal all ships between jumps.
-        HealAllShips();
-
-        if (IsRunOver)
+        switch (transition)
         {
-            RunEndReason = RunEndReason.Defeat;
-            HasActiveRun = false;
-            IsRunComplete = true;
-            await _store.Save();
-            GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
-            return;
+            case PostBattleTransition.Defeat:
+                RunEndReason = RunEndReason.Defeat;
+                await _store.Save();
+                GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
+                break;
+            case PostBattleTransition.Victory:
+                RunEndReason = RunEndReason.Victory;
+                await _store.Save();
+                GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
+                break;
+            case PostBattleTransition.NextJump:
+                await _store.Save();
+                GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
+                break;
         }
-
-        if (JumpNumber >= 8)
-        {
-            // TODO: check flawless run + top-10% score for hidden final encounter.
-            RunEndReason = RunEndReason.Victory;
-            Stats.RecordRunVictory();
-            HasActiveRun = false;
-            IsRunComplete = true;
-            await _store.Save();
-            GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
-            return;
-        }
-
-        Array.Fill(TierRerolls, 0);
-        JumpNumber++;
-        await _store.Save();
-        GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
-    }
-
-    // ── Battle result helpers ─────────────────────────────────────────────────
-
-    private void ApplySurvivorHp(IReadOnlyList<ShipSurvivor> survivors)
-    {
-        // Default all fleet ships to 1 HP — ships destroyed mid-battle survive at minimum.
-        foreach (var ship in Fleet.Ships)
-            ship.Hp = 1.0;
-
-        foreach (var survivor in survivors)
-        {
-            if (survivor.IsMothership)
-            {
-                Fleet.Mothership.Hp = survivor.Hp;
-                continue;
-            }
-            // fleet_index from the sim identifies the exact slot; no ambiguity for same-type ships.
-            if (survivor.FleetIndex is { } idx && idx >= 0 && idx < Fleet.Ships.Count)
-                Fleet.Ships[idx].Hp = survivor.Hp;
-        }
-    }
-
-    private void HealAllShips()
-    {
-        Fleet.Mothership.Hp = Fleet.Mothership.MaxHp;
-        foreach (var ship in Fleet.Ships)
-            ship.Hp = ship.MaxHp;
-    }
-
-    // ── Statistics helpers ────────────────────────────────────────────────────
-
-    private static Dictionary<string, int> CountByHullClass(IReadOnlyList<KilledShip> killed)
-    {
-        var counts = new Dictionary<string, int>();
-        foreach (var ship in killed)
-        {
-            if (ship.IsMothership)
-                continue;
-            counts.TryGetValue(ship.HullClass, out var n);
-            counts[ship.HullClass] = n + 1;
-        }
-        return counts;
     }
 
     // ── Defaults ──────────────────────────────────────────────────────────────
