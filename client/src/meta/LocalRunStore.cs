@@ -21,7 +21,6 @@ public sealed class LocalRunStore : IRunStore
     public Task Load()
     {
         // TODO (online mode): fetch run state from server by Run ID instead.
-        // Server is authoritative; local file is a cache. See CONTEXT.md § "Run state (online mode)".
         var statePath = StatePath();
         if (!File.Exists(statePath) || !File.Exists(_run.PlayerFleetPath))
             return Task.CompletedTask;
@@ -49,7 +48,9 @@ public sealed class LocalRunStore : IRunStore
             fleet.Mothership.IsMothership = true;
             _run.Fleet = fleet;
             _run.TierRerolls = saved.TierRerolls ?? new int[4];
+            _run.ResearchRerolls = saved.ResearchRerolls ?? new int[4];
             _run.UpgradePurchases = saved.UpgradePurchases ?? new Dictionary<string, int>();
+            _run.PlayerId = saved.PlayerId ?? GenerateOfflinePlayerId();
             _run.HasActiveRun = !saved.IsComplete;
             if (saved.JumpHistory is { Count: > 0 })
                 _run.Stats.LoadHistory(saved.JumpHistory);
@@ -82,7 +83,9 @@ public sealed class LocalRunStore : IRunStore
                     LossCount = _run.LossCount,
                     AdmiralId = _run.AdmiralId,
                     TierRerolls = _run.TierRerolls,
+                    ResearchRerolls = _run.ResearchRerolls,
                     UpgradePurchases = _run.UpgradePurchases,
+                    PlayerId = _run.PlayerId,
                     IsComplete = _run.IsRunComplete,
                     JumpHistory = [.. _run.Stats.GetJumpHistory()],
                 },
@@ -116,6 +119,7 @@ public sealed class LocalRunStore : IRunStore
         _run.AdmiralId = admiral.Id;
         _run.Fleet = admiral.StartingFleet;
         _run.TierRerolls = new int[4];
+        _run.ResearchRerolls = new int[4];
         _run.UpgradePurchases = new Dictionary<string, int>();
         _run.HasActiveRun = true;
         _run.IsRunComplete = false;
@@ -128,71 +132,7 @@ public sealed class LocalRunStore : IRunStore
     public Task<ulong> GetBattleSeed()
     {
         // TODO (online mode): POST /runs/{RunId}/battles to get a server-assigned seed.
-        // Server stores the seed so anti-cheat re-simulation uses the identical value.
         return Task.FromResult((ulong)Random.Shared.NextInt64());
-    }
-
-    // ── Dockyard actions ──────────────────────────────────────────────────────
-
-    public async Task<bool> CommissionShip(Blueprint bp)
-    {
-        // TODO (online mode): POST /runs/{RunId}/actions/commission — server validates before applying.
-        if (_run.Salvage < bp.SalvageCost || _run.FreeTonnage < bp.Tonnage)
-            return false;
-        _run.Fleet.Ships.Add(bp.Instantiate());
-        _run.Salvage -= bp.SalvageCost;
-        _run.Stats.RecordSalvageSpent(bp.SalvageCost);
-        if (bp.Template.HullClass is HullClass.Battlecruiser or HullClass.Dreadnought)
-            _run.Stats.RecordCapitalShipBought();
-        await Save();
-        return true;
-    }
-
-    public async Task<int> SalvageShip(int index)
-    {
-        // TODO (online mode): POST /runs/{RunId}/actions/salvage — server validates before applying.
-        if (index >= _run.Fleet.Ships.Count)
-            return -1;
-        // Mothership lives in Fleet.Mothership, never in Fleet.Ships — this is a defensive guard.
-        if (_run.Fleet.Ships[index].IsMothership)
-            return -1;
-        var ship = _run.Fleet.Ships[index];
-        var yield = ship.HullClass.Tonnage() * 3;
-        _run.Fleet.Ships.RemoveAt(index);
-        _run.Salvage += yield;
-        await Save();
-        return yield;
-    }
-
-    public async Task<bool> RerollTier(int tierIndex, int cost)
-    {
-        // TODO (online mode): POST /runs/{RunId}/actions/reroll — server validates before applying.
-        if (_run.Salvage < cost)
-            return false;
-        _run.Salvage -= cost;
-        _run.Stats.RecordSalvageSpent(cost);
-        _run.TierRerolls[tierIndex]++;
-        await Save();
-        return true;
-    }
-
-    public async Task<bool> BuyUpgrade(string upgradeId)
-    {
-        // TODO (online mode): POST /runs/{RunId}/actions/research — server validates before applying.
-        var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
-        if (upgrade is null)
-            return false;
-        if (_run.Tech < upgrade.TechCost)
-            return false;
-        var purchases = _run.UpgradePurchases.GetValueOrDefault(upgradeId);
-        if (upgrade.MaxPurchases > 0 && purchases >= upgrade.MaxPurchases)
-            return false;
-        _run.Tech -= upgrade.TechCost;
-        _run.Stats.RecordTechSpent(upgrade.TechCost);
-        _run.UpgradePurchases[upgradeId] = purchases + 1;
-        upgrade.Apply(_run);
-        await Save();
-        return true;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -225,6 +165,8 @@ public sealed class LocalRunStore : IRunStore
     private string StatePath() =>
         Path.GetFullPath(Path.Combine(_run.ProjectDir, "..", "player_state.json"));
 
+    private static string GenerateOfflinePlayerId() => $"offline:{Guid.NewGuid()}";
+
     private sealed class SavedState
     {
         public ulong RunSeed { get; set; }
@@ -235,7 +177,9 @@ public sealed class LocalRunStore : IRunStore
         public int LossCount { get; set; }
         public string AdmiralId { get; set; } = "";
         public int[]? TierRerolls { get; set; }
+        public int[]? ResearchRerolls { get; set; }
         public Dictionary<string, int>? UpgradePurchases { get; set; }
+        public string? PlayerId { get; set; }
         public bool IsComplete { get; set; }
         public List<JumpRecord>? JumpHistory { get; set; }
     }

@@ -15,7 +15,8 @@ public enum RunEndReason
 
 // Autoload singleton — in-memory run state + scene transitions.
 // All persistence/sync is delegated to IRunStore (_store).
-// Swap _store in _Ready() to switch between offline and online modes.
+// Dockyard-phase logic is delegated to IDockyard (created per dockyard visit).
+// Swap either in _Ready() to switch between offline and online modes.
 public partial class RunState : Node, IRunData
 {
     public static RunState Instance { get; private set; } = null!;
@@ -26,12 +27,17 @@ public partial class RunState : Node, IRunData
 
     public string ProjectDir { get; private set; } = "";
     public string SimBinaryPath { get; private set; } = "";
+    public string DockBinaryPath { get; private set; } = "";
     public string PlayerFleetPath { get; private set; } = "";
     public string FallbackFleetPath { get; private set; } = "";
 
     // ── Settings ──────────────────────────────────────────────────────────────
 
     public UserSettings Settings { get; private set; } = new();
+
+    // ── Identity ──────────────────────────────────────────────────────────────
+
+    public string PlayerId { get; set; } = $"offline:{System.Guid.NewGuid()}";
 
     // ── Run state ─────────────────────────────────────────────────────────────
 
@@ -45,6 +51,7 @@ public partial class RunState : Node, IRunData
     public string AdmiralId { get; set; } = "";
     public FleetJsonData Fleet { get; set; } = DefaultFleet();
     public int[] TierRerolls { get; set; } = new int[4];
+    public int[] ResearchRerolls { get; set; } = new int[4];
     public Dictionary<string, int> UpgradePurchases { get; set; } = new();
 
     public int UsedTonnage => Fleet.Ships.Sum(s => s.HullClass.Tonnage());
@@ -64,7 +71,6 @@ public partial class RunState : Node, IRunData
 
     // ── Statistics ────────────────────────────────────────────────────────────
 
-    // Per-run history and lifetime counters behind a swappable seam (see IStatsStore / ADR-0003).
     public IStatsStore Stats { get; private set; } = null!;
 
     // ── Store ─────────────────────────────────────────────────────────────────
@@ -77,15 +83,13 @@ public partial class RunState : Node, IRunData
     {
         Instance = this;
         ProjectDir = ProjectSettings.GlobalizePath("res://");
-        // In an exported build the sim binary lives in bin/ next to skock.exe.
-        // In the editor it lives in the Rust target directory.
-        SimBinaryPath = OS.HasFeature("editor")
-            ? Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release", "skock-sim.exe"))
-            : Path.Combine(
-                Path.GetDirectoryName(OS.GetExecutablePath()) ?? "",
-                "bin",
-                "skock-sim.exe"
-            );
+
+        var binDir = OS.HasFeature("editor")
+            ? Path.GetFullPath(Path.Combine(ProjectDir, "..", "target", "release"))
+            : Path.Combine(Path.GetDirectoryName(OS.GetExecutablePath()) ?? "", "bin");
+
+        SimBinaryPath = Path.Combine(binDir, "skock-sim.exe");
+        DockBinaryPath = Path.Combine(binDir, "skock-dockyard.exe");
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")
@@ -100,7 +104,6 @@ public partial class RunState : Node, IRunData
 
         Settings = UserSettings.Load(SettingsPath());
         Settings.Apply();
-        // Offline adapters complete synchronously; online adapters will need to be awaited.
         _ = LoadAsync();
     }
 
@@ -145,19 +148,70 @@ public partial class RunState : Node, IRunData
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
-    // ── Dockyard actions ──────────────────────────────────────────────────────
+    // ── Dockyard session factory ──────────────────────────────────────────────
 
-    public Task<ulong> GetBattleSeed() => _store.GetBattleSeed();
+    // Swap LocalDockyardAdapter for ServerDockyardAdapter here when online mode is implemented.
+    public IDockyard OpenDockyardSession() => new LocalDockyardAdapter(DockBinaryPath);
 
-    public Task<bool> CommissionShip(Blueprint bp) => _store.CommissionShip(bp);
+    // Builds the input snapshot for a new dockyard session from current run state.
+    public DockSessionInput BuildDockSessionInput() =>
+        new()
+        {
+            PlayerId = PlayerId,
+            RunSeed = RunSeed,
+            JumpNumber = JumpNumber,
+            TierRerolls = (int[])TierRerolls.Clone(),
+            ResearchRerolls = (int[])ResearchRerolls.Clone(),
+            Salvage = Salvage,
+            Tech = Tech,
+            HangarUsed = UsedTonnage,
+            HangarCap = HangarCapacity,
+            Fleet = Fleet
+                .Ships.Select(
+                    (s, i) =>
+                        new FleetShipRef
+                        {
+                            Index = i,
+                            Tonnage = s.HullClass.Tonnage(),
+                            BlueprintId = s.BlueprintDrawingId,
+                        }
+                )
+                .ToList(),
+            UpgradePurchases = new(UpgradePurchases),
+        };
 
-    public Task<int> SalvageShip(int index) => _store.SalvageShip(index);
+    // Applies a completed dockyard session delta to run state.
+    // Called by DockUi after ShoppingDoneAsync succeeds.
+    public void ApplyDockSessionDelta(DockDelta delta)
+    {
+        // Add commissioned ships (binary returns full ShipDef via DockUi's cached offers).
+        // Commissioned ships are handled by DockUi which has the ShipDef from the offer cache.
 
-    public Task<bool> RerollTier(int tierIndex, int cost) => _store.RerollTier(tierIndex, cost);
+        // Remove salvaged ships: apply in descending index order so earlier removals
+        // do not shift the indices of later ones.
+        foreach (var idx in delta.ShipsSalvaged)
+        {
+            if (idx < Fleet.Ships.Count)
+                Fleet.Ships.RemoveAt(idx);
+        }
 
-    public Task<bool> BuyUpgrade(string upgradeId) => _store.BuyUpgrade(upgradeId);
+        // Apply purchased upgrades.
+        foreach (var upgradeId in delta.UpgradesPurchased)
+        {
+            ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId)?.Apply(this);
+            var prev = UpgradePurchases.GetValueOrDefault(upgradeId);
+            UpgradePurchases[upgradeId] = prev + 1;
+        }
+
+        Salvage = delta.SalvageFinal;
+        Tech = delta.TechFinal;
+        TierRerolls = delta.TierRerollsFinal;
+        ResearchRerolls = delta.ResearchRerollsFinal;
+    }
 
     // ── Battle lifecycle ──────────────────────────────────────────────────────
+
+    public Task<ulong> GetBattleSeed() => _store.GetBattleSeed();
 
     public void BeginBattle(BattleInputs inputs, FleetJsonData? opponentFleet)
     {
@@ -176,7 +230,6 @@ public partial class RunState : Node, IRunData
         _currentBattleInputs = null;
         CurrentOpponentFleet = null;
 
-        // Snapshot fleets before any HP mutation.
         var playerSnapshot = Fleet;
         var opponentSnapshot = opponentFleet ?? new FleetJsonData();
 

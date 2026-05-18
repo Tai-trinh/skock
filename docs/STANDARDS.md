@@ -74,6 +74,34 @@ Prefer composition over inheritance. Build behaviour by combining small, focused
 
 Corollary: if two scene types share behaviour, extract it into a reusable child node or a plain C# helper class, not a shared base class.
 
+## UI state after async actions (dockyard and beyond)
+
+After every action that goes through `IDockyard` (or any future async interface to the binary or server), the UI must reflect the state returned in the response — immediately, before the player can take another action. This means:
+
+- **Rebuild or refresh** every panel whose content or availability may have changed: ship slots, resource counters, button enabled/disabled state.
+- **Drive disabled state from the response**, not from a local guess. If a ship slot costs more salvage than the player now has, the button must be disabled. If a hangar expansion just increased capacity, previously-locked commission buttons must re-enable.
+- **Never leave UI in a stale intermediate state.** A button that was disabled before an action must re-evaluate after the response arrives; a resource counter must reflect the updated values from `ResourceState`.
+
+The pattern in `DockUi` is `_state = result.State!; Refresh();` — call `Refresh()` (or the equivalent full rebuild) at the end of every `async void` handler that receives an updated state from the binary. Do not selectively update individual widgets; rebuild the affected panels from the authoritative state.
+
+This applies equally when the backend is a local binary or a remote server — the `IDockyard` interface hides the transport, and the UI contract is the same either way.
+
+## Testing new C# interfaces
+
+When you add a new C# interface (e.g. `IDockyard`, `IRunStore`), cover it at the right layer — not every interface needs the same kind of test, but none should ship with zero coverage.
+
+**Interfaces that wrap a Rust binary or remote server**
+Test the protocol contract in Rust, not in C#. The binary is the source of truth; a Rust unit test that drives `Session` (or the equivalent pure value object) directly will catch mismatches between what the binary produces and what the C# consumer expects. Mirror the C# delta-application logic in a `SimRun`-style Rust helper so multi-step scenarios (e.g. 8-jump runs) can be verified without any I/O.
+
+**Interfaces that own run state (`IRunStore`, `IAdmiralStore`, …)**
+Depend on a data interface (`IRunData`) rather than the concrete `RunState`, so tests can inject a `FakeRunData` without touching the Godot runtime. Add the fake to `client.tests/Fakes/` and test round-trip save/load, including every field added to the save format. See `LocalRunStoreTests.cs` for the existing pattern.
+
+**Interfaces implemented by Godot nodes**
+Godot nodes (`Control`, `Node2D`, …) cannot be unit-tested outside the editor. Extract all non-trivial logic into plain C# classes or methods that take only plain data types, and test those. Leave the Godot node as a thin wiring layer. If logic can't be extracted, document why with a `// TODO(testability):` comment.
+
+**Fakes live in `client.tests/Fakes/`**
+Every new interface that is injected anywhere (constructor, method parameter, property) gets a fake in `client.tests/Fakes/`. The fake's name is `Fake<InterfaceName>` with the `I` dropped: `FakeRunData`, `FakeDockyardSession`. Fakes record calls so tests can assert that the right methods were invoked with the right arguments.
+
 ## When to extract shared code
 
 The default is repetition. The domain is still changing; an abstraction built on an unstable model becomes an anchor.
@@ -144,6 +172,19 @@ Mark debt with `// TODO(scope): description` where scope is one of:
 - `cleanup` — awkward code that works but should be revisited
 
 No `FIXME`, `HACK`, or bare `TODO` without a scope. TODOs are reviewed at the start of each new system being built — not on a calendar. Delete stale TODOs. Resolve blocking TODOs before starting the system that needs them.
+
+## Spawning subprocesses (Windows / Godot)
+
+Always set `CreateNoWindow = true` on `ProcessStartInfo` when spawning a helper binary from the Godot client. Without it, Windows opens a visible console window for every subprocess (sim, dockyard, any future binary). `UseShellExecute` must also be `false` whenever stdin/stdout are redirected.
+
+The Godot editor resolves binary paths from `target/release/`. Always build helper binaries with `--release` before running the game:
+
+```
+cargo.exe build -p sim --release
+cargo.exe build -p dockyard --release
+```
+
+A missing binary is silent from the UI perspective: the `LocalDockyardAdapter` constructor throws, `OpenSessionAsync` catches it, and the dockyard renders empty. If the dockyard shows nothing to shop, verify the release binaries exist first.
 
 ## What is never allowed
 

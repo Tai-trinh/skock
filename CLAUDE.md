@@ -14,10 +14,12 @@ This is a WSL2 environment targeting Windows binaries — use the `.exe` suffixe
 
 **Rust (sim):**
 ```
-cargo.exe build -p sim --release      # build sim binary
-cargo.exe test                         # all Rust tests
+cargo.exe build -p sim --release       # build sim binary
+cargo.exe build -p dockyard --release  # build dockyard binary
+cargo.exe test                         # all Rust tests (sim + dockyard)
 cargo.exe test --test determinism      # determinism golden-hash tests only
 cargo.exe test -p sim <test_name>      # single test by name
+cargo.exe test -p dockyard             # dockyard unit tests
 cargo.exe fmt                          # format Rust
 cargo.exe fmt --check                  # lint-only (CI)
 ```
@@ -85,10 +87,10 @@ Breaking determinism is a silent, catastrophic bug. Every sim decision must foll
 
 - **Fixed-point math only** — `fixed` crate: `I32F32` for positions, `I16F16` for most else. No floats in sim code.
 - **Explicit RNG state** — xoshiro256+ (`rand_xoshiro`), 4× u64 state, no globals. State is serialized into fleet snapshots for replays.
-- **Ordered containers only** — `BTreeMap`, `BTreeSet`, or arrays indexed by stable ID. Never `HashMap` or `HashSet` in sim code (non-deterministic iteration order). See ADR-0001.
+- **Ordered containers only** — `BTreeMap`, `BTreeSet`, or arrays indexed by stable ID. Never `HashMap` or `HashSet` in any Rust crate that produces deterministic game output (`sim`, `dockyard`, and server when running their logic). See ADR-0001.
 - **Single-threaded sim** — no parallelism inside a battle tick.
 
-`HashMap`/`HashSet` are fine in server and client code.
+`HashMap`/`HashSet` are permitted only in code that does not produce deterministic game output: server HTTP infrastructure, tooling, C#/Godot renderer.
 
 ## Key domain decisions
 

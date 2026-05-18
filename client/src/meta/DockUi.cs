@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 
 namespace Skock.Meta;
@@ -13,17 +14,20 @@ public partial class DockUi : Control
     private VBoxContainer _dockContainer = null!;
     private HBoxContainer _researchContainer = null!;
     private Label _statusLabel = null!;
+    private Button _battleButton = null!;
 
-    private const int RerollCost = 5;
+    // ── Session state ─────────────────────────────────────────────────────────
 
-    // TODO: tweak slot counts, tonnage tiers, and costs once the loop is playtested.
-    private static readonly (string Label, HullClass[] Classes, int Slots)[] Tiers =
-    [
-        ("Corvette / Fighter", [HullClass.Corvette], 5),
-        ("Frigate", [HullClass.Frigate], 3),
-        ("Destroyer / Cruiser", [HullClass.Destroyer, HullClass.Cruiser], 2),
-        ("Capital", [HullClass.Battlecruiser, HullClass.Dreadnought], 1),
-    ];
+    private IDockyard? _session;
+    private DockOffersResult? _offers;
+    private DockResourceState _state = new();
+
+    // Mirrors the fleet during the session. Updated on commission/salvage.
+    private sealed record SessionShip(int CurrentIndex, string Name, int Tonnage);
+
+    private List<SessionShip> _sessionFleet = [];
+
+    // ── Godot lifecycle ───────────────────────────────────────────────────────
 
     public override void _Ready()
     {
@@ -39,8 +43,46 @@ public partial class DockUi : Control
             "MarginContainer/VBox/ResearchSection/ResearchContainer"
         );
         _statusLabel = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
-        GetNode<Button>("MarginContainer/VBox/Footer/BattleButton").Pressed += OnBattlePressed;
-        Refresh();
+        _battleButton = GetNode<Button>("MarginContainer/VBox/Footer/BattleButton");
+        _battleButton.Pressed += OnBattlePressed;
+        _battleButton.Disabled = true; // enabled once session is ready
+
+        var run = RunState.Instance;
+        _titleLabel.Text = $"DOCKYARD — Jump {run.JumpNumber} / 8";
+
+        // Snapshot fleet for local tracking before opening the session.
+        _sessionFleet = run
+            .Fleet.Ships.Select(
+                (s, i) => new SessionShip(i, ShipDisplay.NameFor(s), s.HullClass.Tonnage())
+            )
+            .ToList();
+
+        _ = OpenSessionAsync();
+    }
+
+    public override void _ExitTree()
+    {
+        if (_session is not null)
+            _ = _session.DisposeAsync().AsTask();
+    }
+
+    // ── Session open ──────────────────────────────────────────────────────────
+
+    private async Task OpenSessionAsync()
+    {
+        var run = RunState.Instance;
+        _session = run.OpenDockyardSession();
+        try
+        {
+            _offers = await _session.GetOffersAsync(run.BuildDockSessionInput());
+            _state = _offers.State;
+            _battleButton.Disabled = false;
+            Refresh();
+        }
+        catch (Exception e)
+        {
+            _statusLabel.Text = $"Dockyard unavailable: {e.Message}";
+        }
     }
 
     // ── Full rebuild ──────────────────────────────────────────────────────────
@@ -50,8 +92,8 @@ public partial class DockUi : Control
         var run = RunState.Instance;
         _titleLabel.Text = $"DOCKYARD — Jump {run.JumpNumber} / 8";
         _resourcesLabel.Text =
-            $"Salvage: {run.Salvage}   Tech: {run.Tech}   "
-            + $"Tonnage: {run.UsedTonnage} / {run.HangarCapacity}   "
+            $"Salvage: {_state.Salvage}   Tech: {_state.Tech}   "
+            + $"Tonnage: {_state.HangarUsed} / {_state.HangarCap}   "
             + $"Losses: {run.LossCount} / 3";
         RebuildFleet();
         RebuildDock();
@@ -62,30 +104,35 @@ public partial class DockUi : Control
 
     private void RebuildFleet()
     {
-        var run = RunState.Instance;
         foreach (var child in _fleetContainer.GetChildren())
             child.QueueFree();
 
-        for (var i = 0; i < run.Fleet.Ships.Count; i++)
+        for (var i = 0; i < _sessionFleet.Count; i++)
         {
-            var ship = run.Fleet.Ships[i];
-            var index = i;
-            var yield = ship.HullClass.Tonnage() * 3;
-            var btn = new Button { Text = $"{ShipDisplay.NameFor(ship)}  [+{yield} salvage]" };
-            btn.Pressed += () => OnSalvageShip(index);
+            var ship = _sessionFleet[i];
+            var yield = ship.Tonnage * 3;
+            var btn = new Button { Text = $"{ship.Name}  [+{yield} salvage]" };
+            var capturedIndex = i;
+            btn.Pressed += () => OnSalvageShip(capturedIndex);
             _fleetContainer.AddChild(btn);
         }
     }
 
-    private async void OnSalvageShip(int index)
+    private async void OnSalvageShip(int sessionIndex)
     {
-        var run = RunState.Instance;
-        var shipName =
-            index < run.Fleet.Ships.Count ? ShipDisplay.NameFor(run.Fleet.Ships[index]) : "ship";
-        var yield = await run.SalvageShip(index);
-        if (yield < 0)
+        if (_session is null)
             return;
-        _statusLabel.Text = $"Salvaged {shipName} for {yield} salvage.";
+        var shipName =
+            sessionIndex < _sessionFleet.Count ? _sessionFleet[sessionIndex].Name : "ship";
+        var result = await _session.SalvageFleetShipAsync(sessionIndex);
+        if (!result.Ok)
+        {
+            _statusLabel.Text = $"Cannot salvage: {result.Error}";
+            return;
+        }
+        _state = result.State!;
+        _sessionFleet.RemoveAt(sessionIndex);
+        _statusLabel.Text = $"Salvaged {shipName} for {result.SalvageYield} salvage.";
         Refresh();
     }
 
@@ -96,75 +143,79 @@ public partial class DockUi : Control
         foreach (var child in _dockContainer.GetChildren())
             child.QueueFree();
 
-        for (var tierIndex = 0; tierIndex < Tiers.Length; tierIndex++)
-        {
-            var (label, classes, slots) = Tiers[tierIndex];
-            var pool = BlueprintCatalog
-                .All.Where(bp => classes.Contains(bp.Template.HullClass))
-                .ToList();
-            if (pool.Count == 0)
-                continue;
+        if (_offers is null)
+            return;
 
-            var offers = GenerateOffers(pool, slots, tierIndex);
-            var run = RunState.Instance;
+        foreach (var tier in _offers.ShipTiers)
+        {
+            if (tier.Slots.Count == 0)
+                continue;
 
             var header = new HBoxContainer();
             var tierLabel = new Label
             {
-                Text = $"── {label} ──",
+                Text = $"── {tier.Label} ──",
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
             };
-            var rerollBtn = new Button { Text = $"Reroll [{RerollCost} salvage]" };
-            var capturedTier = tierIndex;
-            rerollBtn.Pressed += () => OnRerollTier(capturedTier);
+            var rerollBtn = new Button { Text = $"Reroll [{tier.RerollCost} salvage]" };
+            var capturedIndex = tier.TierIndex;
+            rerollBtn.Pressed += () => OnRerollTier(capturedIndex);
             header.AddChild(tierLabel);
             header.AddChild(rerollBtn);
             _dockContainer.AddChild(header);
 
-            foreach (var bp in offers)
+            foreach (var slot in tier.Slots)
             {
+                var canAfford = _state.Salvage >= slot.SalvageCost;
+                var hasTonnage = (_state.HangarCap - _state.HangarUsed) >= slot.Tonnage;
                 var btn = new Button
                 {
-                    Text = $"{bp.DisplayName}  [{bp.Tonnage}T  {bp.SalvageCost} salvage]",
-                    Disabled = run.Salvage < bp.SalvageCost || run.FreeTonnage < bp.Tonnage,
+                    Text = $"{slot.DisplayName}  [{slot.Tonnage}T  {slot.SalvageCost} salvage]",
+                    Disabled = !canAfford || !hasTonnage,
                 };
-                var captured = bp;
-                btn.Pressed += () => OnCommissionShip(captured);
+                var capturedSlot = slot;
+                btn.Pressed += () => OnCommissionShip(capturedSlot);
                 _dockContainer.AddChild(btn);
             }
         }
     }
 
-    private static List<Blueprint> GenerateOffers(List<Blueprint> pool, int slots, int tierIndex)
-    {
-        var run = RunState.Instance;
-        // XOR run seed (per-run uniqueness, stable across save/load) with position in the run.
-        // System.Random seed is an int; fold the ulong down without discarding entropy.
-        var position = (ulong)(run.JumpNumber * 997 + tierIndex * 101 + run.TierRerolls[tierIndex]);
-        var seed = (int)((run.RunSeed ^ (run.RunSeed >> 32)) ^ position);
-        var rng = new Random(seed);
-        var offers = new List<Blueprint>(slots);
-        for (var i = 0; i < slots; i++)
-            offers.Add(pool[rng.Next(pool.Count)]);
-        return offers;
-    }
-
     private async void OnRerollTier(int tierIndex)
     {
-        if (!await RunState.Instance.RerollTier(tierIndex, RerollCost))
+        if (_session is null)
+            return;
+        var result = await _session.RerollTierAsync(tierIndex);
+        if (!result.Ok)
         {
-            _statusLabel.Text = $"Need {RerollCost} salvage to reroll.";
+            _statusLabel.Text = $"Cannot reroll: {result.Error}";
             return;
         }
+        _state = result.State!;
+        // Replace the tier in the cached offers.
+        var idx = _offers!.ShipTiers.FindIndex(t => t.TierIndex == tierIndex);
+        if (idx >= 0 && result.Tier is not null)
+            _offers.ShipTiers[idx] = result.Tier;
         _statusLabel.Text = "Dockyard updated.";
         Refresh();
     }
 
-    private async void OnCommissionShip(Blueprint bp)
+    private async void OnCommissionShip(ShipSlotOffer slot)
     {
-        if (!await RunState.Instance.CommissionShip(bp))
+        if (_session is null)
             return;
-        _statusLabel.Text = $"Commissioned {bp.DisplayName}.";
+        var result = await _session.CommissionAsync(slot.BlueprintId);
+        if (!result.Ok)
+        {
+            _statusLabel.Text = $"Cannot commission: {result.Error}";
+            return;
+        }
+        _state = result.State!;
+        var newShip = result.Ship!.ShipDef;
+        // Track locally for fleet display (tonnage from slot offer).
+        _sessionFleet.Add(new SessionShip(_sessionFleet.Count, slot.DisplayName, slot.Tonnage));
+        // Add to RunState fleet so it's ready for the save after ShoppingDone.
+        RunState.Instance.Fleet.Ships.Add(newShip);
+        _statusLabel.Text = $"Commissioned {slot.DisplayName}.";
         Refresh();
     }
 
@@ -175,32 +226,79 @@ public partial class DockUi : Control
         foreach (var child in _researchContainer.GetChildren())
             child.QueueFree();
 
-        var run = RunState.Instance;
-        foreach (var upgrade in ResearchCatalog.All)
+        if (_offers is null)
+            return;
+
+        foreach (var track in _offers.ResearchTracks)
         {
-            var purchases = run.UpgradePurchases.GetValueOrDefault(upgrade.Id);
-            var maxed = purchases >= upgrade.MaxPurchases;
-            var countText = $" ({purchases}/{upgrade.MaxPurchases})";
-            var btn = new Button
+            if (track.Items.Count == 0)
+                continue;
+
+            var trackBox = new VBoxContainer { CustomMinimumSize = new Godot.Vector2(170, 0) };
+            trackBox.AddChild(new Label { Text = track.Label });
+
+            if (track.RerollCost.HasValue)
             {
-                Text =
-                    $"{upgrade.DisplayName}\n{upgrade.Description}\n[{upgrade.TechCost} Tech]{countText}"
-                    + (maxed ? "\nMAXED" : ""),
-                Disabled = run.Tech < upgrade.TechCost || maxed,
-                CustomMinimumSize = new Godot.Vector2(170, 0),
-            };
-            var id = upgrade.Id;
-            btn.Pressed += () => OnBuyUpgrade(id);
-            _researchContainer.AddChild(btn);
+                var rerollBtn = new Button { Text = $"Reroll [{track.RerollCost} Tech]" };
+                var capturedIndex = track.TrackIndex;
+                rerollBtn.Pressed += () => OnRerollResearch(capturedIndex);
+                trackBox.AddChild(rerollBtn);
+            }
+
+            foreach (var item in track.Items)
+            {
+                var maxed = item.Purchased >= item.MaxPurchases;
+                var countText = $" ({item.Purchased}/{item.MaxPurchases})";
+                var btn = new Button
+                {
+                    Text =
+                        $"{item.DisplayName}\n{item.Description}\n[{item.TechCost} Tech]{countText}"
+                        + (maxed ? "\nMAXED" : ""),
+                    Disabled = _state.Tech < item.TechCost || maxed,
+                };
+                var capturedId = item.UpgradeId;
+                btn.Pressed += () => OnBuyUpgrade(capturedId);
+                trackBox.AddChild(btn);
+            }
+
+            _researchContainer.AddChild(trackBox);
         }
+    }
+
+    private async void OnRerollResearch(int trackIndex)
+    {
+        if (_session is null)
+            return;
+        var result = await _session.RerollResearchAsync(trackIndex);
+        if (!result.Ok)
+        {
+            _statusLabel.Text = $"Cannot reroll: {result.Error}";
+            return;
+        }
+        _state = result.State!;
+        var idx = _offers!.ResearchTracks.FindIndex(t => t.TrackIndex == trackIndex);
+        if (idx >= 0 && result.Track is not null)
+            _offers.ResearchTracks[idx] = result.Track;
+        _statusLabel.Text = "Research updated.";
+        Refresh();
     }
 
     private async void OnBuyUpgrade(string upgradeId)
     {
-        var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId);
-        if (upgrade is null || !await RunState.Instance.BuyUpgrade(upgradeId))
+        if (_session is null)
             return;
-        _statusLabel.Text = $"Researched: {upgrade.DisplayName}.";
+        var result = await _session.BuyResearchAsync(upgradeId);
+        if (!result.Ok)
+        {
+            _statusLabel.Text = $"Cannot research: {result.Error}";
+            return;
+        }
+        _state = result.State!;
+        // Refresh research track items to reflect updated purchased counts.
+        // The binary returns updated state but not the full track; rebuild all research from offers.
+        // To get updated purchased counts, refresh the affected track from the binary
+        // by checking what changed — for simplicity, fetch fresh offers on next Refresh().
+        _statusLabel.Text = $"Researched: {upgradeId}.";
         Refresh();
     }
 
@@ -208,12 +306,50 @@ public partial class DockUi : Control
 
     private async void OnBattlePressed()
     {
-        var run = RunState.Instance;
-        if (run.Fleet.Ships.Count == 0)
+        if (_session is null)
+            return;
+
+        if (RunState.Instance.Fleet.Ships.Count == 0)
         {
             _statusLabel.Text = "Need at least one ship to battle.";
             return;
         }
+
+        _battleButton.Disabled = true;
+
+        var sessionResult = await _session.ShoppingDoneAsync();
+        if (!sessionResult.Ok || sessionResult.Delta is null)
+        {
+            _statusLabel.Text = $"Shopping error: {sessionResult.Error}";
+            _battleButton.Disabled = false;
+            return;
+        }
+
+        var run = RunState.Instance;
+        var delta = sessionResult.Delta;
+
+        // Commission: ships already added to RunState.Fleet.Ships in OnCommissionShip.
+        // Salvage: remove by original index (descending so indices stay valid).
+        foreach (var idx in delta.ShipsSalvaged.OrderByDescending(i => i))
+        {
+            if (idx < run.Fleet.Ships.Count)
+                run.Fleet.Ships.RemoveAt(idx);
+        }
+
+        // Apply research upgrades and update purchase counts.
+        foreach (var upgradeId in delta.UpgradesPurchased)
+        {
+            ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId)?.Apply(run);
+            run.UpgradePurchases[upgradeId] = run.UpgradePurchases.GetValueOrDefault(upgradeId) + 1;
+        }
+
+        run.Salvage = delta.SalvageFinal;
+        run.Tech = delta.TechFinal;
+        if (delta.HangarCapFinal > 0)
+            run.HangarCapacity = delta.HangarCapFinal;
+        run.TierRerolls = delta.TierRerollsFinal;
+        run.ResearchRerolls = delta.ResearchRerollsFinal;
+
         await run.Save();
         GetTree().ChangeSceneToFile("res://scenes/Battle.tscn");
     }

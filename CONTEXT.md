@@ -233,15 +233,41 @@ Shields absorb first. Armor only reduces spillover damage to hull HP. A ship wit
 
 Typed newtypes — `ShipId(u32)`, `ProjectileId(u32)`, `BeamId(u32)` — each with its own counter in sim state. Prevents accidental cross-type ID comparisons at compile time. IDs are assigned at entity creation and never reused within a battle. BTreeMap keys throughout the sim use these typed IDs.
 
+## Player identity
+
+Every player has a stable **PlayerID** used to key metaprogression data. In offline single-player mode a UUID is generated on first run and stored in the save file: `"offline:<uuid>"`. In online mode the platform identity is used: `"steam:<steamid64>"`, `"apple:<apple_id>"`, etc. The client normalises the format; the server treats it as an opaque string.
+
+PlayerID is passed to the dockyard binary on every session open. The binary uses it to gate metaprogression-unlocked content — the lookup mechanism for offline mode is deferred (TODO: a local metaprogression store, offline-capable Rust + C# interface). In online mode the server resolves the player's unlocks from the database before routing the request to the dockyard binary.
+
 ## Rust workspace structure
 
-Three-crate workspace:
+Four-crate workspace:
 
-- **`types`** — shared fleet/ship structs, weapon definitions, effect types, fleet JSON deserialization. No game logic. Both `sim` and `server` depend on this.
+- **`types`** — shared fleet/ship structs, weapon definitions, effect types, fleet JSON deserialization. No game logic. Both `sim`, `dockyard`, and `server` depend on this.
 - **`sim`** — boids engine, combat resolution, battle log serialization. CLI binary. Depends on `types`.
-- **`server`** — axum HTTP API, fleet storage, opponent matching, anti-cheat worker. Depends on `types` only — never imports sim logic directly.
+- **`dockyard`** — deterministic dockyard offer generation and session validation. CLI binary. Depends on `types`. See §Dockyard binary protocol below.
+- **`server`** — axum HTTP API, fleet storage, opponent matching, anti-cheat worker. Depends on `types` only — never imports sim or dockyard logic directly.
 
-The server re-runs the sim binary as a subprocess for anti-cheat verification, same as the client.
+The server re-runs the sim and dockyard binaries as subprocesses, same as the client. See ADR-0009.
+
+## Dockyard binary protocol
+
+The `skock-dockyard` binary runs for the duration of one dockyard visit. The pipe stays open; C# and the binary exchange newline-delimited JSON messages (one JSON object per line).
+
+**Session open** — C# sends `{ "action": "get_offers", "player_id": "...", "run_seed": u64, "jump_number": u32, "tier_rerolls": [u32;4], "research_rerolls": [u32;4], "salvage": i32, "tech": i32, "hangar_used": i32, "hangar_cap": i32, "fleet": [ { "index": u, "tonnage": i32 } ], "upgrade_purchases": { "id": count } }`. Binary responds with the full offer set and current resource state.
+
+**Actions** (each line → one response line):
+- `{ "action": "commission", "blueprint_id": "..." }` — buy a ship from the current offer. Binary validates offer membership and affordability. Response includes the full `ship_def` for the client to add to its fleet.
+- `{ "action": "salvage_fleet_ship", "index": u }` — salvage a ship at the given position in the session fleet. Binary returns yield (`tonnage × 3`) and updated resources.
+- `{ "action": "reroll_tier", "tier_index": u }` — reroll one ship tier, costs Salvage. Response includes updated tier offer.
+- `{ "action": "reroll_research", "track_index": u }` — reroll one research track, costs Tech. Response includes updated track.
+- `{ "action": "buy_research", "upgrade_id": "..." }` — purchase a research item. Binary validates offer, affordability, and max-purchase cap.
+
+**Session close** — `{ "action": "shopping_done" }`. Binary returns `"delta"`: `{ "salvage_final", "tech_final", "hangar_used_final", "tier_rerolls_final", "research_rerolls_final", "ships_commissioned": ["id"...], "ships_salvaged": [original_index...], "upgrades_purchased": ["id"...] }`. C# applies the delta to `RunState` and saves.
+
+**Errors** — non-fatal action errors return `{ "ok": false, "error": "not_in_offer" | "cannot_afford" | "maxed" | "invalid_index" | ... }`. Fatal errors (invalid JSON, session not started) go to stderr as `RESULT:{"error":"...", "message":"..."}` and the binary exits.
+
+**Determinism** — offer generation is a pure function of `(run_seed, jump_number, tier_rerolls, research_rerolls, player_unlocks)`. Given identical inputs, any machine produces identical offers. C# seam: `IDockyard` / `LocalDockyardAdapter` (offline subprocess) / `ServerDockyardAdapter` (online, TODO).
 
 ## Tech stack
 
@@ -254,7 +280,7 @@ The server re-runs the sim binary as a subprocess for anti-cheat verification, s
 | Server protocol | REST/JSON, async, no real-time |
 | Math | Fixed-point via `fixed` crate — `I32F32` for positions, `I16F16` for most else |
 | RNG | xoshiro256+ (`rand_xoshiro` crate), explicit state (4× u64), no globals |
-| Containers (sim) | `BTreeMap` / `BTreeSet` / arrays-by-ID only — see ADR-0001 |
+| Containers (game rule crates) | `BTreeMap` / `BTreeSet` / arrays-by-ID only in `sim`, `dockyard`, and server game logic — see ADR-0001. `HashMap`/`HashSet` permitted in server HTTP infrastructure, tooling, renderer. |
 | Replays | Seed + value-snapshot of both fleets at battle start |
 | Anti-cheat | Honor system — client reports results; server re-simulates all battles in dev, sample-based (anomaly detection + leaderboard review) in production. See ADR-0003. |
 
@@ -458,7 +484,8 @@ Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape. P
 **Run state (online mode, planned post-offline):** the server owns a server-side Run ID assigned at run start. All run choices (fleet, Salvage, Tech, JumpNumber, LossCount) are stored in the server DB and fetched on login — local save is only a cache. If the local save and server record diverge, server wins. Matchmaking for opponent fleets uses JumpNumber + LossCount as the progress dimensions: a player at Jump 4 / 1 loss is matched against fleets submitted by other players (or curated by the dev team) at the same bracket. The opponent fleet DB is seeded with hand-authored curated fleets organised by these brackets. Future: curated fleets are benchmarked against each other via the deterministic sim (seeded batch runs) so each bracket contains vetted, calibrated opponents.
 
 **Online design principle — always design for online, build offline first:** Every stateful client class that has a plausible online counterpart is coded against an interface from day one. The offline adapter is the only implementation today; the online adapter slots in without touching the rest of the codebase. Current seams:
-- `IRunStore` / `LocalRunStore` — run lifecycle and dockyard actions. Online: `ServerRunStore` validates each action via REST before mutating RunState (server-authoritative).
+- `IRunStore` / `LocalRunStore` — run lifecycle only (Load, Save, StartRun, GetBattleSeed). Online: `ServerRunStore` validates lifecycle actions via REST before mutating RunState.
+- `IDockyard` / `LocalDockyardAdapter` — one instance per dockyard visit. Offline: spawns `skock-dockyard` subprocess. Online: `ServerDockyardAdapter` talks to the server which runs the same Rust binary. The binary is the single source of truth for offer generation and purchase validation (see ADR-0009 and §Dockyard binary protocol).
 - `IStatsStore` / `LocalStatsStore` — per-run jump history and lifetime counters. Online: `ServerStatsStore` POSTs `BattleInputs` (seed + fleet JSONs) to the server for anti-cheat storage and retroactive re-simulation (honor system — see ADR-0003 and ADR-0004).
 - `IAdmiralStore` / `LocalAdmiralStore` — admiral and faction catalog. Reads `client/data/admirals.json` and `client/data/factions.json`. Online: `ServerAdmiralStore` fetches from REST API, enabling server-curated or rotating admiral pools.
 

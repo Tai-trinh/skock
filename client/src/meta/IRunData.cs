@@ -10,6 +10,13 @@ public interface IRunData
 
     string PlayerFleetPath { get; }
     string ProjectDir { get; }
+    string DockBinaryPath { get; }
+
+    // ── Identity ──────────────────────────────────────────────────────────────
+
+    // Stable player identifier. "offline:<uuid>" in single-player.
+    // Platform ID (Steam, Apple, etc.) in online mode.
+    string PlayerId { get; set; }
 
     // ── Run state ─────────────────────────────────────────────────────────────
 
@@ -22,6 +29,7 @@ public interface IRunData
     string AdmiralId { get; set; }
     FleetJsonData Fleet { get; set; }
     int[] TierRerolls { get; set; }
+    int[] ResearchRerolls { get; set; }
     Dictionary<string, int> UpgradePurchases { get; set; }
     bool HasActiveRun { get; set; }
     bool IsRunComplete { get; set; }
