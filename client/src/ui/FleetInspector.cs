@@ -68,8 +68,7 @@ public static class FleetInspector
             vbox.AddChild(new Label { Text = "Upgrades" });
             foreach (var (id, count) in upgrades)
             {
-                var upgrade = ResearchCatalog.All.FirstOrDefault(u => u.Id == id);
-                var name = upgrade?.DisplayName ?? id;
+                var name = ResearchCatalog.LabelFor(id);
                 vbox.AddChild(new Label { Text = $"  {name} ×{count}" });
             }
         }
