@@ -1,6 +1,7 @@
 pub mod boids;
 pub mod combat;
 pub mod config;
+pub mod geometry;
 pub mod log;
 pub mod spawn;
 pub mod state;
@@ -9,6 +10,8 @@ pub mod tick;
 use rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256Plus;
 use types::FleetJson;
+
+use types::WeaponType;
 
 use crate::{
     config::SimConfig,
@@ -34,6 +37,17 @@ pub fn run_battle(
 
     let _ = spawn::spawn_fleet(&mut state, fleet_a, Fleet::A, config);
     let _ = spawn::spawn_fleet(&mut state, fleet_b, Fleet::B, config);
+
+    for ship in state.ships.values() {
+        if let Some(w) = &ship.weapon {
+            if w.weapon_type != WeaponType::Hitscan {
+                eprintln!(
+                    "WARNING: ship {:?} has weapon type {:?} which is not yet implemented — it will not fire",
+                    ship.id, w.weapon_type
+                );
+            }
+        }
+    }
 
     let mut log_bytes: Vec<u8> = Vec::new();
     log::write_header(&mut log_bytes).expect("write header");

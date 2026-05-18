@@ -2,13 +2,8 @@ use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use types::{ShipId, WeaponType};
 
+use crate::geometry::dist_sq;
 use crate::state::{Event, Fleet, SimState};
-
-fn dist_sq(ax: I32F32, ay: I32F32, bx: I32F32, by: I32F32) -> I32F32 {
-    let dx = ax - bx;
-    let dy = ay - by;
-    dx * dx + dy * dy
-}
 
 fn rng_frac(rng: &mut impl RngCore) -> I16F16 {
     I16F16::from_bits((rng.next_u64() >> 48) as i32)
@@ -22,7 +17,7 @@ pub fn resolve_hitscan(state: &mut SimState) {
         if !state.ships.contains_key(&id) {
             continue; // destroyed earlier this tick
         }
-        let (fleet, pos_x, pos_y, range_sq) = {
+        let (fleet, pos, range_sq) = {
             let ship = &state.ships[&id];
             let w = match &ship.weapon {
                 Some(w) if w.weapon_type == WeaponType::Hitscan && w.cooldown_remaining == 0 => w,
@@ -32,7 +27,7 @@ pub fn resolve_hitscan(state: &mut SimState) {
                 continue;
             }
             let range = I32F32::from_num(w.range);
-            (ship.fleet, ship.pos.x, ship.pos.y, range * range)
+            (ship.fleet, ship.pos, range * range)
         };
 
         // Find nearest enemy in range
@@ -41,7 +36,7 @@ pub fn resolve_hitscan(state: &mut SimState) {
             .iter()
             .filter(|(_, other)| other.fleet != fleet)
             .filter_map(|(other_id, other)| {
-                let d = dist_sq(pos_x, pos_y, other.pos.x, other.pos.y);
+                let d = dist_sq(&pos, &other.pos);
                 (d <= range_sq).then_some((d, *other_id))
             })
             .min_by(|(a, _), (b, _)| a.cmp(b))

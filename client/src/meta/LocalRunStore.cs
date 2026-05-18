@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Godot;
 
 namespace Skock.Meta;
 
@@ -55,9 +56,9 @@ public sealed class LocalRunStore : IRunStore
             if (saved.JumpHistory is { Count: > 0 })
                 _run.Stats.LoadHistory(saved.JumpHistory);
         }
-        catch
+        catch (Exception ex)
         {
-            // corrupt save — keep defaults
+            GD.PrintErr($"[LocalRunStore] Failed to load save ({ex.GetType().Name}): {ex.Message}");
         }
 
         return Task.CompletedTask;

@@ -2,13 +2,8 @@ use fixed::types::{I16F16, I32F32};
 use std::collections::BTreeMap;
 use types::ShipId;
 
+use crate::geometry::dist_sq;
 use crate::state::{Pos2, Ship, Vec2};
-
-fn dist_sq(a: &Pos2, b: &Pos2) -> I32F32 {
-    let dx = a.x - b.x;
-    let dy = a.y - b.y;
-    dx * dx + dy * dy
-}
 
 // Returns a unit vector from `from` toward `to` in I16F16, or ZERO if coincident.
 fn dir(from: &Pos2, to: &Pos2) -> Vec2 {
