@@ -22,5 +22,8 @@ Pop-Location
 # CSharpier — C# code formatter (used by make win-fmt and the pre-commit hook)
 dotnet tool install csharpier -g
 
+# Roslynator — C# analyzer and code-fix tool
+dotnet tool install roslynator.dotnet.cli -g
+
 # Activate the project git hooks (formatter runs on commit)
 git -C "$PSScriptRoot" config core.hooksPath .githooks

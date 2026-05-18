@@ -43,6 +43,20 @@ let _ = ship_ids.iter().map(|id| apply_damage(&mut state, *id, dmg));
 
 Prefer the ternary operator over `if` statements when assigning a value. Prefer LINQ over `foreach` when transforming or filtering without side effects. If the body mutates external state, use `foreach`.
 
+LINQ is encouraged for query-style operations — filtering, projecting, aggregating, and joining collections. It reads like a description of intent rather than a loop describing mechanics:
+
+```csharp
+// Good — LINQ reads as a query
+var survivors = fleet.Ships.Where(s => s.Hp > 0).Select(s => s.BlueprintDrawingId).ToList();
+
+// Avoid — imperative loop for a pure transformation
+var survivors = new List<string>();
+foreach (var s in fleet.Ships)
+    if (s.Hp > 0) survivors.Add(s.BlueprintDrawingId);
+```
+
+Use a `foreach` when the body has side effects, mutates external state, or when an early `break`/`continue` makes intent clearer than the LINQ equivalent.
+
 Use `const` for compile-time constants, `static readonly` for values computed once at class load time, `readonly` for instance fields set only in the constructor. Never use a mutable field when the value never changes after assignment.
 
 ```csharp
