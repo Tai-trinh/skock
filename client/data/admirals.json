@@ -6,7 +6,7 @@
     "bonus_text": "All Fighters +15% speed.",
     "starting_salvage": 60,
     "starting_tech": 0,
-    "starting_hangar_capacity": 10,
+    "starting_hangar_capacity": 12,
     "starting_fleet": {
       "faction": "player",
       "admiral_id": "kira",
@@ -65,7 +65,7 @@
     "bonus_text": "Artillery weapons +10% damage.",
     "starting_salvage": 30,
     "starting_tech": 1,
-    "starting_hangar_capacity": 10,
+    "starting_hangar_capacity": 12,
     "starting_fleet": {
       "faction": "player",
       "admiral_id": "voss",

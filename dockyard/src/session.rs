@@ -695,9 +695,9 @@ mod tests {
             run.win_battle(30, 3);
         }
 
-        // After 8 jumps: hangar expansion is maxed (3 purchases) so cap should be at least 10 + 6 = 16.
+        // After 8 jumps: hangar expansion is maxed (5 purchases) so cap should be at least 10 + 10 = 20.
         let expansions = run.upgrade_purchases.get("hangar_expansion").copied().unwrap_or(0);
-        assert_eq!(expansions, 3, "hangar_expansion should be maxed after 8 jumps with 20+ tech");
+        assert_eq!(expansions, 5, "hangar_expansion should be maxed after 8 jumps with 20+ tech");
         assert_eq!(run.hangar_cap, 10 + expansions * 2);
         assert!(!run.fleet.is_empty(), "player should have commissioned at least one ship");
     }
