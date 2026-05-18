@@ -156,6 +156,32 @@ public sealed class BattleOutcomeResolverTests
         Assert.All(run.TierRerolls, v => Assert.Equal(0, v));
     }
 
+    // ── Loss behaviour (retry same jump) ─────────────────────────────────────
+
+    [Fact]
+    public async Task Loss_DoesNotIncrementJumpNumber()
+    {
+        var run = MakeRun(jumpNumber: 3);
+        await Resolve(run, Loss);
+        Assert.Equal(3, run.JumpNumber);
+    }
+
+    [Fact]
+    public async Task Loss_ReturnsNextJump_ForDockardRetry()
+    {
+        var run = MakeRun(jumpNumber: 3, lossCount: 1);
+        var transition = await Resolve(run, Loss);
+        Assert.Equal(PostBattleTransition.NextJump, transition);
+    }
+
+    [Fact]
+    public async Task Loss_ResetsTierRerolls()
+    {
+        var run = MakeRun();
+        await Resolve(run, Loss);
+        Assert.All(run.TierRerolls, v => Assert.Equal(0, v));
+    }
+
     // ── HP restoration ────────────────────────────────────────────────────────
 
     [Fact]

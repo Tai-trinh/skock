@@ -28,9 +28,13 @@ Fleet size is limited by the Mothership's **hangar capacity** (a tonnage value).
 
 ## Game loop
 
-A run consists of 8 jumps through contested space. Every fleet encountered is a rival colony ship competing for the same fertile frontier systems — not enemies, but competitors. Lose 3 battles and the run ends — lore: each defeat decimates the colony population; after three losses not enough people remain to operate the Mothership.
+A run ends after **winning at jump 8** or accumulating **3 losses**. Every fleet encountered is a rival colony ship competing for the same fertile frontier systems — not enemies, but competitors. Lore: each defeat decimates the colony population; after three losses not enough people remain to operate the Mothership.
 
-**Hidden final encounter:** completing all 8 jumps without a single loss AND achieving a top-10% run score unlocks a secret 9th encounter — the strongest rival fleet, which reached the prime homeworld first. Beating them claims the best world (true victory ending). Skipping or losing still earns the standard victory (settling for a second-rate system). TODO: define the scoring formula once the loop is playtested.
+The run visits **8 jump destinations** (jump 1–8). **JumpNumber only advances on a win.** A loss means the Mothership retreats, regroups at the same system's dockyard, and challenges a fresh rival fleet at that same jump — the player stays at jump N until they win it. Losing is a setback, not a skip. Pity salvage is awarded on loss (`JumpNumber × 10`) to prevent death spirals; no Tech is earned on a loss.
+
+The retry opponent is drawn fresh from the same jump's pool — not the same fleet fought before, keeping the dockyard visit meaningful. TODO: consider a "rematch same opponent / draw fresh" player choice if hard-walls on a specific jump prove frustrating in playtesting.
+
+**Hidden final encounter:** winning jump 8 without a single loss across the entire run AND achieving a top-10% run score unlocks a secret jump 9 — the strongest rival fleet, which reached the prime homeworld first. Beating them claims the best world (true victory ending). Skipping or losing still earns the standard victory (settling for a second-rate system). TODO: define the scoring formula once the loop is playtested.
 
 ### Shopping phase
 

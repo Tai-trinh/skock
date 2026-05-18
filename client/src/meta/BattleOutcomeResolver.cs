@@ -45,7 +45,8 @@ public static class BattleOutcomeResolver
         if (!playerWon)
             run.LossCount++;
 
-        // Salvage: flat base every battle + flat win bonus, both scaling with JumpNumber.
+        // Salvage: pity base every battle scaling with JumpNumber, win bonus on top.
+        // Losses stay at the same jump so JumpNumber reflects difficulty of the retry.
         // TODO (playtesting): tune multipliers.
         run.Salvage += run.JumpNumber * 10;
         if (playerWon)
@@ -66,17 +67,27 @@ public static class BattleOutcomeResolver
             return PostBattleTransition.Defeat;
         }
 
-        if (run.JumpNumber >= 8)
+        if (!playerWon)
         {
-            // TODO: check flawless run + top-10% score for hidden final encounter.
+            // Loss: regroup at the same jump — JumpNumber does not advance.
+            // Reroll resets so the dockyard offers a fresh selection before the retry.
+            Array.Fill(run.TierRerolls, 0);
+            return PostBattleTransition.NextJump;
+        }
+
+        // Win: advance to the next jump.
+        Array.Fill(run.TierRerolls, 0);
+        run.JumpNumber++;
+
+        if (run.JumpNumber > 8)
+        {
+            // TODO: check flawless run (LossCount == 0) + top-10% score for hidden jump 9.
             run.Stats.RecordRunVictory();
             run.HasActiveRun = false;
             run.IsRunComplete = true;
             return PostBattleTransition.Victory;
         }
 
-        Array.Fill(run.TierRerolls, 0);
-        run.JumpNumber++;
         return PostBattleTransition.NextJump;
     }
 
