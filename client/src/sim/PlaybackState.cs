@@ -1,4 +1,4 @@
-using Godot;
+using System;
 
 namespace Skock.Sim;
 
@@ -30,7 +30,7 @@ public sealed class PlaybackState
     {
         if (IsFinished)
             return;
-        Time = Mathf.Min(Time + (float)(delta * tickRate * PlaybackSpeed), TotalTicks - 1);
+        Time = Math.Min(Time + (float)(delta * tickRate * PlaybackSpeed), TotalTicks - 1);
     }
 
     /// <summary>
@@ -38,8 +38,8 @@ public sealed class PlaybackState
     /// </summary>
     public (TickRecord A, TickRecord B, float T) CurrentFrame()
     {
-        var indexA = Mathf.FloorToInt(Time);
-        var indexB = Mathf.Min(indexA + 1, TotalTicks - 1);
+        var indexA = (int)Math.Floor(Time);
+        var indexB = Math.Min(indexA + 1, TotalTicks - 1);
         var t = Time - indexA;
         return (_log.Ticks[indexA], _log.Ticks[indexB], t);
     }
