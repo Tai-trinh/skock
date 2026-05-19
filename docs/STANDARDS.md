@@ -1,5 +1,17 @@
 # Code standards
 
+## Prefer Brevity
+
+Write code and documentation that is concise and to the point.
+
+* Omit unnecessary words, comments, and abstractions.
+* Prefer simple, direct solutions over clever or complex ones.
+* Let clear naming reduce the need for explanation.
+* If something can be shorter without losing clarity, make it shorter.
+* Brevity should not sacrifice readability—clarity comes first.
+
+Short, clear code is easier to read, review, and maintain.
+
 ## Formatting
 
 All Rust source files are formatted with `rustfmt` using the project's `rustfmt.toml` as the single source of truth. Run before committing, or configure your editor to format on save (`rust-analyzer` does this by default). CI rejects PRs where `cargo fmt --check` reports a diff.
@@ -67,6 +79,15 @@ private readonly Dictionary<uint, ShipNode> _shipNodes = [];
 ```
 
 Prefer `switch` expressions over `switch` statements when returning a value — they enforce exhaustiveness and read as data, not control flow.
+
+## Prefer Result Types Over Exceptions 
+
+Do not use try/catch for normal control flow. Use Result (or Either/Option) types instead.
+
+* Make failures explicit in the return type (Result<T, E>).
+* Handle errors via pattern matching or combinators.
+* Avoid generic catches.
+* Reserve exceptions for truly exceptional, unrecoverable cases.
 
 ## Godot scene design
 
@@ -151,7 +172,7 @@ Elegant code is the simplest code that correctly solves the problem.
 
 ## Comments
 
-Comments explain **why**, never **what**. The code explains what.
+Comments explain **why**, never **what**. The code should already make the what clear. If a comment is needed, first ask whether the logic can be extracted into a well-named function; prefer that over adding a comment.
 
 Write a comment when:
 - A constraint is non-obvious (`// xoshiro256+ requires explicit state — no global RNG in sim`)
