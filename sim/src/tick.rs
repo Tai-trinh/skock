@@ -4,7 +4,7 @@ use types::ShipId;
 
 use crate::{
     boids::compute_forces,
-    combat::resolve_hitscan,
+    combat::resolve_weapons,
     config::SimConfig,
     state::{Event, Fleet, SimState},
 };
@@ -80,8 +80,8 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
         }
     }
 
-    // Phase 6: resolve weapon firing (hitscan only for now)
-    resolve_hitscan(state);
+    // Phase 6: resolve weapon firing
+    resolve_weapons(state);
 
     // Phase 7 & 8: projectiles and beams — not yet implemented
 

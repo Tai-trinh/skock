@@ -9,7 +9,15 @@ fn rng_frac(rng: &mut impl RngCore) -> I16F16 {
     I16F16::from_bits((rng.next_u64() >> 48) as i32)
 }
 
-pub fn resolve_hitscan(state: &mut SimState) {
+/// Dispatch point for all weapon resolution. The tick loop calls this once per tick.
+/// Add new resolver calls here as weapon archetypes are implemented.
+pub fn resolve_weapons(state: &mut SimState) {
+    resolve_hitscan(state);
+    // resolve_projectiles(state); — not yet implemented
+    // resolve_beams(state);       — not yet implemented
+}
+
+fn resolve_hitscan(state: &mut SimState) {
     // Collect firing decisions first to avoid borrow conflicts
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
 

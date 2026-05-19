@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -100,7 +101,8 @@ public partial class RunState : Node, IRunData
         // Swap LocalStatsStore for ServerStatsStore here when online mode is implemented.
         Stats = new LocalStatsStore();
         // Swap LocalRunStore for ServerRunStore here when online mode is implemented.
-        _store = new LocalRunStore(this);
+        var statePath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_state.json"));
+        _store = new LocalRunStore(statePath, PlayerFleetPath);
 
         Settings = UserSettings.Load(SettingsPath());
         Settings.Apply();
@@ -110,12 +112,14 @@ public partial class RunState : Node, IRunData
     private async Task LoadAsync()
     {
         await Catalog.Load();
-        await _store.Load();
+        var snapshot = await _store.Load();
+        if (snapshot is not null)
+            ApplySnapshot(snapshot);
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
-    public Task Save() => _store.Save();
+    public Task Save() => _store.Save(ToSnapshot());
 
     public void SaveSettings() => Settings.Save(SettingsPath());
 
@@ -124,14 +128,20 @@ public partial class RunState : Node, IRunData
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
-    public Task StartRun(Admiral admiral) => _store.StartRun(admiral);
+    public async Task StartRun(Admiral admiral)
+    {
+        var snapshot = await _store.StartRun(admiral);
+        ApplySnapshot(snapshot);
+        Stats.Reset();
+        await _store.Save(ToSnapshot());
+    }
 
     public async Task AbandonCurrentRun()
     {
         IsBattleActive = false;
         _currentBattleInputs = null;
         CurrentOpponentFleet = null;
-        await _store.DeleteSave();
+        await _store.Delete();
         HasActiveRun = false;
         IsRunComplete = false;
         AdmiralId = "";
@@ -144,7 +154,7 @@ public partial class RunState : Node, IRunData
 
     public async Task SaveAndQuitToMenu()
     {
-        await _store.Save();
+        await _store.Save(ToSnapshot());
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
@@ -245,19 +255,60 @@ public partial class RunState : Node, IRunData
         {
             case PostBattleTransition.Defeat:
                 RunEndReason = RunEndReason.Defeat;
-                await _store.Save();
+                await _store.Save(ToSnapshot());
                 GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
                 break;
             case PostBattleTransition.Victory:
                 RunEndReason = RunEndReason.Victory;
-                await _store.Save();
+                await _store.Save(ToSnapshot());
                 GetTree().ChangeSceneToFile("res://scenes/RunEnd.tscn");
                 break;
             case PostBattleTransition.NextJump:
-                await _store.Save();
+                await _store.Save(ToSnapshot());
                 GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
                 break;
         }
+    }
+
+    // ── Snapshot helpers ──────────────────────────────────────────────────────
+
+    private RunSnapshot ToSnapshot() =>
+        new()
+        {
+            PlayerId = PlayerId,
+            RunSeed = RunSeed,
+            Salvage = Salvage,
+            Tech = Tech,
+            HangarCapacity = HangarCapacity,
+            JumpNumber = JumpNumber,
+            LossCount = LossCount,
+            AdmiralId = AdmiralId,
+            Fleet = Fleet,
+            TierRerolls = (int[])TierRerolls.Clone(),
+            ResearchRerolls = (int[])ResearchRerolls.Clone(),
+            UpgradePurchases = new Dictionary<string, int>(UpgradePurchases),
+            IsComplete = IsRunComplete,
+            JumpHistory = [.. Stats.GetJumpHistory()],
+        };
+
+    private void ApplySnapshot(RunSnapshot snapshot)
+    {
+        if (!string.IsNullOrEmpty(snapshot.PlayerId))
+            PlayerId = snapshot.PlayerId;
+        RunSeed = snapshot.RunSeed;
+        Salvage = snapshot.Salvage;
+        Tech = snapshot.Tech;
+        HangarCapacity = snapshot.HangarCapacity;
+        JumpNumber = Math.Max(1, snapshot.JumpNumber);
+        LossCount = snapshot.LossCount;
+        AdmiralId = snapshot.AdmiralId;
+        Fleet = snapshot.Fleet;
+        TierRerolls = snapshot.TierRerolls ?? new int[4];
+        ResearchRerolls = snapshot.ResearchRerolls ?? new int[4];
+        UpgradePurchases = snapshot.UpgradePurchases ?? new Dictionary<string, int>();
+        HasActiveRun = !snapshot.IsComplete;
+        IsRunComplete = snapshot.IsComplete;
+        Stats.LoadHistory(snapshot.JumpHistory ?? []);
     }
 
     // ── Defaults ──────────────────────────────────────────────────────────────

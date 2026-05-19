@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FleetJson {
@@ -9,13 +8,13 @@ pub struct FleetJson {
     pub mothership: ShipDef,
     pub ships: Vec<ShipDef>,
     #[serde(default)]
-    pub doctrines: Vec<Value>,
+    pub doctrines: Vec<FleetEffect>,
     #[serde(default)]
-    pub role_equipment: Vec<Value>,
+    pub role_equipment: Vec<FleetEffect>,
     #[serde(default)]
-    pub faction_effects: Vec<Value>,
+    pub faction_effects: Vec<FleetEffect>,
     #[serde(default)]
-    pub admiral_effects: Vec<Value>,
+    pub admiral_effects: Vec<FleetEffect>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,8 +41,146 @@ pub struct ShipDef {
     #[serde(default)]
     pub weapon: Option<WeaponDef>,
     #[serde(default)]
-    pub equipment: Vec<Value>,
+    pub equipment: Vec<FleetEffect>,
 }
+
+// ── Fleet effects ─────────────────────────────────────────────────────────────
+
+/// Scope filter for a fleet effect. Any omitted field is unconstrained.
+/// A `null` scope in JSON (represented as `Option<EffectScope>` = None) means fleet-wide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EffectScope {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<Role>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hull_class: Option<HullClass>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weight: Option<Weight>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModifierType {
+    /// Additive: bonuses sum, then applied as `base * (1 + total)`.
+    Increased,
+    /// Additive decrease: negative modifier, same stacking as Increased.
+    Decreased,
+    /// Multiplicative: each bonus multiplies independently.
+    More,
+    /// Multiplicative decrease: sub-1.0 multiplier.
+    Less,
+}
+
+/// A single typed effect entry carried in `doctrines`, `role_equipment`,
+/// `faction_effects`, `admiral_effects`, or per-ship `equipment` arrays.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum FleetEffect {
+    StatModifier {
+        /// `null` = fleet-wide. Combine `role`, `hull_class`, `weight` to narrow.
+        scope: Option<EffectScope>,
+        stat: String,
+        modifier_type: ModifierType,
+        modifier: f64,
+    },
+    HpRegen {
+        value: f64,
+    },
+    DamageReduction {
+        value: f64,
+    },
+}
+
+// ── Weapon definitions ────────────────────────────────────────────────────────
+
+/// Typed weapon definition — discriminated by the `"type"` JSON field.
+/// Each variant only carries fields relevant to that weapon archetype.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum WeaponDef {
+    Hitscan {
+        damage: f64,
+        range: f64,
+        cooldown_ticks: u32,
+        #[serde(default)]
+        miss_chance: f64,
+        #[serde(default)]
+        crit_chance: f64,
+        #[serde(default = "default_one")]
+        crit_damage: f64,
+        #[serde(default)]
+        ammo: Option<u32>,
+    },
+    Projectile {
+        #[serde(default)]
+        subtype: Option<ProjectileSubtype>,
+        damage: f64,
+        range: f64,
+        cooldown_ticks: u32,
+        #[serde(default)]
+        projectile_speed: f64,
+        #[serde(default)]
+        turn_rate: f64,
+        #[serde(default)]
+        fuse_ticks: u32,
+        #[serde(default)]
+        explosion_radius: f64,
+        #[serde(default)]
+        explosion_damage: f64,
+        #[serde(default)]
+        crit_chance: f64,
+        #[serde(default = "default_one")]
+        crit_damage: f64,
+        #[serde(default)]
+        ammo: Option<u32>,
+    },
+    Beam {
+        damage: f64,
+        range: f64,
+        cooldown_ticks: u32,
+        #[serde(default)]
+        charge_ticks: u32,
+        #[serde(default)]
+        duration_ticks: u32,
+        #[serde(default)]
+        beam_width: f64,
+        #[serde(default)]
+        crit_chance: f64,
+        #[serde(default = "default_one")]
+        crit_damage: f64,
+        #[serde(default)]
+        ammo: Option<u32>,
+    },
+}
+
+impl WeaponDef {
+    pub fn range(&self) -> f64 {
+        match self {
+            Self::Hitscan { range, .. } => *range,
+            Self::Projectile { range, .. } => *range,
+            Self::Beam { range, .. } => *range,
+        }
+    }
+}
+
+/// Runtime weapon type tag — used by `WeaponState` to identify archetype at sim time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WeaponType {
+    Hitscan,
+    Projectile,
+    Beam,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectileSubtype {
+    SeekingMissile,
+    Torpedo,
+    Mine,
+}
+
+// ── Other types ───────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoidWeightsDef {
@@ -61,70 +198,6 @@ pub struct BoidWeightsDef {
 
 fn default_one() -> f64 {
     1.0
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WeaponDef {
-    #[serde(rename = "type")]
-    pub weapon_type: WeaponType,
-    pub damage: f64,
-    pub range: f64,
-    pub cooldown_ticks: u32,
-    #[serde(default)]
-    pub miss_chance: f64,
-    #[serde(default)]
-    pub crit_chance: f64,
-    #[serde(default = "default_one")]
-    pub crit_damage: f64,
-    #[serde(default)]
-    pub ammo: Option<u32>,
-    // Projectile fields
-    #[serde(default)]
-    pub subtype: Option<ProjectileSubtype>,
-    #[serde(default)]
-    pub projectile_speed: f64,
-    #[serde(default)]
-    pub turn_rate: f64,
-    #[serde(default)]
-    pub fuse_ticks: u32,
-    #[serde(default)]
-    pub explosion_radius: f64,
-    #[serde(default)]
-    pub explosion_damage: f64,
-    // Beam fields
-    #[serde(default)]
-    pub charge_ticks: u32,
-    #[serde(default)]
-    pub duration_ticks: u32,
-    #[serde(default)]
-    pub beam_width: f64,
-    // Status effect fields
-    #[serde(default)]
-    pub stun_ticks: u32,
-    #[serde(default)]
-    pub burn_damage: f64,
-    #[serde(default)]
-    pub burn_ticks: u32,
-    #[serde(default)]
-    pub radiation_damage: f64,
-    #[serde(default)]
-    pub radiation_ticks: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum WeaponType {
-    Hitscan,
-    Projectile,
-    Beam,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ProjectileSubtype {
-    SeekingMissile,
-    Torpedo,
-    Mine,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

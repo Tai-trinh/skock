@@ -2,7 +2,7 @@ use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
-use types::{FleetJson, HullClass, ShipDef, ShipId};
+use types::{FleetJson, HullClass, ShipDef, ShipId, WeaponDef, WeaponType};
 
 use crate::{
     config::SimConfig,
@@ -89,20 +89,62 @@ fn noise_offset(rng: &mut Xoshiro256Plus, amplitude: I32F32) -> I32F32 {
 }
 
 pub fn build_ship(id: ShipId, def: &ShipDef, fleet: Fleet, pos: Pos2, is_mothership: bool) -> Ship {
-    let weapon = def.weapon.as_ref().map(|w| WeaponState {
-        weapon_type: w.weapon_type,
-        damage: I16F16::from_num(w.damage),
-        range: I16F16::from_num(w.range),
-        cooldown_ticks: w.cooldown_ticks,
-        cooldown_remaining: 0,
-        miss_chance: I16F16::from_num(w.miss_chance),
-        crit_chance: I16F16::from_num(w.crit_chance),
-        crit_damage: I16F16::from_num(w.crit_damage),
-        ammo: w.ammo,
+    let weapon = def.weapon.as_ref().map(|w| match w {
+        WeaponDef::Hitscan {
+            damage,
+            range,
+            cooldown_ticks,
+            miss_chance,
+            crit_chance,
+            crit_damage,
+            ammo,
+        } => WeaponState {
+            weapon_type: WeaponType::Hitscan,
+            damage: I16F16::from_num(*damage),
+            range: I16F16::from_num(*range),
+            cooldown_ticks: *cooldown_ticks,
+            cooldown_remaining: 0,
+            miss_chance: I16F16::from_num(*miss_chance),
+            crit_chance: I16F16::from_num(*crit_chance),
+            crit_damage: I16F16::from_num(*crit_damage),
+            ammo: *ammo,
+        },
+        WeaponDef::Projectile {
+            damage,
+            range,
+            cooldown_ticks,
+            crit_chance,
+            crit_damage,
+            ammo,
+            ..
+        } => WeaponState {
+            weapon_type: WeaponType::Projectile,
+            damage: I16F16::from_num(*damage),
+            range: I16F16::from_num(*range),
+            cooldown_ticks: *cooldown_ticks,
+            cooldown_remaining: 0,
+            miss_chance: I16F16::ZERO,
+            crit_chance: I16F16::from_num(*crit_chance),
+            crit_damage: I16F16::from_num(*crit_damage),
+            ammo: *ammo,
+        },
+        WeaponDef::Beam {
+            damage, range, cooldown_ticks, crit_chance, crit_damage, ammo, ..
+        } => WeaponState {
+            weapon_type: WeaponType::Beam,
+            damage: I16F16::from_num(*damage),
+            range: I16F16::from_num(*range),
+            cooldown_ticks: *cooldown_ticks,
+            cooldown_remaining: 0,
+            miss_chance: I16F16::ZERO,
+            crit_chance: I16F16::from_num(*crit_chance),
+            crit_damage: I16F16::from_num(*crit_damage),
+            ammo: *ammo,
+        },
     });
 
     let preferred_range =
-        def.weapon.as_ref().map(|w| I16F16::from_num(w.range)).unwrap_or(I16F16::ZERO);
+        def.weapon.as_ref().map(|w| I16F16::from_num(w.range())).unwrap_or(I16F16::ZERO);
 
     let heading = match fleet {
         Fleet::A => I16F16::ZERO,

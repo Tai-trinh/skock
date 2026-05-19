@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use types::{BoidWeightsDef, HullClass, Role, ShipDef, WeaponDef, WeaponType};
+use types::{BoidWeightsDef, HullClass, Role, ShipDef, WeaponDef};
 
 // ── Hull tonnage ──────────────────────────────────────────────────────────────
 
@@ -38,8 +38,7 @@ pub fn blueprints() -> &'static [Blueprint] {
 }
 
 fn hitscan(damage: f64, range: f64, cooldown_ticks: u32) -> WeaponDef {
-    WeaponDef {
-        weapon_type: WeaponType::Hitscan,
+    WeaponDef::Hitscan {
         damage,
         range,
         cooldown_ticks,
@@ -47,20 +46,6 @@ fn hitscan(damage: f64, range: f64, cooldown_ticks: u32) -> WeaponDef {
         crit_chance: 0.0,
         crit_damage: 1.0,
         ammo: None,
-        subtype: None,
-        projectile_speed: 0.0,
-        turn_rate: 0.0,
-        fuse_ticks: 0,
-        explosion_radius: 0.0,
-        explosion_damage: 0.0,
-        charge_ticks: 0,
-        duration_ticks: 0,
-        beam_width: 0.0,
-        stun_ticks: 0,
-        burn_damage: 0.0,
-        burn_ticks: 0,
-        radiation_damage: 0.0,
-        radiation_ticks: 0,
     }
 }
 

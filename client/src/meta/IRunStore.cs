@@ -13,13 +13,16 @@ public interface IRunStore
 {
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    Task Load();
-    Task Save();
-    Task DeleteSave();
+    Task<RunSnapshot?> Load();
+    Task Save(RunSnapshot snapshot);
+    Task Delete();
 
     // ── Run start ─────────────────────────────────────────────────────────────
 
-    Task StartRun(Admiral admiral);
+    // Returns an initial RunSnapshot for the chosen admiral.
+    // PlayerId is not set — caller preserves the existing PlayerId.
+    // Online: POSTs to server to create the run record; receives the server-assigned seed.
+    Task<RunSnapshot> StartRun(Admiral admiral);
 
     // ── Battle ────────────────────────────────────────────────────────────────
 

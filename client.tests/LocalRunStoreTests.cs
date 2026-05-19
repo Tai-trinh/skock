@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Skock.Meta;
-using Skock.Tests.Fakes;
 using Xunit;
 
 namespace Skock.Tests;
@@ -11,24 +10,29 @@ namespace Skock.Tests;
 public sealed class LocalRunStoreTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-    private readonly FakeRunData _run;
     private readonly LocalRunStore _store;
 
     public LocalRunStoreTests()
     {
         Directory.CreateDirectory(_tempDir);
-        _run = new FakeRunData
-        {
-            PlayerFleetPath = Path.Combine(_tempDir, "player_fleet.json"),
-            ProjectDir = _tempDir,
-            Salvage = 50,
-            Tech = 5,
-            HangarCapacity = 10,
-        };
-        _store = new LocalRunStore(_run);
+        _store = new LocalRunStore(
+            Path.Combine(_tempDir, "player_state.json"),
+            Path.Combine(_tempDir, "player_fleet.json")
+        );
     }
 
     public void Dispose() => Directory.Delete(_tempDir, recursive: true);
+
+    private static RunSnapshot BaseSnapshot() =>
+        new()
+        {
+            Salvage = 50,
+            Fleet = new FleetJsonData
+            {
+                Mothership = new ShipDefData { IsMothership = true },
+                Ships = [],
+            },
+        };
 
     // ── JumpHistory persistence ───────────────────────────────────────────────
 
@@ -49,23 +53,19 @@ public sealed class LocalRunStoreTests : IDisposable
             PlayerUpgrades = new Dictionary<string, int>(),
             PlayerAdmiralId = "kira",
         };
-        await _run.Stats.RecordBattle(record, new BattleInputs());
-        await _store.Save();
 
-        var freshRun = new FakeRunData
-        {
-            PlayerFleetPath = _run.PlayerFleetPath,
-            ProjectDir = _run.ProjectDir,
-        };
-        var freshStore = new LocalRunStore(freshRun);
-        await freshStore.Load();
+        var snapshot = BaseSnapshot();
+        snapshot.JumpHistory = [record];
+        await _store.Save(snapshot);
 
-        var history = freshRun.Stats.GetJumpHistory();
-        Assert.Single(history);
-        Assert.Equal(3, history[0].JumpNumber);
-        Assert.True(history[0].Won);
-        Assert.Equal("kira", history[0].PlayerAdmiralId);
-        Assert.Equal(2, history[0].EnemiesKilledByHullClass["Corvette"]);
+        var loaded = await _store.Load();
+
+        Assert.NotNull(loaded);
+        Assert.Single(loaded!.JumpHistory!);
+        Assert.Equal(3, loaded.JumpHistory![0].JumpNumber);
+        Assert.True(loaded.JumpHistory[0].Won);
+        Assert.Equal("kira", loaded.JumpHistory[0].PlayerAdmiralId);
+        Assert.Equal(2, loaded.JumpHistory[0].EnemiesKilledByHullClass["Corvette"]);
     }
 
     // ── ResearchRerolls + PlayerId persistence ────────────────────────────────
@@ -73,18 +73,15 @@ public sealed class LocalRunStoreTests : IDisposable
     [Fact]
     public async Task Save_And_Load_RestoresResearchRerollsAndPlayerId()
     {
-        _run.ResearchRerolls = [0, 2, 1, 0];
-        _run.PlayerId = "offline:test-player-id";
-        await _store.Save();
+        var snapshot = BaseSnapshot();
+        snapshot.PlayerId = "offline:test-player-id";
+        snapshot.ResearchRerolls = [0, 2, 1, 0];
+        await _store.Save(snapshot);
 
-        var freshRun = new FakeRunData
-        {
-            PlayerFleetPath = _run.PlayerFleetPath,
-            ProjectDir = _run.ProjectDir,
-        };
-        await new LocalRunStore(freshRun).Load();
+        var loaded = await _store.Load();
 
-        Assert.Equal(new[] { 0, 2, 1, 0 }, freshRun.ResearchRerolls);
-        Assert.Equal("offline:test-player-id", freshRun.PlayerId);
+        Assert.NotNull(loaded);
+        Assert.Equal(new[] { 0, 2, 1, 0 }, loaded!.ResearchRerolls);
+        Assert.Equal("offline:test-player-id", loaded.PlayerId);
     }
 }

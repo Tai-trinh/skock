@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Godot;
 
 namespace Skock.Meta;
 
@@ -13,119 +11,90 @@ namespace Skock.Meta;
 public sealed class LocalRunStore : IRunStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    private readonly IRunData _run;
+    private readonly string _statePath;
+    private readonly string _fleetPath;
 
-    public LocalRunStore(IRunData run) => _run = run;
+    public LocalRunStore(string statePath, string fleetPath)
+    {
+        _statePath = statePath;
+        _fleetPath = fleetPath;
+    }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    public Task Load()
+    public Task<RunSnapshot?> Load()
     {
         // TODO (online mode): fetch run state from server by Run ID instead.
-        var statePath = StatePath();
-        if (!File.Exists(statePath) || !File.Exists(_run.PlayerFleetPath))
-            return Task.CompletedTask;
+        if (!File.Exists(_statePath) || !File.Exists(_fleetPath))
+            return Task.FromResult<RunSnapshot?>(null);
 
         try
         {
-            var saved = JsonSerializer.Deserialize<SavedState>(
-                File.ReadAllText(statePath),
+            var snapshot = JsonSerializer.Deserialize<RunSnapshot>(
+                File.ReadAllText(_statePath),
                 JsonOptions
             );
             var fleet = JsonSerializer.Deserialize<FleetJsonData>(
-                File.ReadAllText(_run.PlayerFleetPath),
+                File.ReadAllText(_fleetPath),
                 JsonOptions
             );
-            if (saved is null || fleet is null)
-                return Task.CompletedTask;
+            if (snapshot is null || fleet is null)
+                return Task.FromResult<RunSnapshot?>(null);
 
-            _run.RunSeed = saved.RunSeed;
-            _run.Salvage = saved.Salvage;
-            _run.Tech = saved.Tech;
-            _run.HangarCapacity = saved.HangarCapacity;
-            _run.JumpNumber = Math.Max(1, saved.JumpNumber);
-            _run.LossCount = saved.LossCount;
-            _run.AdmiralId = saved.AdmiralId;
             fleet.Mothership.IsMothership = true;
-            _run.Fleet = fleet;
-            _run.TierRerolls = saved.TierRerolls ?? new int[4];
-            _run.ResearchRerolls = saved.ResearchRerolls ?? new int[4];
-            _run.UpgradePurchases = saved.UpgradePurchases ?? new Dictionary<string, int>();
-            _run.PlayerId = saved.PlayerId ?? GenerateOfflinePlayerId();
-            _run.HasActiveRun = !saved.IsComplete;
-            if (saved.JumpHistory is { Count: > 0 })
-                _run.Stats.LoadHistory(saved.JumpHistory);
+            snapshot.Fleet = fleet;
+            return Task.FromResult<RunSnapshot?>(snapshot);
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[LocalRunStore] Failed to load save ({ex.GetType().Name}): {ex.Message}");
+            Console.Error.WriteLine(
+                $"[LocalRunStore] Failed to load save ({ex.GetType().Name}): {ex.Message}"
+            );
+            return Task.FromResult<RunSnapshot?>(null);
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task Save()
+    public Task Save(RunSnapshot snapshot)
     {
         // TODO (online mode): also sync run state to server after writing locally.
-        File.WriteAllText(
-            _run.PlayerFleetPath,
-            JsonSerializer.Serialize(BuildFleetForSim(), JsonOptions)
-        );
-        File.WriteAllText(
-            StatePath(),
-            JsonSerializer.Serialize(
-                new SavedState
-                {
-                    RunSeed = _run.RunSeed,
-                    Salvage = _run.Salvage,
-                    Tech = _run.Tech,
-                    HangarCapacity = _run.HangarCapacity,
-                    JumpNumber = _run.JumpNumber,
-                    LossCount = _run.LossCount,
-                    AdmiralId = _run.AdmiralId,
-                    TierRerolls = _run.TierRerolls,
-                    ResearchRerolls = _run.ResearchRerolls,
-                    UpgradePurchases = _run.UpgradePurchases,
-                    PlayerId = _run.PlayerId,
-                    IsComplete = _run.IsRunComplete,
-                    JumpHistory = [.. _run.Stats.GetJumpHistory()],
-                },
-                JsonOptions
-            )
-        );
+        File.WriteAllText(_fleetPath, JsonSerializer.Serialize(snapshot.Fleet, JsonOptions));
+        File.WriteAllText(_statePath, JsonSerializer.Serialize(snapshot, JsonOptions));
         return Task.CompletedTask;
     }
 
-    public Task DeleteSave()
+    public Task Delete()
     {
         // TODO (online mode): DELETE /runs/{RunId} on server.
-        if (File.Exists(StatePath()))
-            File.Delete(StatePath());
-        if (File.Exists(_run.PlayerFleetPath))
-            File.Delete(_run.PlayerFleetPath);
+        if (File.Exists(_statePath))
+            File.Delete(_statePath);
+        if (File.Exists(_fleetPath))
+            File.Delete(_fleetPath);
         return Task.CompletedTask;
     }
 
     // ── Run start ─────────────────────────────────────────────────────────────
 
-    public async Task StartRun(Admiral admiral)
+    public Task<RunSnapshot> StartRun(Admiral admiral)
     {
         // TODO (online mode): POST /runs to create a server-side run record; receive Run ID.
-        _run.RunSeed = (ulong)Random.Shared.NextInt64();
-        _run.Salvage = admiral.StartingSalvage;
-        _run.Tech = admiral.StartingTech;
-        _run.HangarCapacity = admiral.StartingHangarCapacity;
-        _run.JumpNumber = 1;
-        _run.LossCount = 0;
-        _run.AdmiralId = admiral.Id;
-        _run.Fleet = admiral.StartingFleet;
-        _run.TierRerolls = new int[4];
-        _run.ResearchRerolls = new int[4];
-        _run.UpgradePurchases = new Dictionary<string, int>();
-        _run.HasActiveRun = true;
-        _run.IsRunComplete = false;
-        _run.Stats.Reset();
-        await Save();
+        return Task.FromResult(
+            new RunSnapshot
+            {
+                RunSeed = (ulong)Random.Shared.NextInt64(),
+                Salvage = admiral.StartingSalvage,
+                Tech = admiral.StartingTech,
+                HangarCapacity = admiral.StartingHangarCapacity,
+                JumpNumber = 1,
+                LossCount = 0,
+                AdmiralId = admiral.Id,
+                Fleet = admiral.StartingFleet,
+                TierRerolls = new int[4],
+                ResearchRerolls = new int[4],
+                UpgradePurchases = new Dictionary<string, int>(),
+                IsComplete = false,
+                JumpHistory = [],
+            }
+        );
     }
 
     // ── Battle ────────────────────────────────────────────────────────────────
@@ -134,54 +103,5 @@ public sealed class LocalRunStore : IRunStore
     {
         // TODO (online mode): POST /runs/{RunId}/battles to get a server-assigned seed.
         return Task.FromResult((ulong)Random.Shared.NextInt64());
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private FleetJsonData BuildFleetForSim()
-    {
-        var effects = _run.Catalog.FindAdmiral(_run.AdmiralId)?.ShipEffects ?? [];
-
-        var clonedShips = _run
-            .Fleet.Ships.Select(s =>
-            {
-                var clone = s.Clone();
-                foreach (var effect in effects)
-                    if (effect.Matches(clone))
-                        effect.Apply(clone);
-                return clone;
-            })
-            .ToList();
-
-        return new FleetJsonData
-        {
-            Faction = _run.Fleet.Faction,
-            AdmiralId = _run.Fleet.AdmiralId,
-            Formation = _run.Fleet.Formation,
-            Mothership = _run.Fleet.Mothership.Clone(),
-            Ships = clonedShips,
-        };
-    }
-
-    private string StatePath() =>
-        Path.GetFullPath(Path.Combine(_run.ProjectDir, "..", "player_state.json"));
-
-    private static string GenerateOfflinePlayerId() => $"offline:{Guid.NewGuid()}";
-
-    private sealed class SavedState
-    {
-        public ulong RunSeed { get; set; }
-        public int Salvage { get; set; }
-        public int Tech { get; set; }
-        public int HangarCapacity { get; set; }
-        public int JumpNumber { get; set; }
-        public int LossCount { get; set; }
-        public string AdmiralId { get; set; } = "";
-        public int[]? TierRerolls { get; set; }
-        public int[]? ResearchRerolls { get; set; }
-        public Dictionary<string, int>? UpgradePurchases { get; set; }
-        public string? PlayerId { get; set; }
-        public bool IsComplete { get; set; }
-        public List<JumpRecord>? JumpHistory { get; set; }
     }
 }
