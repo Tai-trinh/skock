@@ -2,15 +2,11 @@
 
 ## Prefer Brevity
 
-Write code and documentation that is concise and to the point.
-
 * Omit unnecessary words, comments, and abstractions.
 * Prefer simple, direct solutions over clever or complex ones.
 * Let clear naming reduce the need for explanation.
 * If something can be shorter without losing clarity, make it shorter.
 * Brevity should not sacrifice readability—clarity comes first.
-
-Short, clear code is easier to read, review, and maintain.
 
 ## Formatting
 
@@ -20,7 +16,7 @@ When `rustfmt` would damage readability — aligned columns, hand-tuned tables, 
 
 ## Functional style
 
-Prefer a functional style (transform data through expressions, avoid shared mutable state, compose small pure functions) over imperative step-by-step mutation. Functional code tends to be easier to reason about because each step has no hidden dependency on external state.
+Prefer a functional style (transform data through expressions, avoid shared mutable state, compose small pure functions) over imperative step-by-step mutation.
 
 This is a preference, not a rule. Break it when:
 - The functional version requires reading the same collection more than once.
@@ -55,7 +51,7 @@ let _ = ship_ids.iter().map(|id| apply_damage(&mut state, *id, dmg));
 
 Prefer the ternary operator over `if` statements when assigning a value. Prefer LINQ over `foreach` when transforming or filtering without side effects. If the body mutates external state, use `foreach`.
 
-LINQ is encouraged for query-style operations — filtering, projecting, aggregating, and joining collections. It reads like a description of intent rather than a loop describing mechanics:
+LINQ is encouraged for query-style operations — filtering, projecting, aggregating, and joining collections:
 
 ```csharp
 // Good — LINQ reads as a query
@@ -137,8 +133,6 @@ But structural similarity alone doesn't count. The test: *would a single change 
 
 ## Naming
 
-Names are the first line of documentation. A well-named function needs no comment.
-
 - Names describe **what**, not **how**: `resolve_hitscan`, not `do_damage_loop`
 - No abbreviations except established domain terms (`hp`, `rng`, `vel`) and types (`u32`, `I16F16`)
 - Boolean names answer a yes/no question: `is_mothership`, `has_shield`
@@ -164,15 +158,13 @@ A poor data model produces code that fights the domain at every turn. Get the mo
 
 ## Elegance over cleverness
 
-Elegant code is the simplest code that correctly solves the problem.
-
-- If a solution requires a comment to explain *what* it does (not *why*), it is too clever — simplify it.
+- **Simplest correct solution.** If a solution requires a comment to explain *what* it does, simplify it.
 - Prefer the obvious algorithm until profiling proves it's a bottleneck (`TODO(perf):` to mark the spot).
 - Iterator chains are elegant when they read like a sentence; they are clever when they require tracing through four nested closures to understand.
 
 ## Comments
 
-Comments explain **why**, never **what**. The code should already make the what clear. If a comment is needed, first ask whether the logic can be extracted into a well-named function; prefer that over adding a comment.
+Comments explain **why**, never **what**. If a comment is needed, first ask whether the logic can be extracted into a well-named function; prefer that over adding a comment.
 
 Write a comment when:
 - A constraint is non-obvious (`// xoshiro256+ requires explicit state — no global RNG in sim`)
@@ -188,7 +180,7 @@ Never write:
 
 Mark debt with `// TODO(scope): description` where scope is one of:
 
-- `perf` — known inefficiency acceptable now (e.g. O(N²) boid search)
+- `perf` — known inefficiency acceptable now (e.g. brute-force projectile hit detection)
 - `feature` — placeholder for future functionality
 - `cleanup` — awkward code that works but should be revisited
 
@@ -217,13 +209,7 @@ A missing binary is silent from the UI perspective: the `LocalDockyardAdapter` c
 
 ## Self-review checklist
 
-Before committing any non-trivial change:
-
-1. Compiles with no warnings (`cargo build` / `dotnet build`)?
-2. Determinism tests pass (`make det`)?
-3. Any new bare `unwrap()` in sim code?
-4. Any name that made you pause — is it the right name?
-5. Any function longer than ~40 lines — does it need splitting?
+See [Workflows](docs/WORKFLOWS.md) — before-commit checklist.
 
 ## When to pay debt
 
