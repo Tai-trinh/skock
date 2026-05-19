@@ -1,11 +1,11 @@
 ---
 name: tais-context-pruner
-description: Use this skill when the user wants to prune, tighten, audit, or shorten a context.md, CLAUDE.md, docs/CONVENTIONS.md, or similar instruction file for an AI coding assistant. Triggers include requests to "review my context file," "clean up CLAUDE.md," "this is getting too long," or when the user pastes a context/instructions file and asks for cuts. Do NOT use for general prose editing, code review, or documentation aimed at humans rather than AI assistants.
+description: Use this skill when the user wants to prune, tighten, audit, or shorten a CONTEXT.md, CLAUDE.md, docs/CONVENTIONS.md, or similar instruction file for an AI coding assistant. Triggers include requests to "review my context file," "clean up CLAUDE.md," "this is getting too long," or when the user pastes a context/instructions file and asks for cuts. Do NOT use for general prose editing, code review, or documentation aimed at humans rather than AI assistants.
 ---
 
 # Context Pruner
 
-Audit and tighten instruction files written for AI coding assistants (context.md, CLAUDE.md, docs/CONVENTIONS.md, etc.). The goal is fewer lines, sharper rules, less drift.
+Audit and tighten instruction files written for AI coding assistants (CONTEXT.md, CLAUDE.md, docs/CONVENTIONS.md, etc.). The goal is fewer lines, sharper rules, less drift.
 
 ## Before the passes: build context
 
