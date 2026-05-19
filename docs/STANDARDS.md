@@ -1,5 +1,17 @@
 # Code standards
 
+## Prefer Brevity
+
+Write code and documentation that is concise and to the point.
+
+* Omit unnecessary words, comments, and abstractions.
+* Prefer simple, direct solutions over clever or complex ones.
+* Let clear naming reduce the need for explanation.
+* If something can be shorter without losing clarity, make it shorter.
+* Brevity should not sacrifice readability—clarity comes first.
+
+Short, clear code is easier to read, review, and maintain.
+
 ## Formatting
 
 All Rust source files are formatted with `rustfmt` using the project's `rustfmt.toml` as the single source of truth. Run before committing, or configure your editor to format on save (`rust-analyzer` does this by default). CI rejects PRs where `cargo fmt --check` reports a diff.
