@@ -4,8 +4,8 @@ Sim determinism rules and working conventions for Skock.
 
 Breaking determinism is a silent, catastrophic bug. Given the same seed and fleet snapshots, every sim run must produce byte-identical output.
 
-- **Fixed-point math only** — `fixed` crate: `I32F32` for positions, `I16F16` for most else. No floats in sim code.
-- **Explicit RNG state** — xoshiro256+ (`rand_xoshiro`), 4× u64 state, no globals. State is serialized into fleet snapshots for replays.
+- **Fixed-point math only** — no floats in sim code. See ADR-0002.
+- **Explicit RNG state** — xoshiro256+, no globals. State is serialized into fleet snapshots for replays. See ADR-0002.
 - **Ordered containers only** — `BTreeMap`, `BTreeSet`, or arrays indexed by stable ID. Never `HashMap`/`HashSet` in `/sim`, `/dockyard`, or server game logic. See ADR-0001.
 - **Single-threaded sim** — no parallelism inside a battle tick.
 - `HashMap`/`HashSet` are allowed only in code that does not produce deterministic output: server HTTP infrastructure, tooling, C#/Godot renderer.
