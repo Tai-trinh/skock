@@ -5,7 +5,12 @@
       "Bash(\"/mnt/c/Program Files/dotnet/dotnet.exe\" test \"C:/Users/Qinn/source/repos/skock/client.tests/skock.tests.csproj\" --no-build)",
       "Bash(cargo.exe test *)",
       "Bash(dotnet.exe test *)",
-      "Bash(cargo.exe build *)"
+      "Bash(cargo.exe build *)",
+      "Bash(xargs -I{} head -30 {})",
+      "Bash(make det *)",
+      "Bash(xargs cat)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

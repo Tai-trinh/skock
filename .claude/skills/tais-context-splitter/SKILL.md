@@ -1,6 +1,6 @@
 ---
 name: tais-context-splitter
-description: Use this skill when the user wants to split a large context.md, CLAUDE.md, or similar monolithic instruction file into focused, separate markdown files under docs/ and wire them up with references in CLAUDE.md. Triggers include "split my context file," "break this up," "my CLAUDE.md is too big," or pasting a long context file and asking for it to be organized into multiple files. Do NOT use for splitting code files, general documentation, or content aimed at human readers.
+description: Use this skill when the user wants to split a large CONTEXT.md, CLAUDE.md, or similar monolithic instruction file into focused, separate markdown files under docs/ and wire them up with references in CLAUDE.md. Triggers include "split my context file," "break this up," "my CLAUDE.md is too big," or pasting a long context file and asking for it to be organized into multiple files. Do NOT use for splitting code files, general documentation, or content aimed at human readers.
 ---
 
 # Context Splitter
