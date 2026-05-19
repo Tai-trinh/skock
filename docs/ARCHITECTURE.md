@@ -72,6 +72,28 @@ The existing `FleetBuilder.tscn` is superseded by `Dockyard.tscn` — rename and
 
 **Camera:** fixed, auto-fits battlefield bounds. No player pan/zoom in initial build. TODO: add free camera if players request it.
 
+## Placeholder VFX
+
+All graphics below are temporary — goal is something working to find the fun. TODO: replace each with final art once core loop is playtested.
+
+**Ship trails** — `Line2D` per ship, 30 historical positions, tapers via `WidthCurve` from ship width to 0, fleet color fading to transparent via gradient. Updated each tick by prepending current position and dropping the oldest. TODO: tune position count and width per hull class.
+
+**Hitscan line** — driven by `hitscan_fired` / `hitscan_missed` events (not state snapshots). On event: create a `Line2D` from source pos to target pos, width 2px, fleet color. Alpha-fade to transparent over 12 display frames, then free. TODO: add bright white leading edge for visual pop.
+
+**Projectile shapes** — driven by `tick.Projectiles[]` (TODO: wire `TickRecord`). Dispatch on `subtype`:
+- `seeking_missile` — small arrowhead `Polygon2D` pointing in heading direction + 10-position `Line2D` trail (same taper/fade as ship trail).
+- `torpedo` — `Line2D` arc of 6 points, open end trailing (nose forward), + 10-position trail.
+- `drifting_bomb` / `mine` — 6 radiating lines drawn via `DrawLine()`, slowly rotating (~0.1 rad/tick, deterministic from mine ID). No trail.
+- **Fallback (unknown subtype)** — filled circle via `DrawCircle()`.
+- All shapes use fleet color.
+
+**Beam** — driven by `tick.Beams[]` (TODO: wire `TickRecord`). `Line2D` from source position along `current_angle` to range limit or first hit. Width = `beam_width` sim units × `SimScale`. Alpha: 30% during `phase: "charging"`, 100% during `phase: "firing"`. Fleet color. TODO: add glow/bloom and charge-up particle effect.
+
+**Required `TickRecord` additions** (TODO: implement in `BattleLog.cs` and matching Rust output):
+- `Projectiles[]` — `id`, `fleet`, `pos_x`, `pos_y`, `heading`, `subtype`
+- `Beams[]` — `source_pos_x/y`, `current_angle`, `phase`, `beam_width`
+- `Events[]` — including `hitscan_fired`/`hitscan_missed` with `source_pos_x/y`, `target_pos_x/y`, `fleet`
+
 ## Build order
 
 1. Headless deterministic boids sim in Rust. No graphics. Two fleets fly at each other, shoot, one wins. Tick log to stdout. Test: run twice, diff output, must be byte-identical. **First playable milestone:** two ship types (fighter + mothership), hitscan only, no status effects, no equipment, no doctrines. Watch the replay. Evaluate whether boids combat feels fun before building anything else.
