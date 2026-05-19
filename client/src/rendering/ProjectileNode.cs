@@ -49,6 +49,7 @@ public partial class ProjectileNode : Node2D
                 EndCapMode = Line2D.LineCapMode.None,
             };
             _trail.WidthCurve = BuildTrailCurve();
+            _trail.TopLevel = true; // render in world space, independent of projectile rotation
             var gradient = new Gradient();
             gradient.SetColor(0, new Color(_color, 0.6f));
             gradient.SetColor(1, new Color(_color, 0f));
@@ -74,7 +75,7 @@ public partial class ProjectileNode : Node2D
 
             _trail.ClearPoints();
             for (var i = 0; i < _trailCount; i++)
-                _trail.AddPoint(_trailHistory[i] - worldPos);
+                _trail.AddPoint(_trailHistory[i]);
         }
 
         Position = worldPos;

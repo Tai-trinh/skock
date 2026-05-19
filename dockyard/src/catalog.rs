@@ -195,7 +195,7 @@ fn build_blueprints() -> Vec<Blueprint> {
                 shield_hp: 0.0,
                 shield_max_hp: 0.0,
                 shield_recharge_rate: 0.0,
-                weapon: Some(missile(35.0, 200.0, 9.0, 0.08, 50)),
+                weapon: Some(missile(35.0, 200.0, 18.0, 0.08, 50)),
                 equipment: vec![],
             },
         },

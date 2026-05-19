@@ -98,6 +98,7 @@ public partial class ShipNode : Node2D
             EndCapMode = Line2D.LineCapMode.None,
         };
         _trail.WidthCurve = BuildTrailCurve();
+        _trail.TopLevel = true; // render in world space, independent of ship rotation
         AddChild(_trail);
 
         _body = new Polygon2D();
@@ -154,13 +155,9 @@ public partial class ShipNode : Node2D
         _trailHistory[0] = worldPos;
         _trailCount = count;
 
-        // Update Line2D points in local space (Line2D is a child of this node)
         _trail.ClearPoints();
         for (var i = 0; i < _trailCount; i++)
-        {
-            // Convert world-space history to local space relative to current position
-            _trail.AddPoint(_trailHistory[i] - worldPos);
-        }
+            _trail.AddPoint(_trailHistory[i]);
     }
 
     private static Curve BuildTrailCurve()
