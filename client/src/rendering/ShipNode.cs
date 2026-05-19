@@ -126,10 +126,6 @@ public partial class ShipNode : Node2D
     // worldPos is already in Godot world-space (sim coords scaled and y-flipped).
     public void ApplySnapshot(Vector2 worldPos, float headingRad, float hpFraction)
     {
-        // Prepend current position to trail (world-space, independent of ship rotation)
-        var trailPos = worldPos - Position; // trail points are relative to this node's position
-        // Actually, trail should be in world space. Use a global-space trail by reparenting to canvas
-        // For simplicity, store trail points in world space and convert to local space each frame.
         PrependTrailPoint(worldPos);
 
         Position = worldPos;
