@@ -1,8 +1,9 @@
-use crate::state::{Event, Fleet, SimState};
+use crate::state::{BeamPhase, Event, Fleet, SimState};
 use serde::Serialize;
 use std::io::{self, Write};
+use types::ProjectileSubtype;
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Serialize)]
 struct LogHeader {
@@ -15,10 +16,8 @@ struct ShipSnapshot {
     fleet: u8,
     blueprint_drawing_id: String,
     is_mothership: bool,
-    // I32F32 raw bits
     pos_x: i64,
     pos_y: i64,
-    // I16F16 raw bits
     vel_x: i32,
     vel_y: i32,
     heading: i32,
@@ -29,12 +28,63 @@ struct ShipSnapshot {
 }
 
 #[derive(Serialize)]
+struct ProjectileSnapshot {
+    id: u32,
+    fleet: u8,
+    pos_x: i64,
+    pos_y: i64,
+    heading: i32,
+    subtype: u8,
+}
+
+#[derive(Serialize)]
+struct BeamSnapshot {
+    id: u32,
+    fleet: u8,
+    source_pos_x: i64,
+    source_pos_y: i64,
+    current_angle: i32,
+    phase: u8,
+    beam_width: i32,
+    range: i32,
+}
+
+#[derive(Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum LogEvent {
-    HitscanFired { source_id: u32, target_id: u32, damage: i32 },
-    HitscanMissed { source_id: u32, target_id: u32 },
-    ShipDestroyed { id: u32, fleet: u8 },
-    ShipAtLowHp { id: u32 },
+    HitscanFired {
+        source_id: u32,
+        target_id: u32,
+        damage: i32,
+        fleet: u8,
+        source_pos_x: i64,
+        source_pos_y: i64,
+        target_pos_x: i64,
+        target_pos_y: i64,
+    },
+    HitscanMissed {
+        source_id: u32,
+        target_id: u32,
+        fleet: u8,
+        source_pos_x: i64,
+        source_pos_y: i64,
+        target_pos_x: i64,
+        target_pos_y: i64,
+    },
+    ProjectileExplosion {
+        id: u32,
+        fleet: u8,
+        pos_x: i64,
+        pos_y: i64,
+        radius: i32,
+    },
+    ShipDestroyed {
+        id: u32,
+        fleet: u8,
+    },
+    ShipAtLowHp {
+        id: u32,
+    },
     AttritionStarted,
 }
 
@@ -42,8 +92,8 @@ enum LogEvent {
 struct TickRecord {
     tick: u32,
     ships: Vec<ShipSnapshot>,
-    projectiles: Vec<()>,
-    beams: Vec<()>,
+    projectiles: Vec<ProjectileSnapshot>,
+    beams: Vec<BeamSnapshot>,
     events: Vec<LogEvent>,
 }
 
@@ -54,15 +104,67 @@ fn fleet_byte(f: Fleet) -> u8 {
     }
 }
 
+fn subtype_byte(s: ProjectileSubtype) -> u8 {
+    match s {
+        ProjectileSubtype::SeekingMissile => 0,
+        ProjectileSubtype::Torpedo => 1,
+        ProjectileSubtype::Mine => 2,
+    }
+}
+
+fn phase_byte(p: BeamPhase) -> u8 {
+    match p {
+        BeamPhase::Charging => 0,
+        BeamPhase::Firing => 1,
+    }
+}
+
 fn map_event(e: &Event) -> LogEvent {
     match e {
-        Event::HitscanFired { source_id, target_id, damage } => LogEvent::HitscanFired {
+        Event::HitscanFired {
+            source_id,
+            target_id,
+            damage,
+            fleet,
+            source_pos_x,
+            source_pos_y,
+            target_pos_x,
+            target_pos_y,
+        } => LogEvent::HitscanFired {
             source_id: source_id.0,
             target_id: target_id.0,
             damage: damage.to_bits(),
+            fleet: fleet_byte(*fleet),
+            source_pos_x: source_pos_x.to_bits(),
+            source_pos_y: source_pos_y.to_bits(),
+            target_pos_x: target_pos_x.to_bits(),
+            target_pos_y: target_pos_y.to_bits(),
         },
-        Event::HitscanMissed { source_id, target_id } => {
-            LogEvent::HitscanMissed { source_id: source_id.0, target_id: target_id.0 }
+        Event::HitscanMissed {
+            source_id,
+            target_id,
+            fleet,
+            source_pos_x,
+            source_pos_y,
+            target_pos_x,
+            target_pos_y,
+        } => LogEvent::HitscanMissed {
+            source_id: source_id.0,
+            target_id: target_id.0,
+            fleet: fleet_byte(*fleet),
+            source_pos_x: source_pos_x.to_bits(),
+            source_pos_y: source_pos_y.to_bits(),
+            target_pos_x: target_pos_x.to_bits(),
+            target_pos_y: target_pos_y.to_bits(),
+        },
+        Event::ProjectileExplosion { id, fleet, pos_x, pos_y, radius } => {
+            LogEvent::ProjectileExplosion {
+                id: id.0,
+                fleet: fleet_byte(*fleet),
+                pos_x: pos_x.to_bits(),
+                pos_y: pos_y.to_bits(),
+                radius: radius.to_bits(),
+            }
         }
         Event::ShipDestroyed { id, fleet } => {
             LogEvent::ShipDestroyed { id: id.0, fleet: fleet_byte(*fleet) }
@@ -99,10 +201,41 @@ pub fn write_tick(out: &mut impl Write, state: &SimState) -> io::Result<()> {
         })
         .collect();
 
+    let projectiles: Vec<ProjectileSnapshot> = state
+        .projectiles
+        .values()
+        .map(|p| ProjectileSnapshot {
+            id: p.id.0,
+            fleet: fleet_byte(p.owner_fleet),
+            pos_x: p.pos.x.to_bits(),
+            pos_y: p.pos.y.to_bits(),
+            heading: p.heading.to_bits(),
+            subtype: subtype_byte(p.subtype),
+        })
+        .collect();
+
+    let beams: Vec<BeamSnapshot> = state
+        .beams
+        .values()
+        .map(|b| {
+            let source_pos =
+                state.ships.get(&b.source_id).map(|s| s.pos).unwrap_or(crate::state::Pos2::ZERO);
+            BeamSnapshot {
+                id: b.id.0,
+                fleet: fleet_byte(b.owner_fleet),
+                source_pos_x: source_pos.x.to_bits(),
+                source_pos_y: source_pos.y.to_bits(),
+                current_angle: b.current_angle.to_bits(),
+                phase: phase_byte(b.phase),
+                beam_width: b.beam_width.to_bits(),
+                range: b.range.to_bits(),
+            }
+        })
+        .collect();
+
     let events: Vec<LogEvent> = state.events.iter().map(map_event).collect();
 
-    let record = TickRecord { tick: state.tick, ships, projectiles: vec![], beams: vec![], events };
-
+    let record = TickRecord { tick: state.tick, ships, projectiles, beams, events };
     let bytes = rmp_serde::to_vec_named(&record).map_err(io::Error::other)?;
     out.write_all(&bytes)
 }

@@ -16,10 +16,16 @@ public partial class BattleRenderer : Node2D
     [Export]
     public int TickRate { get; set; } = 30;
 
+    // Sim world → Godot world: 1 sim unit = SimScale pixels, y-axis flipped.
+    private const float SimScale = 1f;
+
     // ── Scene children ────────────────────────────────────────────────────────
 
     private Camera2D _camera = null!;
     private Node2D _shipsContainer = null!;
+    private Node2D _projectilesContainer = null!;
+    private Node2D _beamsContainer = null!;
+    private Node2D _effectsContainer = null!;
     private Label _debugLabel = null!;
     private Label _resultLabel = null!;
     private DebugOverlay _debugOverlay = null!;
@@ -28,14 +34,17 @@ public partial class BattleRenderer : Node2D
 
     private PlaybackState? _playback;
     private readonly Dictionary<uint, ShipNode> _shipNodes = [];
+    private readonly Dictionary<uint, ProjectileNode> _projNodes = [];
+    private readonly Dictionary<uint, BeamNode> _beamNodes = [];
+    private int _lastEventTick = -1;
     private Control? _inspectorOverlay;
     private ConfirmationDialog _abandonConfirm = null!;
     private Task? _recordTask;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+    // Mine rotation accumulator (per projectile id → accumulated rotation)
+    private readonly Dictionary<uint, float> _mineRotation = [];
 
-    // Sim world → Godot world: 1 sim unit = SimScale pixels, y-axis flipped.
-    private const float SimScale = 1f;
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     // ── Godot lifecycle ───────────────────────────────────────────────────────
 
@@ -46,6 +55,16 @@ public partial class BattleRenderer : Node2D
         _debugLabel = GetNode<Label>("DebugUI/DebugLabel");
         _resultLabel = GetNode<Label>("DebugUI/ResultLabel");
         _debugOverlay = GetNode<DebugOverlay>("DebugOverlay");
+
+        // Create containers for projectiles, beams, effects (rendered below ships)
+        _beamsContainer = new Node2D();
+        _projectilesContainer = new Node2D();
+        _effectsContainer = new Node2D();
+        AddChild(_beamsContainer);
+        AddChild(_projectilesContainer);
+        AddChild(_effectsContainer);
+        // Move ships container to front
+        MoveChild(_shipsContainer, -1);
 
         FitCamera();
         _resultLabel.Visible = false;
@@ -116,13 +135,13 @@ public partial class BattleRenderer : Node2D
     {
         if (_playback is null || !_playback.IsLoaded)
             return;
-        // Gate processing while RecordBattleResult is in flight; it handles the scene transition.
         if (_recordTask is not null)
             return;
 
         HandleInput();
         _playback.Advance(delta, TickRate);
         Render();
+        MineRotationTick(delta);
 
         if (_playback.IsFinished)
             ShowResult();
@@ -187,6 +206,7 @@ public partial class BattleRenderer : Node2D
     {
         _playback = new PlaybackState(log, result);
         RebuildShipNodes(log);
+        _lastEventTick = -1;
     }
 
     private void RebuildShipNodes(BattleLog log)
@@ -218,7 +238,72 @@ public partial class BattleRenderer : Node2D
             return;
 
         var (tickA, tickB, t) = _playback.CurrentFrame();
+        var currentTickIndex = (int)Math.Floor(_playback.Time);
 
+        // Fire events for any ticks we've advanced past since last frame
+        FirePendingEvents(currentTickIndex, tickA);
+
+        RenderShips(tickA, tickB, t);
+        RenderProjectiles(tickA, tickB, t);
+        RenderBeams(tickA);
+        UpdateDebugLabel(tickA);
+        _debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
+    }
+
+    private void FirePendingEvents(int currentTickIndex, TickRecord currentTick)
+    {
+        if (currentTickIndex <= _lastEventTick)
+            return;
+
+        // Fire events for the current tick (and any skipped ticks we don't have direct access to)
+        FireTickEvents(currentTick.Events);
+        _lastEventTick = currentTickIndex;
+    }
+
+    private void FireTickEvents(LogEvent[] events)
+    {
+        foreach (var ev in events)
+        {
+            switch (ev.Type)
+            {
+                case "hitscan_fired":
+                case "hitscan_missed":
+                    SpawnHitscanEffect(ev);
+                    break;
+                case "projectile_explosion":
+                    SpawnExplosionEffect(ev);
+                    break;
+            }
+        }
+    }
+
+    private void SpawnHitscanEffect(LogEvent ev)
+    {
+        var effect = new HitscanEffect();
+        _effectsContainer.AddChild(effect);
+        effect.Spawn(
+            new Vector2(ev.SourceWorldX, -ev.SourceWorldY),
+            new Vector2(ev.TargetWorldX, -ev.TargetWorldY),
+            ev.Fleet,
+            SimScale
+        );
+    }
+
+    private void SpawnExplosionEffect(LogEvent ev)
+    {
+        // Simple expanding circle that fades — reuse HitscanEffect container for now
+        // TODO: dedicated ExplosionEffect node with expanding radius
+        var pos = new Vector2(ev.ExplosionWorldX, -ev.ExplosionWorldY) * SimScale;
+        var r = ev.RadiusUnits * SimScale;
+        var effect = new ExplosionEffect();
+        _effectsContainer.AddChild(effect);
+        effect.Spawn(pos, r, ev.Fleet);
+    }
+
+    // ── Ship rendering ────────────────────────────────────────────────────────
+
+    private void RenderShips(TickRecord tickA, TickRecord tickB, float t)
+    {
         var snapshotsB = new Dictionary<uint, ShipSnapshot>(tickB.Ships.Length);
         foreach (var s in tickB.Ships)
             snapshotsB[s.Id] = s;
@@ -253,10 +338,142 @@ public partial class BattleRenderer : Node2D
 
             node.ApplySnapshot(posA.Lerp(posB, t), headingRad, hpFrac);
         }
-
-        UpdateDebugLabel(tickA);
-        _debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
     }
+
+    // ── Projectile rendering ──────────────────────────────────────────────────
+
+    private void RenderProjectiles(TickRecord tickA, TickRecord tickB, float t)
+    {
+        // Build lookup for interpolation
+        var projB = new Dictionary<uint, ProjectileSnapshot>(tickB.Projectiles.Length);
+        foreach (var p in tickB.Projectiles)
+            projB[p.Id] = p;
+
+        var liveIds = new HashSet<uint>(tickA.Projectiles.Length);
+        foreach (var p in tickA.Projectiles)
+            liveIds.Add(p.Id);
+
+        // Create nodes for newly appearing projectiles
+        foreach (var snap in tickA.Projectiles)
+        {
+            if (!_projNodes.ContainsKey(snap.Id))
+            {
+                var node = new ProjectileNode();
+                _projectilesContainer.AddChild(node);
+                node.Init(snap.Id, snap.Fleet, snap.Subtype);
+                _projNodes[snap.Id] = node;
+            }
+        }
+
+        // Remove nodes for projectiles that have disappeared
+        var toRemove = new List<uint>();
+        foreach (var id in _projNodes.Keys)
+        {
+            if (!liveIds.Contains(id))
+                toRemove.Add(id);
+        }
+        foreach (var id in toRemove)
+        {
+            _projNodes[id].QueueFree();
+            _projNodes.Remove(id);
+            _mineRotation.Remove(id);
+        }
+
+        // Update position/rotation for live projectiles
+        foreach (var snapA in tickA.Projectiles)
+        {
+            if (!_projNodes.TryGetValue(snapA.Id, out var node))
+                continue;
+
+            var posA = new Vector2(snapA.WorldX, -snapA.WorldY) * SimScale;
+            float heading;
+            Vector2 pos;
+
+            if (projB.TryGetValue(snapA.Id, out var snapBp))
+            {
+                pos = posA.Lerp(new Vector2(snapBp.WorldX, -snapBp.WorldY) * SimScale, t);
+                heading = Mathf.LerpAngle(snapA.HeadingRad, snapBp.HeadingRad, t);
+            }
+            else
+            {
+                pos = posA;
+                heading = snapA.HeadingRad;
+            }
+
+            // Mines rotate slowly — override heading with accumulated rotation
+            if (snapA.Subtype == 2) // Mine
+            {
+                _mineRotation.TryGetValue(snapA.Id, out var rot);
+                node.Rotation = rot;
+                node.Position = pos;
+            }
+            else
+            {
+                node.ApplySnapshot(pos, heading);
+            }
+        }
+    }
+
+    private void MineRotationTick(double delta)
+    {
+        const float MineRotSpeed = 0.1f; // ~0.1 rad/frame at 30fps
+        foreach (var id in _mineRotation.Keys.ToList())
+        {
+            _mineRotation[id] += MineRotSpeed * (float)delta * 30f;
+        }
+        // Register newly seen mines
+        if (_playback is null)
+            return;
+        var (tickA, _, _) = _playback.CurrentFrame();
+        foreach (var p in tickA.Projectiles)
+        {
+            if (p.Subtype == 2 && !_mineRotation.ContainsKey(p.Id))
+                _mineRotation[p.Id] = 0f;
+        }
+    }
+
+    // ── Beam rendering ────────────────────────────────────────────────────────
+
+    private void RenderBeams(TickRecord tickA)
+    {
+        var liveIds = new HashSet<uint>(tickA.Beams.Length);
+        foreach (var b in tickA.Beams)
+            liveIds.Add(b.Id);
+
+        // Create nodes for new beams
+        foreach (var snap in tickA.Beams)
+        {
+            if (!_beamNodes.ContainsKey(snap.Id))
+            {
+                var node = new BeamNode();
+                _beamsContainer.AddChild(node);
+                node.Init(snap.Id, snap.Fleet);
+                _beamNodes[snap.Id] = node;
+            }
+        }
+
+        // Remove ended beams
+        var toRemove = new List<uint>();
+        foreach (var id in _beamNodes.Keys)
+        {
+            if (!liveIds.Contains(id))
+                toRemove.Add(id);
+        }
+        foreach (var id in toRemove)
+        {
+            _beamNodes[id].QueueFree();
+            _beamNodes.Remove(id);
+        }
+
+        // Update active beams
+        foreach (var snap in tickA.Beams)
+        {
+            if (_beamNodes.TryGetValue(snap.Id, out var node))
+                node.ApplySnapshot(snap, SimScale);
+        }
+    }
+
+    // ── Input ─────────────────────────────────────────────────────────────────
 
     private void HandleInput()
     {
@@ -302,7 +519,6 @@ public partial class BattleRenderer : Node2D
         var outer = new VBoxContainer();
         overlay.AddChild(outer);
 
-        // Result line
         var resultText =
             result.Winner == "draw"
                 ? "DRAW — time limit reached"
@@ -311,7 +527,6 @@ public partial class BattleRenderer : Node2D
             new Label { Text = resultText, HorizontalAlignment = HorizontalAlignment.Center }
         );
 
-        // Stats line
         var enemyKills = result.FleetBKilled.Count(k => !k.IsMothership);
         var ownLost = result.FleetAKilled.Count(k => !k.IsMothership);
         outer.AddChild(
@@ -326,16 +541,13 @@ public partial class BattleRenderer : Node2D
 
         outer.AddChild(new HSeparator());
 
-        // Fleet panels side by side
         var fleetsRow = new HBoxContainer();
         fleetsRow.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         outer.AddChild(fleetsRow);
 
         var playerFleet = run.Fleet;
         fleetsRow.AddChild(FleetInspector.Build(playerFleet, run.UpgradePurchases, true));
-
         fleetsRow.AddChild(new VSeparator());
-
         var opponentFleet = RunState.Instance.CurrentOpponentFleet ?? new FleetJsonData();
         fleetsRow.AddChild(FleetInspector.Build(opponentFleet, null, false));
 

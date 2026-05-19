@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use types::{BoidWeightsDef, HullClass, Role, ShipDef, WeaponDef};
+use types::{BoidWeightsDef, HullClass, ProjectileSubtype, Role, ShipDef, WeaponDef};
 
 // ── Hull tonnage ──────────────────────────────────────────────────────────────
 
@@ -43,6 +43,93 @@ fn hitscan(damage: f64, range: f64, cooldown_ticks: u32) -> WeaponDef {
         range,
         cooldown_ticks,
         miss_chance: 0.0,
+        crit_chance: 0.0,
+        crit_damage: 1.0,
+        ammo: None,
+    }
+}
+
+fn missile(damage: f64, range: f64, speed: f64, turn_rate: f64, cooldown_ticks: u32) -> WeaponDef {
+    WeaponDef::Projectile {
+        subtype: Some(ProjectileSubtype::SeekingMissile),
+        damage,
+        range,
+        cooldown_ticks,
+        projectile_speed: speed,
+        turn_rate,
+        fuse_ticks: (range / speed * 1.5) as u32 + 30,
+        explosion_radius: 0.0,
+        explosion_damage: 0.0,
+        crit_chance: 0.0,
+        crit_damage: 1.0,
+        ammo: None,
+    }
+}
+
+fn torpedo(
+    damage: f64,
+    expl_damage: f64,
+    range: f64,
+    speed: f64,
+    expl_radius: f64,
+    cooldown_ticks: u32,
+) -> WeaponDef {
+    WeaponDef::Projectile {
+        subtype: Some(ProjectileSubtype::Torpedo),
+        damage,
+        range,
+        cooldown_ticks,
+        projectile_speed: speed,
+        turn_rate: 0.0,
+        fuse_ticks: (range / speed * 1.5) as u32 + 30,
+        explosion_radius: expl_radius,
+        explosion_damage: expl_damage,
+        crit_chance: 0.0,
+        crit_damage: 1.0,
+        ammo: None,
+    }
+}
+
+fn mine_layer(expl_damage: f64, expl_radius: f64, cooldown_ticks: u32) -> WeaponDef {
+    WeaponDef::Projectile {
+        subtype: Some(ProjectileSubtype::Mine),
+        damage: 0.0,
+        range: expl_radius * 2.0,
+        cooldown_ticks,
+        projectile_speed: 0.3,
+        turn_rate: 0.0,
+        fuse_ticks: 480, // 16s at 30Hz before self-destructing
+        explosion_radius: expl_radius,
+        explosion_damage: expl_damage,
+        crit_chance: 0.0,
+        crit_damage: 1.0,
+        ammo: None,
+    }
+}
+
+fn beam(
+    damage: f64,
+    range: f64,
+    beam_width: f64,
+    charge_ticks: u32,
+    duration_ticks: u32,
+    slew_rate: f64,
+    track_rate: f64,
+    ramp_ticks: u32,
+    ramp_max: f64,
+    cooldown_ticks: u32,
+) -> WeaponDef {
+    WeaponDef::Beam {
+        damage,
+        range,
+        cooldown_ticks,
+        charge_ticks,
+        duration_ticks,
+        beam_width,
+        slew_rate,
+        track_rate,
+        ramp_ticks,
+        ramp_max,
         crit_chance: 0.0,
         crit_damage: 1.0,
         ammo: None,
@@ -108,7 +195,7 @@ fn build_blueprints() -> Vec<Blueprint> {
                 shield_hp: 0.0,
                 shield_max_hp: 0.0,
                 shield_recharge_rate: 0.0,
-                weapon: Some(hitscan(8.0, 120.0, 10)),
+                weapon: Some(missile(35.0, 200.0, 9.0, 0.08, 50)),
                 equipment: vec![],
             },
         },
@@ -199,7 +286,37 @@ fn build_blueprints() -> Vec<Blueprint> {
                 shield_hp: 0.0,
                 shield_max_hp: 0.0,
                 shield_recharge_rate: 0.0,
-                weapon: Some(hitscan(15.0, 140.0, 18)),
+                weapon: Some(missile(50.0, 220.0, 8.0, 0.06, 60)),
+                equipment: vec![],
+            },
+        },
+        Blueprint {
+            id: "mine_frigate",
+            display_name: "Mine Layer Frigate",
+            salvage_cost: 40,
+            hull_class: HullClass::Frigate,
+            ship_def: ShipDef {
+                blueprint_drawing_id: "frigate_a".into(),
+                hull_class: HullClass::Frigate,
+                role: Role::Mine,
+                weight: None,
+                hp: 140.0,
+                max_hp: 140.0,
+                speed: 3.5,
+                acceleration: 0.9,
+                turn_rate: 0.5,
+                boid_weights: BoidWeightsDef {
+                    separation: 1.5,
+                    cohesion: 0.3,
+                    alignment: 0.2,
+                    seek_enemy: 0.6,
+                    maintain_range: 2.5,
+                },
+                armor: 0.0,
+                shield_hp: 0.0,
+                shield_max_hp: 0.0,
+                shield_recharge_rate: 0.0,
+                weapon: Some(mine_layer(80.0, 45.0, 80)),
                 equipment: vec![],
             },
         },
@@ -260,7 +377,39 @@ fn build_blueprints() -> Vec<Blueprint> {
                 shield_hp: 0.0,
                 shield_max_hp: 0.0,
                 shield_recharge_rate: 0.0,
-                weapon: Some(hitscan(90.0, 180.0, 90)),
+                // Direct hit + splash damage
+                weapon: Some(torpedo(40.0, 80.0, 220.0, 5.0, 35.0, 90)),
+                equipment: vec![],
+            },
+        },
+        Blueprint {
+            id: "beam_destroyer",
+            display_name: "Beam Destroyer",
+            salvage_cost: 65,
+            hull_class: HullClass::Destroyer,
+            ship_def: ShipDef {
+                blueprint_drawing_id: "destroyer_a".into(),
+                hull_class: HullClass::Destroyer,
+                role: Role::Artillery,
+                weight: None,
+                hp: 180.0,
+                max_hp: 180.0,
+                speed: 2.5,
+                acceleration: 0.6,
+                turn_rate: 0.4,
+                boid_weights: BoidWeightsDef {
+                    separation: 1.0,
+                    cohesion: 0.3,
+                    alignment: 0.3,
+                    seek_enemy: 0.8,
+                    maintain_range: 2.0,
+                },
+                armor: 0.0,
+                shield_hp: 60.0,
+                shield_max_hp: 60.0,
+                shield_recharge_rate: 1.0,
+                // 8 dmg/tick, 45 ticks firing = 360 total + ramp to 2× = ~540 effective
+                weapon: Some(beam(8.0, 220.0, 5.0, 30, 45, 0.12, 0.02, 20, 2.0, 90)),
                 equipment: vec![],
             },
         },
@@ -352,6 +501,36 @@ fn build_blueprints() -> Vec<Blueprint> {
                 shield_max_hp: 0.0,
                 shield_recharge_rate: 0.0,
                 weapon: Some(hitscan(70.0, 210.0, 55)),
+                equipment: vec![],
+            },
+        },
+        Blueprint {
+            id: "beam_cruiser",
+            display_name: "Beam Cruiser",
+            salvage_cost: 100,
+            hull_class: HullClass::Cruiser,
+            ship_def: ShipDef {
+                blueprint_drawing_id: "cruiser_a".into(),
+                hull_class: HullClass::Cruiser,
+                role: Role::Artillery,
+                weight: None,
+                hp: 320.0,
+                max_hp: 320.0,
+                speed: 2.5,
+                acceleration: 0.6,
+                turn_rate: 0.35,
+                boid_weights: BoidWeightsDef {
+                    separation: 1.0,
+                    cohesion: 0.3,
+                    alignment: 0.3,
+                    seek_enemy: 0.7,
+                    maintain_range: 2.0,
+                },
+                armor: 0.05,
+                shield_hp: 80.0,
+                shield_max_hp: 80.0,
+                shield_recharge_rate: 1.5,
+                weapon: Some(beam(12.0, 260.0, 7.0, 40, 60, 0.10, 0.02, 25, 2.5, 120)),
                 equipment: vec![],
             },
         },

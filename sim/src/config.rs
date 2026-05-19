@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,6 +16,12 @@ pub struct SimConfig {
     pub attrition_base_damage_per_second: f64,
     pub attrition_ramp_per_second: f64,
     pub max_ticks: u32,
+    /// Single-circle hit radius per hull class name (e.g. "Corvette" → 5.0).
+    #[serde(default)]
+    pub hull_hit_radii: BTreeMap<String, f64>,
+    /// Default collision radius per projectile subtype name (e.g. "seeking_missile" → 1.0).
+    #[serde(default)]
+    pub projectile_hit_radii: BTreeMap<String, f64>,
 }
 
 impl SimConfig {

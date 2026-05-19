@@ -10,5 +10,19 @@
   "attrition_start_tick": 1800,
   "attrition_base_damage_per_second": 0.01,
   "attrition_ramp_per_second": 0.01,
-  "max_ticks": 3600
+  "max_ticks": 3600,
+  "hull_hit_radii": {
+    "Corvette": 5.0,
+    "Frigate": 7.0,
+    "Destroyer": 8.0,
+    "Cruiser": 9.0,
+    "Battlecruiser": 14.0,
+    "Dreadnought": 16.0,
+    "Mothership": 18.0
+  },
+  "projectile_hit_radii": {
+    "seeking_missile": 1.0,
+    "torpedo": 4.0,
+    "mine": 6.0
+  }
 }

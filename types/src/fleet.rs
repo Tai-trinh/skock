@@ -144,6 +144,18 @@ pub enum WeaponDef {
         duration_ticks: u32,
         #[serde(default)]
         beam_width: f64,
+        /// Angular velocity (rad/tick) while beam is not hitting any enemy — fast re-acquisition.
+        #[serde(default)]
+        slew_rate: f64,
+        /// Angular velocity (rad/tick) while beam is firing on an enemy — slow tracking.
+        #[serde(default)]
+        track_rate: f64,
+        /// Ticks to ramp from base damage to ramp_max × damage. 0 = no ramp.
+        #[serde(default)]
+        ramp_ticks: u32,
+        /// Maximum damage multiplier at full ramp. 1.0 = no ramp.
+        #[serde(default = "default_one")]
+        ramp_max: f64,
         #[serde(default)]
         crit_chance: f64,
         #[serde(default = "default_one")]

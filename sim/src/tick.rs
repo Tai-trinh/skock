@@ -4,7 +4,7 @@ use types::ShipId;
 
 use crate::{
     boids::{compute_forces, SpatialGrid},
-    combat::resolve_weapons,
+    combat::fire_weapons as resolve_weapons,
     config::SimConfig,
     state::{Event, Fleet, SimState},
 };
@@ -89,10 +89,14 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
         }
     }
 
-    // Phase 6: resolve weapon firing
-    resolve_weapons(state);
+    // Phase 6: resolve weapon firing — hitscan instant, spawn projectiles, start beams
+    resolve_weapons(state, config);
 
-    // Phase 7 & 8: projectiles and beams — not yet implemented
+    // Phase 7: advance projectiles — move, seek, hit detection, fuse/explosion
+    crate::combat::advance_projectiles(state, config);
+
+    // Phase 8: resolve beam damage — charge countdown, angle tracking, ramp damage
+    crate::combat::resolve_beams(state, config);
 
     // Phase 9: damage already applied inline in combat.rs
 

@@ -79,7 +79,9 @@ public partial class ShipNode : Node2D
     // ── State ─────────────────────────────────────────────────────────────────
 
     private Polygon2D _body = null!;
+    private Line2D _trail = null!;
     private Color _baseColor;
+    private const int TrailLength = 30;
 
     public uint ShipId { get; private set; }
 
@@ -87,6 +89,17 @@ public partial class ShipNode : Node2D
 
     public override void _Ready()
     {
+        // Trail drawn behind the ship (added first so it renders below the body)
+        _trail = new Line2D
+        {
+            Width = 3f,
+            DefaultColor = Colors.White,
+            BeginCapMode = Line2D.LineCapMode.None,
+            EndCapMode = Line2D.LineCapMode.None,
+        };
+        _trail.WidthCurve = BuildTrailCurve();
+        AddChild(_trail);
+
         _body = new Polygon2D();
         AddChild(_body);
     }
@@ -96,25 +109,66 @@ public partial class ShipNode : Node2D
     public void Init(uint id, byte fleet, bool isMothership, string blueprintDrawingId)
     {
         ShipId = id;
-
         _body.Polygon = isMothership ? MothershipShape : ShapeFor(blueprintDrawingId);
 
         var baseColor = fleet == 0 ? FleetAColor : FleetBColor;
         _baseColor = isMothership ? baseColor * MothershipTint : baseColor;
         _body.Color = _baseColor;
+
+        // Trail gradient: fleet color at head → transparent at tail
+        var gradient = new Gradient();
+        gradient.SetColor(0, new Color(_baseColor, 0.7f)); // tip
+        gradient.SetColor(1, new Color(_baseColor, 0.0f)); // tail
+        _trail.Gradient = gradient;
     }
 
     // worldPos is already in Godot world-space (sim coords scaled and y-flipped).
     public void ApplySnapshot(Vector2 worldPos, float headingRad, float hpFraction)
     {
+        // Prepend current position to trail (world-space, independent of ship rotation)
+        var trailPos = worldPos - Position; // trail points are relative to this node's position
+        // Actually, trail should be in world space. Use a global-space trail by reparenting to canvas
+        // For simplicity, store trail points in world space and convert to local space each frame.
+        PrependTrailPoint(worldPos);
+
         Position = worldPos;
         // Godot Rotation is clockwise; sim heading is CCW from +x.
         // +Pi/2 aligns the local -y tip with the heading direction.
         Rotation = -headingRad + Mathf.Pi / 2f;
 
-        // Recalculate from base color each frame — multiplying from current color would darken indefinitely.
         var tint = Mathf.Lerp(0.4f, 1f, hpFraction);
         _body.Color = _baseColor * tint;
+    }
+
+    // ── Trail ─────────────────────────────────────────────────────────────────
+
+    private readonly Vector2[] _trailHistory = new Vector2[TrailLength];
+    private int _trailCount = 0;
+
+    private void PrependTrailPoint(Vector2 worldPos)
+    {
+        // Shift history forward
+        var count = Mathf.Min(_trailCount + 1, TrailLength);
+        for (var i = count - 1; i > 0; i--)
+            _trailHistory[i] = _trailHistory[i - 1];
+        _trailHistory[0] = worldPos;
+        _trailCount = count;
+
+        // Update Line2D points in local space (Line2D is a child of this node)
+        _trail.ClearPoints();
+        for (var i = 0; i < _trailCount; i++)
+        {
+            // Convert world-space history to local space relative to current position
+            _trail.AddPoint(_trailHistory[i] - worldPos);
+        }
+    }
+
+    private static Curve BuildTrailCurve()
+    {
+        var c = new Curve();
+        c.AddPoint(new Vector2(0f, 1f)); // at ship: full width
+        c.AddPoint(new Vector2(1f, 0f)); // at tail: zero width
+        return c;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

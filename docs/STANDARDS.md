@@ -47,6 +47,61 @@ for id in ship_ids {
 let _ = ship_ids.iter().map(|id| apply_damage(&mut state, *id, dmg));
 ```
 
+#### Options and Results
+- `if let Some(x) = opt.as_mut()` for mutation. Not `map` — `map` is for transforming, not side effects.
+- `?` over `match` for error propagation. Reserve `match` for branching logic.
+- `unwrap()` only in tests or after a proven invariant. Use `expect("why this is safe")` otherwise.
+- Prefer `ok_or`, `ok_or_else`, `unwrap_or`, `unwrap_or_else` over manual `match`.
+- `saturating_sub`, `checked_add`, `wrapping_mul` over hand-rolled bounds checks.
+
+#### Ownership and borrowing
+- Take `&str` not `&String`, `&[T]` not `&Vec<T>`. Accept the widest type.
+- Return owned types (`String`, `Vec<T>`) from functions. Borrowing in return signatures invites lifetime pain.
+- Clone when it makes the code clearer. Premature `Rc`/`Arc` is worse than a clone.
+- `&mut self` methods over free functions that take `&mut T`.
+
+#### Error handling
+- `thiserror` for library errors, `anyhow` for application errors. Don't mix.
+- One error enum per module, not per function.
+- Never `panic!` on user input or external data. Return `Result`.
+- `?` at the call site. Don't wrap errors unless you're adding context.
+
+#### Types
+- Newtype wrappers for domain values: `struct UserId(u64)` not `u64`.
+- Enums over booleans when there are two states with meaning: `enum Mode { Read, Write }` not `is_write: bool`.
+- Make illegal states unrepresentable. If two fields can't both be `Some`, use an enum.
+- Derive `Debug` everywhere. Derive `Clone` only when needed.
+
+#### Iterators
+- Chain iterators over manual loops. `collect()` at the end.
+- `for` loop when you need `break`, `continue`, or `?` mid-iteration.
+- `.iter()` for read, `.iter_mut()` for mutate, `.into_iter()` for consume. Be explicit.
+- Avoid `.collect::<Vec<_>>().iter()` — you just allocated for nothing.
+
+#### Functions
+- Short. If a function needs section comments, split it.
+- Take `impl Trait` as parameters, return concrete types unless the abstraction matters.
+- No `mut` in parameter lists unless the function mutates a borrow.
+- Builder pattern for >3 optional parameters. Otherwise positional is fine.
+
+#### Modules and visibility
+- `pub(crate)` by default. Promote to `pub` only at API boundaries.
+- One concept per file. Re-export from `mod.rs` or `lib.rs`.
+- Tests in the same file under `#[cfg(test)] mod tests`. Integration tests in `/tests`.
+
+#### Code shape
+- No defensive checks for invariants the type system already guarantees.
+- Let bindings for clarity, not for reuse. If it's used once, inline it.
+- `match` arms in order: most specific to least specific, `_` last.
+- Format with `cargo fmt`. Lint with `cargo clippy -- -D warnings`. No exceptions.
+
+#### What to avoid
+- `Rc<RefCell<T>>` outside of single-threaded UI or graph structures. It's a smell.
+- `unsafe` without a `// SAFETY:` comment explaining the invariant.
+- Lifetime elision tricks that save one character and cost ten minutes of reading.
+- `String` concatenation with `+`. Use `format!` or `write!`.
+- `.clone()` to shut up the borrow checker without understanding why.
+
 ### C# / .NET
 
 Prefer the ternary operator over `if` statements when assigning a value. Prefer LINQ over `foreach` when transforming or filtering without side effects. If the body mutates external state, use `foreach`.
@@ -76,7 +131,7 @@ private readonly Dictionary<uint, ShipNode> _shipNodes = [];
 
 Prefer `switch` expressions over `switch` statements when returning a value — they enforce exhaustiveness and read as data, not control flow.
 
-## Prefer Result Types Over Exceptions 
+## Prefer Result Types Over Exceptions
 
 Do not use try/catch for normal control flow. Use Result (or Either/Option) types instead.
 

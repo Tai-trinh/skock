@@ -1,7 +1,7 @@
 use fixed::types::{I16F16, I32F32};
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
-use types::{HullClass, Role, ShipId, WeaponType};
+use types::{BeamId, HullClass, ProjectileId, ProjectileSubtype, Role, ShipId, WeaponType};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pos2 {
@@ -78,6 +78,29 @@ pub struct WeaponState {
     pub crit_chance: I16F16,
     pub crit_damage: I16F16,
     pub ammo: Option<u32>,
+
+    // ── Projectile weapon fields ──────────────────────────────────────────────
+    pub subtype: Option<ProjectileSubtype>,
+    pub projectile_speed: I16F16,
+    /// Turn rate for seeking missiles (rad/tick).
+    pub proj_turn_rate: I16F16,
+    pub fuse_ticks: u32,
+    pub explosion_radius: I16F16,
+    pub explosion_damage: I16F16,
+    pub proj_hit_radius: I16F16,
+
+    // ── Beam weapon fields ────────────────────────────────────────────────────
+    pub charge_ticks: u32,
+    pub duration_ticks: u32,
+    pub beam_width: I16F16,
+    /// Angular velocity (rad/tick) while not hitting any enemy.
+    pub slew_rate: I16F16,
+    /// Angular velocity (rad/tick) while firing on an enemy.
+    pub track_rate: I16F16,
+    pub ramp_ticks: u32,
+    pub ramp_max: I16F16,
+    /// ID of the currently active beam entity, if any.
+    pub active_beam_id: Option<BeamId>,
 }
 
 #[derive(Debug, Clone)]
@@ -114,26 +137,118 @@ pub struct Ship {
     pub preferred_range: I16F16,
 }
 
+// ── Projectile entity ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct Projectile {
+    pub id: ProjectileId,
+    pub owner_id: ShipId,
+    pub owner_fleet: Fleet,
+    /// Position at the start of this tick (before movement) — used for swept-segment hit detection.
+    pub prev_pos: Pos2,
+    pub pos: Pos2,
+    pub vel: Vec2,
+    /// Direction of travel in radians, derived from vel.
+    pub heading: I16F16,
+    pub subtype: ProjectileSubtype,
+    pub damage: I16F16,
+    pub hit_radius: I16F16,
+    pub explosion_radius: I16F16,
+    pub explosion_damage: I16F16,
+    pub fuse_ticks_remaining: u32,
+    /// Missile homing turn rate (rad/tick). 0 = no homing.
+    pub turn_rate: I16F16,
+    pub crit_chance: I16F16,
+    pub crit_damage: I16F16,
+}
+
+// ── Beam entity ───────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BeamPhase {
+    Charging,
+    Firing,
+}
+
+#[derive(Debug, Clone)]
+pub struct BeamEntity {
+    pub id: BeamId,
+    pub source_id: ShipId,
+    pub owner_fleet: Fleet,
+    /// Current absolute angle (radians) of the beam ray, measured from +x axis.
+    pub current_angle: I16F16,
+    pub phase: BeamPhase,
+    pub charge_ticks_remaining: u32,
+    pub damage_ticks_remaining: u32,
+    /// Consecutive ticks the beam has been hitting an enemy — drives damage ramp.
+    pub on_target_ticks: u32,
+    pub damage: I16F16,
+    pub range: I16F16,
+    pub beam_width: I16F16,
+    pub slew_rate: I16F16,
+    pub track_rate: I16F16,
+    pub ramp_ticks: u32,
+    pub ramp_max: I16F16,
+    pub crit_chance: I16F16,
+    pub crit_damage: I16F16,
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone)]
 pub enum Event {
-    HitscanFired { source_id: ShipId, target_id: ShipId, damage: I16F16 },
-    HitscanMissed { source_id: ShipId, target_id: ShipId },
-    ShipDestroyed { id: ShipId, fleet: Fleet },
-    ShipAtLowHp { id: ShipId },
+    HitscanFired {
+        source_id: ShipId,
+        target_id: ShipId,
+        damage: I16F16,
+        fleet: Fleet,
+        source_pos_x: I32F32,
+        source_pos_y: I32F32,
+        target_pos_x: I32F32,
+        target_pos_y: I32F32,
+    },
+    HitscanMissed {
+        source_id: ShipId,
+        target_id: ShipId,
+        fleet: Fleet,
+        source_pos_x: I32F32,
+        source_pos_y: I32F32,
+        target_pos_x: I32F32,
+        target_pos_y: I32F32,
+    },
+    ProjectileExplosion {
+        id: ProjectileId,
+        fleet: Fleet,
+        pos_x: I32F32,
+        pos_y: I32F32,
+        radius: I16F16,
+    },
+    ShipDestroyed {
+        id: ShipId,
+        fleet: Fleet,
+    },
+    ShipAtLowHp {
+        id: ShipId,
+    },
     AttritionStarted,
 }
+
+// ── Sim state ─────────────────────────────────────────────────────────────────
 
 pub struct SimState {
     pub tick: u32,
     pub ships: BTreeMap<ShipId, Ship>,
     pub next_ship_id: u32,
+    pub projectiles: BTreeMap<ProjectileId, Projectile>,
+    pub next_projectile_id: u32,
+    pub beams: BTreeMap<BeamId, BeamEntity>,
+    pub next_beam_id: u32,
     pub rng: Xoshiro256Plus,
     pub events: Vec<Event>,
     pub low_hp_flagged: BTreeMap<ShipId, bool>,
     pub attrition_started: bool,
-    // Statistics — accumulated during the battle, emitted in RESULT JSON.
-    pub killed: Vec<(Fleet, HullClass, bool)>, // (fleet of dead ship, hull_class, is_mothership)
-    pub damage_dealt: [I32F32; 2],             // [fleet_a_dealt, fleet_b_dealt]
+    pub killed: Vec<(Fleet, HullClass, bool)>,
+    pub damage_dealt: [I32F32; 2],
 }
 
 impl SimState {
@@ -142,6 +257,10 @@ impl SimState {
             tick: 0,
             ships: BTreeMap::new(),
             next_ship_id: 0,
+            projectiles: BTreeMap::new(),
+            next_projectile_id: 0,
+            beams: BTreeMap::new(),
+            next_beam_id: 0,
             rng,
             events: Vec::new(),
             low_hp_flagged: BTreeMap::new(),
@@ -154,6 +273,18 @@ impl SimState {
     pub fn alloc_ship_id(&mut self) -> ShipId {
         let id = ShipId(self.next_ship_id);
         self.next_ship_id += 1;
+        id
+    }
+
+    pub fn alloc_projectile_id(&mut self) -> ProjectileId {
+        let id = ProjectileId(self.next_projectile_id);
+        self.next_projectile_id += 1;
+        id
+    }
+
+    pub fn alloc_beam_id(&mut self) -> BeamId {
+        let id = BeamId(self.next_beam_id);
+        self.next_beam_id += 1;
         id
     }
 }
