@@ -72,8 +72,6 @@ All ships auto-heal to full HP for free between jumps — no player choice, no U
 
 The only way to permanently remove a ship is to manually salvage it in the dockyard. Salvage yield = `Tonnage × 3`, always at full HP (since ships are always healed before the dockyard phase). The Mothership cannot be salvaged — it is not part of the fleet roster and losing it ends the run immediately.
 
-Ships that reach 0 HP during battle explode and are removed from the sim that tick (`ship_destroyed` event). They do not appear in subsequent state snapshots. After the battle, the fleet roster restores all destroyed ships to 1 HP — the player does not lose them permanently. This keeps battles visually dramatic without punishing the player with forced repurchases.
-
 ## Combat
 
 ### Weapon archetypes
@@ -133,7 +131,7 @@ TODO: shop economy needs playtesting — reroll costs, Tech drop rates, doctrine
 
 ## Boids
 
-Ships use boids-based movement with inertia and acceleration. Neighbor search is O(N²) brute-force for now — the sim runs offline so raw throughput is not the first concern. TODO: replace with a uniform spatial grid or k-d tree if sim speed becomes a bottleneck during playtesting.
+Ships use boids-based movement with inertia and acceleration. Neighbor search uses a uniform spatial hash grid (`BTreeMap<(i32,i32), Vec<ShipId>>`), cell size = perception radius. Only the `boid_max_neighbors` nearest friendly neighbors are considered per ship.
 
 Forces are a weighted sum per ship: `separation`, `cohesion`, `alignment`, `seek_enemy`, `maintain_range`. Each ship role has a distinct weight profile — behavior changes by tuning weights, not code. Note: `seek_enemy` doubles as follow-leader (point it at an ally); `separation` doubles as flee-from-enemy (point it at a threat).
 
@@ -161,7 +159,7 @@ TODO: define morale thresholds, recovery rate, damage/destruction penalty magnit
 
 ## Tick loop phase order
 
-Each tick executes phases in this exact order — order is part of the determinism contract:
+Each tick executes phases in this exact order — order is part of the determinism contract (see ADR-0010):
 
 1. Increment tick counter
 2. Apply continuous effects — shield recharge, burn/radiation damage, status effect countdowns
@@ -192,22 +190,13 @@ Godot reads stderr after sim exit, finds the `RESULT:` line, and inspects it. If
 
 At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. The sim owns all effect resolution — this is the authoritative design.
 
-**Current exception (temporary):** `admiral_effects` in the fleet JSON sent to the sim is always `[]`. Admiral bonuses are pre-applied in C# by `BuildFleetForSim()` using code-defined lambdas in `AdmiralEffectsRegistry`, because the shared effect vocabulary interpreter is not yet built. Once it is, admiral effects move into the `admiral_effects` array and the C# pre-application is deleted — the sim becomes the sole owner. See ADR-0006.
+**Current exception:** admiral effects are pre-applied by `BuildFleetForSim()` in C# — see ADR-0006.
 
 Proc-based effects (on_hit, on_kill) will be event-driven and layered on top of pre-resolved stats when implemented. TODO: add conditional trigger effects that activate on sim state conditions — e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. These are evaluated each tick against sim state, not pre-resolved.
 
 ### Fixed-point type assignments
 
-| Field category | Type | Bytes |
-|---|---|---|
-| Position (x, y) | `I32F32` | 8 |
-| Velocity, acceleration | `I16F16` | 4 |
-| Heading (radians) | `I16F16` | 4 |
-| HP, shield HP, damage, regen | `I16F16` | 4 |
-| Armor fraction, crit chance | `I16F16` | 4 |
-| Boid weights | `I16F16` | 4 |
-
-`I32F32` only for positions — needed for future battlefield scaling. Everything else `I16F16` (±32 767 range, 4 bytes). Halves per-field cost in state snapshots.
+Positions use `I32F32`; everything else `I16F16`. See ADR-0002.
 
 ### Point defense targeting
 
@@ -221,7 +210,7 @@ Point-in-radius per tick: projectile hits if `distance(projectile, target) <= hi
 
 Ray from source toward the nearest valid target. Hits the first ship whose center is within `beam_width` of the ray (sorted by distance). Ray stops at the first hit — client draws the beam terminating at the hit ship.
 
-### Damage resolution
+### Damage resolution *(see ADR-0011)*
 
 ```
 shield_absorbed = min(raw_damage, shield_hp)
@@ -282,11 +271,11 @@ The `skock-dockyard` binary runs for the duration of one dockyard visit. The pip
 | Server | Rust + axum — shares fleet/ship types with sim crate. Fallback: Node + Fastify. |
 | Database | Postgres |
 | Server protocol | REST/JSON, async, no real-time |
-| Math | Fixed-point via `fixed` crate — `I32F32` for positions, `I16F16` for most else |
-| RNG | xoshiro256+ (`rand_xoshiro` crate), explicit state (4× u64), no globals |
-| Containers (game rule crates) | `BTreeMap` / `BTreeSet` / arrays-by-ID only in `sim`, `dockyard`, and server game logic — see ADR-0001. `HashMap`/`HashSet` permitted in server HTTP infrastructure, tooling, renderer. |
+| Math | Fixed-point (`I32F32` positions, `I16F16` most else) — see ADR-0002 |
+| RNG | xoshiro256+, explicit state (4× u64) — see ADR-0002 |
+| Containers (game rule crates) | `BTreeMap`/`BTreeSet` in sim/dockyard/server game logic — see ADR-0001 |
 | Replays | Seed + value-snapshot of both fleets at battle start |
-| Anti-cheat | Honor system — client reports results; server re-simulates all battles in dev, sample-based (anomaly detection + leaderboard review) in production. See ADR-0003. |
+| Anti-cheat | Honor system, sample-based server re-simulation — see ADR-0003 |
 
 ## Sim ↔ client interface
 
@@ -528,13 +517,7 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
 
 ## C# testing
 
-**Test project:** `client.tests/` (xUnit, `Microsoft.NET.Sdk`) lives as a sibling to `client/` so the Godot editor never scans it. It references `client/skock.csproj` directly. See ADR-0008 for the trade-off vs. extracting a `client.core/` shared library.
-
-**What is testable:** any class with no `using Godot` import. This includes all store implementations (`LocalRunStore`, `LocalAdmiralStore`, `LocalStatsStore`), `SimRunner`, `BattleLogParser`, and all plain data/domain types.
-
-**Dependency injection seam:** `LocalRunStore` depends on `IRunData` (not `RunState`), so tests construct a `FakeRunData` without touching the Godot runtime. Similarly, `ResearchUpgrade.Apply` is `Action<IRunData>`. Test fakes live in `client.tests/Fakes/`.
-
-**What is not tested here:** anything that inherits from a Godot type (`RunState : Node`, UI scenes, `BattleRenderer`). Those require either a running Godot instance or a Godot-specific test harness — out of scope for this project at this stage.
+See ADR-0008. Any class without `using Godot` is testable — store implementations, `SimRunner`, `BattleLogParser`, plain types. `FakeRunData` in `client.tests/Fakes/` stubs `IRunData` for store tests. Godot-inheriting types (`RunState`, scenes, `BattleRenderer`) require a Godot instance and are not unit-tested.
 
 ## CI / CD
 
@@ -549,7 +532,7 @@ No game logic in `_Ready()` or `_Process()` — those delegate to the appropriat
   - **Master push** → overwrites the rolling `dev` pre-release on GitHub Releases. Permanent download link for playtesters.
   - **`v*` tag** → creates a named versioned release alongside the dev slot.
 
-**Release package layout:** `skock.exe` and `skock.pck` at the root; `skock-sim.exe` and `skock-dockyard.exe` in `bin/`; .NET assemblies in `data_skock_windows_x86_64/`; loose data files in `data/`. `RunState` resolves binary paths as `bin/<name>.exe` relative to the Godot executable in exported builds (`OS.HasFeature("editor")` guard); in the editor it uses the Rust `target/release/` path. See ADR-0007.
+**Release package layout:** see ADR-0007.
 
 **Rust toolchain:** not pinned to a specific version (`@stable`). The determinism tests guard against unintended output changes regardless of cause. Pin when the server anti-cheat re-simulation must byte-match a specific build.
 
