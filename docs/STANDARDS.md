@@ -68,6 +68,15 @@ private readonly Dictionary<uint, ShipNode> _shipNodes = [];
 
 Prefer `switch` expressions over `switch` statements when returning a value — they enforce exhaustiveness and read as data, not control flow.
 
+## Prefer Result Types Over Exceptions 
+
+Do not use try/catch for normal control flow. Use Result (or Either/Option) types instead.
+
+* Make failures explicit in the return type (Result<T, E>).
+* Handle errors via pattern matching or combinators.
+* Avoid generic catches.
+* Reserve exceptions for truly exceptional, unrecoverable cases.
+
 ## Godot scene design
 
 Prefer composition over inheritance. Build behaviour by combining small, focused nodes rather than by extending a base class. A `ShipNode` that owns a `HealthBar` child is easier to reason about than a `ShipNode` that inherits from `HealthBarBase`. Inheritance is appropriate only for the Godot-required root (`Node2D`, `Control`, etc.) and for genuine is-a relationships — which are rare.
