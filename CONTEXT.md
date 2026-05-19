@@ -22,13 +22,13 @@ The Mothership is a colony ship — the last refuge of a surviving population fl
 
 **Win condition:** destroy the enemy Mothership.
 
-**Forced retreat:** if the player's Mothership reaches 0 HP mid-battle, it immediately warps out — the battle ends, all surviving fleet ships are recalled with it. The Mothership is never destroyed; it escapes. This counts as a battle loss toward the 3-loss run limit. Lore: the Mothership's emergency jump drive activates the instant the hull is critically breached — the colony cannot afford to be lost.
+**Forced retreat:** if the player's Mothership reaches 0 HP mid-battle, it immediately warps out — the battle ends, all surviving fleet ships are recalled with it. The Mothership is never destroyed; it escapes. This counts as a battle loss toward the 3-loss run limit.
 
-Fleet size is limited by the Mothership's **hangar capacity** (a tonnage value). Each ship has a tonnage cost; heavier ships cost more. Lore: the entire fleet must physically dock inside the Mothership to survive hyperspace jumps. Upgrading hangar capacity (costs `Tech`) is a primary progression axis.
+Fleet size is limited by the Mothership's **hangar capacity** (a tonnage value). Each ship has a tonnage cost; heavier ships cost more. Upgrading hangar capacity (costs `Tech`) is a primary progression axis.
 
 ## Game loop
 
-A run ends after **winning at jump 8** or accumulating **3 losses**. Every fleet encountered is a rival colony ship competing for the same fertile frontier systems — not enemies, but competitors. Lore: each defeat decimates the colony population; after three losses not enough people remain to operate the Mothership.
+A run ends after **winning at jump 8** or accumulating **3 losses**. Every fleet encountered is a rival colony ship competing for the same fertile frontier systems — not enemies, but competitors.
 
 The run visits **8 jump destinations** (jump 1–8). **JumpNumber only advances on a win.** A loss means the Mothership retreats, regroups at the same system's dockyard, and challenges a fresh rival fleet at that same jump — the player stays at jump N until they win it. Losing is a setback, not a skip. Pity salvage is awarded on loss (`JumpNumber × 10`) to prevent death spirals; no Tech is earned on a loss.
 
@@ -188,7 +188,7 @@ Godot reads stderr after sim exit, finds the `RESULT:` line, and inspects it. If
 
 ### Effect resolution
 
-At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. The sim owns all effect resolution — this is the authoritative design.
+At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. The sim owns all effect resolution.
 
 **Current exception:** admiral effects are pre-applied by `BuildFleetForSim()` in C# — see ADR-0006.
 
@@ -219,8 +219,6 @@ spillover       = raw_damage - shield_absorbed
 hull_damage     = spillover * (1.0 - armor)
 hp             -= hull_damage
 ```
-
-Shields absorb first. Armor only reduces spillover damage to hull HP. A ship with full shields is tankier against burst; armor matters most when shields are down.
 
 ### Entity IDs
 
@@ -279,8 +277,6 @@ The `skock-dockyard` binary runs for the duration of one dockyard visit. The pip
 
 ## Sim ↔ client interface
 
-The Rust sim is a standalone CLI tool. Godot invokes it as a subprocess. Sim runs to completion, then Godot reads the battle log.
-
 **Transport:** sim writes MessagePack log bytes to stdout; Godot reads subprocess stdout after process exits. Debug flag (`--debug`) writes JSON to disk instead for desync investigation.
 
 **Battle result:** single line on stderr, prefixed with `RESULT:` sentinel, on completion:
@@ -289,7 +285,7 @@ RESULT:{"winner": "fleet_a", "ticks": 2134, "reason": "mothership_destroyed", "f
 ```
 Reasons: `mothership_destroyed`, `timeout_draw`. `fleet_a_survivors` and `fleet_b_survivors` list final HP for every ship that was alive at battle end — ships that reached 0 HP mid-battle are absent (treated as 1 HP by the client when restoring the fleet). Always written regardless of `--debug` flag.
 
-**Format:** MessagePack (`rmp-serde` in Rust, `MessagePack-CSharp` in Godot) in production; JSON on disk in debug. At up to 256 total entities a full 120s battle log is ~100 MB JSON / ~40 MB MessagePack. Same data model — switching is a flag not a rewrite.
+**Format:** MessagePack (`rmp-serde` in Rust, `MessagePack-CSharp` in Godot) in production; JSON on disk in debug. Same data model — switching is a flag not a rewrite.
 
 **Schema:** the battle log opens with a header record containing a `schema_version` integer. Client rejects logs where the version doesn't match what it understands. Followed by one MessagePack record per tick, interleaved:
 ```
@@ -304,7 +300,6 @@ State snapshot and events for the same tick are one record. Godot builds the scr
 **Debug overlay** *(toggled by key during battle playback)*: displays raw tick state for a selected ship — position, velocity, HP, shields, active status effects, boid weights, current target, weapon cooldown. Reads directly from the in-memory battle log at the current playback tick. Built first — validates log correctness during sim and renderer development. TODO: add player-facing fleet stats panel (damage dealt/received, ships destroyed, weapons fired) once debug overlay confirms log data is correct.
 
 TODO: validate schema against renderer needs once the engine layer is being built.
-TODO: evaluate GDExtension (`gdext` crate) to embed the sim directly in Godot once the sim API stabilises.
 
 ## Fleet JSON specification
 
@@ -476,26 +471,19 @@ Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape. P
 
 **Run state (online mode, planned post-offline):** the server owns a server-side Run ID assigned at run start. All run choices (fleet, Salvage, Tech, JumpNumber, LossCount) are stored in the server DB and fetched on login — local save is only a cache. If the local save and server record diverge, server wins. Matchmaking for opponent fleets uses JumpNumber + LossCount as the progress dimensions: a player at Jump 4 / 1 loss is matched against fleets submitted by other players (or curated by the dev team) at the same bracket. The opponent fleet DB is seeded with hand-authored curated fleets organised by these brackets. Future: curated fleets are benchmarked against each other via the deterministic sim (seeded batch runs) so each bracket contains vetted, calibrated opponents.
 
-**Online design principle — always design for online, build offline first:** Every stateful client class that has a plausible online counterpart is coded against an interface from day one. The offline adapter is the only implementation today; the online adapter slots in without touching the rest of the codebase. Current seams:
+Interface-first — always design for online, build offline first (see ADR-0012). Current seams:
 - `IRunStore` / `LocalRunStore` — run lifecycle only (Load, Save, StartRun, GetBattleSeed). Online: `ServerRunStore` validates lifecycle actions via REST before mutating RunState.
 - `IDockyard` / `LocalDockyardAdapter` — one instance per dockyard visit. Offline: spawns `skock-dockyard` subprocess. Online: `ServerDockyardAdapter` talks to the server which runs the same Rust binary. The binary is the single source of truth for offer generation and purchase validation (see ADR-0009 and §Dockyard binary protocol).
 - `IStatsStore` / `LocalStatsStore` — per-run jump history and lifetime counters. Online: `ServerStatsStore` POSTs `BattleInputs` (seed + fleet JSONs) to the server for anti-cheat storage and retroactive re-simulation (honor system — see ADR-0003 and ADR-0004).
 - `IAdmiralStore` / `LocalAdmiralStore` — admiral and faction catalog. Reads `client/data/admirals.json` and `client/data/factions.json`. Online: `ServerAdmiralStore` fetches from REST API, enabling server-curated or rotating admiral pools.
 
-The swap for each is a one-line change in `RunState._Ready()`. Anti-cheat model: honor system — client reports results, server trusts by default and verifies retroactively. Triggers: anomaly detection heuristics and leaderboard review. During development, every submitted battle is re-simulated.
+Each store swaps with a one-line change in `RunState._Ready()`.
 
 **Run reset:** every run starts fresh from the chosen admiral's starting fleet. No ships, doctrines, or equipment carry over between runs. The combo-hunting feel depends on a blank slate — a persistent fleet collapses into one optimal build. The admiral selection screen is the only persistent choice a player makes at run start.
 
 **Meta-progression (out-of-run):** separate from run state. Tracks achievements and unlocks across all runs. TODO: design meta-progression system — achievements that unlock new admirals, new factions, additional starting difficulties (e.g. smaller hangar cap, fewer starting ships), and cosmetic or quality-of-life goodies. Implement after the core loop is playtested.
 
-**UI data flow:** one-way. A single `RunState` C# class owns all run state. UI nodes read from it and subscribe to signals for updates; player actions call methods on it. No UI node owns state. Prevents split-brain bugs where multiple nodes disagree on currency counts or fleet composition.
-
-**Godot project structure:**
-- `src/sim/` — subprocess wrapper, battle log parser, playback state
-- `src/meta/` — `RunState`, shop logic, admiral definitions, dockyard logic
-- `src/ui/` — pure UI nodes, display only; call into `meta/` or `sim/` via signals, never the reverse
-- `src/rendering/` — battle renderer, ship sprite assembly, effect triggers
-- `data/` — JSON data files loaded at startup by local store adapters: `admirals.json`, `factions.json`. Accessible as `res://data/` in Godot. Add new admirals or factions here without touching C#.
+For project structure and UI data flow, see [Architecture](docs/ARCHITECTURE.md).
 
 **Scenes:**
 - `AdmiralSelect.tscn` — run start; player picks an admiral, sees starting fleet and passive bonus. Transitions to `Dockyard.tscn` on confirm.
