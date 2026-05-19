@@ -6,6 +6,7 @@
   "fleet_b_spawn_x": 400,
   "spawn_noise": 20.0,
   "boid_neighbor_radius": 150.0,
+  "boid_max_neighbors": 8,
   "attrition_start_tick": 1800,
   "attrition_base_damage_per_second": 0.01,
   "attrition_ramp_per_second": 0.01,

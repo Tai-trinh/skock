@@ -9,6 +9,7 @@ pub struct SimConfig {
     pub fleet_b_spawn_x: f64,
     pub spawn_noise: f64,
     pub boid_neighbor_radius: f64,
+    pub boid_max_neighbors: u32,
     pub attrition_start_tick: u32,
     pub attrition_base_damage_per_second: f64,
     pub attrition_ramp_per_second: f64,

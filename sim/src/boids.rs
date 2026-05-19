@@ -17,89 +17,147 @@ fn dir(from: &Pos2, to: &Pos2) -> Vec2 {
     Vec2 { x: I16F16::from_num(dx / dist), y: I16F16::from_num(dy / dist) }
 }
 
+fn cell_of(pos: &Pos2, cell_size: I32F32) -> (i32, i32) {
+    ((pos.x / cell_size).to_num::<i32>(), (pos.y / cell_size).to_num::<i32>())
+}
+
+// Single flat grid sized to the perception radius.
+// Cell size = neighbor_radius, so a 3×3 neighborhood covers every candidate within range.
+// Build once per tick; each ship queries its own 3×3 neighborhood (~9 cells).
+pub struct SpatialGrid {
+    cell_size: I32F32,
+    cells: BTreeMap<(i32, i32), Vec<ShipId>>,
+}
+
+impl SpatialGrid {
+    pub fn build(ships: &BTreeMap<ShipId, Ship>, cell_size: I32F32) -> Self {
+        let mut cells: BTreeMap<(i32, i32), Vec<ShipId>> = BTreeMap::new();
+        // BTreeMap iteration is sorted by ShipId, so each Vec is in ascending ShipId order.
+        for (&id, ship) in ships {
+            cells.entry(cell_of(&ship.pos, cell_size)).or_default().push(id);
+        }
+        Self { cell_size, cells }
+    }
+
+    // ShipIds in the 3×3 cell neighborhood around `pos`.
+    // Order: cells in BTreeMap (cx,cy) order; within each cell, ascending ShipId.
+    fn candidates(&self, pos: &Pos2) -> Vec<ShipId> {
+        let (cx, cy) = cell_of(pos, self.cell_size);
+        let mut result = Vec::new();
+        for dx in -1i32..=1 {
+            for dy in -1i32..=1 {
+                if let Some(ids) = self.cells.get(&(cx + dx, cy + dy)) {
+                    result.extend_from_slice(ids);
+                }
+            }
+        }
+        result
+    }
+}
+
 pub fn compute_forces(
     ship: &Ship,
     ships: &BTreeMap<ShipId, Ship>,
+    grid: &SpatialGrid,
     neighbor_radius_sq: I32F32,
+    max_neighbors: usize,
 ) -> Vec2 {
+    // ── Friendly neighbors: grid candidates → filter → N nearest ─────────────
+
+    let neighbor_radius = cordic::sqrt(neighbor_radius_sq);
+
+    let mut friendly_candidates: Vec<(I32F32, ShipId)> = grid
+        .candidates(&ship.pos)
+        .into_iter()
+        .filter(|&id| id != ship.id)
+        .filter_map(|id| {
+            let other = &ships[&id];
+            if other.fleet != ship.fleet {
+                return None;
+            }
+            let d_sq = dist_sq(&ship.pos, &other.pos);
+            if d_sq < neighbor_radius_sq && d_sq > I32F32::ZERO {
+                Some((d_sq, id))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Sort by distance; tie-break by ShipId for determinism.
+    friendly_candidates.sort_by(|(a, aid), (b, bid)| a.cmp(b).then_with(|| aid.cmp(bid)));
+    friendly_candidates.truncate(max_neighbors);
+
     let mut sep = Vec2::ZERO;
     let mut coh_sum = Pos2::ZERO;
     let mut coh_count: i32 = 0;
     let mut ali = Vec2::ZERO;
     let mut ali_count: i32 = 0;
-    let mut nearest_enemy: Option<(I32F32, &Ship)> = None;
 
+    for &(d_sq, other_id) in &friendly_candidates {
+        let other = &ships[&other_id];
+        let dist = cordic::sqrt(d_sq);
+
+        // Separation: push away, weighted by inverse distance
+        let away = dir(&other.pos, &ship.pos);
+        let strength = (neighbor_radius - dist) / neighbor_radius;
+        sep += away * I16F16::from_num(strength);
+
+        // Cohesion: accumulate center of mass
+        coh_sum.x += other.pos.x;
+        coh_sum.y += other.pos.y;
+        coh_count += 1;
+
+        // Alignment: match neighbor velocity
+        ali += other.vel;
+        ali_count += 1;
+    }
+
+    // ── Nearest enemy: full scan — enemies have no perception radius cap ──────
+
+    let mut nearest_enemy: Option<(I32F32, &Ship)> = None;
     for other in ships.values() {
-        if other.id == ship.id {
+        if other.fleet == ship.fleet {
             continue;
         }
-
         let d_sq = dist_sq(&ship.pos, &other.pos);
-
-        if other.fleet == ship.fleet {
-            if d_sq < neighbor_radius_sq && d_sq > I32F32::ZERO {
-                // Separation: push away from nearby friendlies
-                let away = dir(&other.pos, &ship.pos);
-                // Weight separation by inverse distance (closer = stronger push)
-                let dist = cordic::sqrt(d_sq);
-                let radius = cordic::sqrt(neighbor_radius_sq);
-                let strength = (radius - dist) / radius;
-                sep += away * I16F16::from_num(strength);
-
-                // Cohesion: accumulate center of mass of neighbors
-                coh_sum.x += I32F32::from_num(other.pos.x);
-                coh_sum.y += I32F32::from_num(other.pos.y);
-                coh_count += 1;
-
-                // Alignment: match velocity of neighbors
-                ali += other.vel;
-                ali_count += 1;
-            }
-        } else {
-            // Track nearest enemy for seek_enemy and maintain_range
-            if nearest_enemy.is_none_or(|(d, _)| d_sq < d) {
-                nearest_enemy = Some((d_sq, other));
-            }
+        if nearest_enemy.is_none_or(|(d, _)| d_sq < d) {
+            nearest_enemy = Some((d_sq, other));
         }
     }
+
+    // ── Accumulate total force ─────────────────────────────────────────────────
 
     let mut total = Vec2::ZERO;
 
-    // Separation
     total += sep * ship.boid_weights.separation;
 
-    // Cohesion: steer toward average position of neighbors
     if coh_count > 0 {
-        let avg_x = coh_sum.x / I32F32::from_num(coh_count);
-        let avg_y = coh_sum.y / I32F32::from_num(coh_count);
-        let center = Pos2 { x: avg_x, y: avg_y };
-        let to_center = dir(&ship.pos, &center);
-        total += to_center * ship.boid_weights.cohesion;
+        let avg = Pos2 {
+            x: coh_sum.x / I32F32::from_num(coh_count),
+            y: coh_sum.y / I32F32::from_num(coh_count),
+        };
+        total += dir(&ship.pos, &avg) * ship.boid_weights.cohesion;
     }
 
-    // Alignment: steer toward average velocity of neighbors
     if ali_count > 0 {
         let avg =
             Vec2 { x: ali.x / I16F16::from_num(ali_count), y: ali.y / I16F16::from_num(ali_count) };
         total += avg * ship.boid_weights.alignment;
     }
 
-    // Seek enemy + maintain range
     if let Some((d_sq, enemy)) = nearest_enemy {
         let to_enemy = dir(&ship.pos, &enemy.pos);
         total += to_enemy * ship.boid_weights.seek_enemy;
 
-        // Maintain range: push away if too close, pull in if too far
         let dist = cordic::sqrt(d_sq);
         let preferred = I32F32::from_num(ship.preferred_range);
         if preferred > I32F32::ZERO {
             let diff = dist - preferred;
-            // positive diff = too far, move toward; negative = too close, move away
-            let dir_to_enemy = to_enemy;
             let range_force = if diff > I32F32::ZERO {
-                dir_to_enemy
+                to_enemy
             } else {
-                Vec2 { x: -dir_to_enemy.x, y: -dir_to_enemy.y }
+                Vec2 { x: -to_enemy.x, y: -to_enemy.y }
             };
             total += range_force * ship.boid_weights.maintain_range;
         }

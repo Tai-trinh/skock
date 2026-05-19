@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use types::ShipId;
 
 use crate::{
-    boids::compute_forces,
+    boids::{compute_forces, SpatialGrid},
     combat::resolve_weapons,
     config::SimConfig,
     state::{Event, Fleet, SimState},
@@ -33,16 +33,25 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
         }
     }
 
-    // Phase 3: spatial grid skipped — O(N²) in boids
-
-    // Phase 4 & 5: compute boid forces and integrate
+    // Phase 3: build spatial grid for boid neighbor queries
     let neighbor_radius = I32F32::from_num(config.boid_neighbor_radius);
     let neighbor_radius_sq = neighbor_radius * neighbor_radius;
+    let grid = SpatialGrid::build(&state.ships, neighbor_radius);
 
+    // Phase 4 & 5: compute boid forces and integrate
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
     let forces: BTreeMap<ShipId, crate::state::Vec2> = ship_ids
         .iter()
-        .map(|&id| (id, compute_forces(&state.ships[&id], &state.ships, neighbor_radius_sq)))
+        .map(|&id| {
+            let force = compute_forces(
+                &state.ships[&id],
+                &state.ships,
+                &grid,
+                neighbor_radius_sq,
+                config.boid_max_neighbors as usize,
+            );
+            (id, force)
+        })
         .collect();
 
     for &id in &ship_ids {
