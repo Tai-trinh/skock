@@ -121,6 +121,8 @@ Ships are identified by two fields plus an optional weight designation. Display 
 
 TODO: revisit ship roles — add Shield projector (support ship that extends shields to nearby friendlies) once core roles are playtested.
 
+**Hull hit shape** — a ship's collision geometry: a list of circles in ship-local space, each defined by a forward/lateral offset and a radius. Circles rotate with the ship's heading. Most ships are a single circle; elongated hulls (Battlecruiser, Dreadnought) use two circles staggered along the forward axis. Per hull class, tuned in sim config. Used for projectile and beam hit detection; mine proximity and explosion damage use ship center only.
+
 **Targeting:** default is nearest enemy. Ships have an optional `target_priority` field that overrides targeting for specific roles (e.g. `PointDefense` targets incoming projectiles first, then nearest enemy). Defined per ship in the fleet JSON. TODO: revisit targeting logic after playtesting — nearest enemy may produce boring behaviour at scale.
 
 **Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance. Both work together: boids handle positioning, range check handles firing permission.

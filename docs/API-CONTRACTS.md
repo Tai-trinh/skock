@@ -25,6 +25,30 @@ The sim CLI takes a seed as a CLI argument, two fleet JSON files, and an optiona
 
 `sim_config.json` holds global tuning knobs — attrition start tick, attrition rate, boid force caps, tick rate, battlefield bounds. In development, loaded from disk via `--config`. In production, embedded at compile time via `include_str!` — the `--config` flag overrides the embedded config for local testing. No runtime file dependency in the shipped binary.
 
+**Hull hit shapes** — compound circle hitboxes per hull class. Offsets are in ship-local space (x = forward axis, y = lateral) and rotate with `ship.heading`. See ADR-0014.
+```json
+"hull_hit_shapes": {
+  "Corvette":      [{ "ox": 0,   "oy": 0, "r": 5  }],
+  "Frigate":       [{ "ox": 0,   "oy": 0, "r": 7  }],
+  "Destroyer":     [{ "ox": 0,   "oy": 0, "r": 8  }],
+  "Cruiser":       [{ "ox": 0,   "oy": 0, "r": 9  }],
+  "Battlecruiser": [{ "ox": -10, "oy": 0, "r": 8  }, { "ox": 10, "oy": 0, "r": 8  }],
+  "Dreadnought":   [{ "ox": -8,  "oy": 0, "r": 12 }, { "ox": 8,  "oy": 0, "r": 12 }],
+  "Mothership":    [{ "ox": 0,   "oy": 0, "r": 18 }]
+}
+```
+
+**Projectile hit radii** — default collision radius per projectile subtype. Overridable per weapon block via `"hit_radius": N`. See ADR-0013.
+```json
+"projectile_hit_radii": {
+  "seeking_missile": 1,
+  "torpedo":         4,
+  "drifting_bomb":   6
+}
+```
+
+Mine/bomb proximity trigger and explosion radius damage both use ship center only (not hull hit shapes) — explosion radii are large enough that the approximation is negligible.
+
 Fleet JSON top-level structure:
 ```json
 {

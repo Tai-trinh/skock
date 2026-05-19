@@ -156,15 +156,15 @@ Positions use `I32F32`; everything else `I16F16`. See ADR-0002.
 
 ### Point defense targeting
 
-Point defense (`PointDefense` role) uses `target_priority: "projectile"`. Each tick it scans all live projectiles within weapon `range`, picks the one closest to any friendly ship (highest threat), and fires if cooldown allows. On hit: `projectile_intercepted` event, projectile removed. No special code path — point defense is a standard weapon that targets `ProjectileId` instead of `ShipId`.
+Point defense (`PointDefense` role) uses `target_priority: "projectile"`. Each tick it scans all live projectiles within weapon `range`, picks the one closest to any friendly ship (highest threat), and fires if cooldown allows. Interception resolves instantly (hitscan — no interceptor projectile spawned): if PD fires and the target projectile is in range, `projectile_intercepted` fires and the projectile is removed. A `miss_chance` on the PD weapon block is the tuning knob for PD reliability.
 
 ### Projectile hit detection
 
-Point-in-radius per tick: projectile hits if `distance(projectile, target) <= hit_radius`. No swept segment test. Tunneling is prevented by capping projectile speed so it cannot travel more than one ship-radius per tick. TODO: add swept segment test if tunneling is observed in playtesting.
+Swept segment test (see ADR-0013): each tick the projectile's movement is treated as a line segment `prev_pos → pos` (derived as `pos - velocity`). A hit occurs when the minimum distance from any circle center in the target ship's hull hit shape to the segment is ≤ `(circle.radius + projectile.hit_radius)`. `projectile.hit_radius` is a per-subtype default from sim config (e.g. `torpedo: 4`, `seeking_missile: 1`), overridable via `hit_radius` in the weapon block.
 
 ### Beam hit detection
 
-Ray from source toward the nearest valid target. Hits the first ship whose center is within `beam_width` of the ray (sorted by distance). Ray stops at the first hit — client draws the beam terminating at the hit ship.
+Ray from source toward the nearest valid target. For each candidate ship, checks minimum distance from the ray to each circle center in the ship's hull hit shape; a hit occurs when that distance ≤ `(beam_width / 2 + circle.radius)`. Hits the first ship (sorted by distance from source) that satisfies the test. Ray stops at the first hit — client draws the beam terminating at the hit ship.
 
 ### Damage resolution *(see ADR-0011)*
 
