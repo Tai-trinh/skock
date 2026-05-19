@@ -151,7 +151,7 @@ Elegant code is the simplest code that correctly solves the problem.
 
 ## Comments
 
-Comments explain **why**, never **what**. The code explains what.
+Comments explain **why**, never **what**. The code should already make the what clear. If a comment is needed, first ask whether the logic can be extracted into a well-named function; prefer that over adding a comment.
 
 Write a comment when:
 - A constraint is non-obvious (`// xoshiro256+ requires explicit state — no global RNG in sim`)
