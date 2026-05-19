@@ -78,7 +78,13 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 
 - **Hitscan** — damage resolves instantly at the tick fired. No sim entity created. Optional `miss_chance` (0.0–1.0): rolled via battle RNG each shot; on miss, a `hitscan_missed` event fires and no damage is applied.
 - **Projectile** — a first-class sim entity with position, velocity, target, and `ticks_remaining`. On expiry without a hit it fizzles (`projectile_fizzled`).
-- **Beam / ray** — continuous damage over a fixed tick duration. The beam entity persists in state snapshots while active (source, target, `ticks_remaining`). Hits the first ship in its path each tick — single-target only. `Artillery`-role and `Battlecruiser` hull class ships typically carry beams: slow charge time, high sustained damage, long cooldown.
+- **Beam / ray** — two-phase weapon. **Charge phase** (`charge_ticks`): the turret slews toward the target; beam entity exists in state snapshots so the renderer shows the turret aiming. Charge cancels immediately if the firing ship is stunned. **Firing phase** (`duration_ticks`): continuous damage each tick to the first enemy in the current ray direction within `range`. Beam ends immediately if the intended target dies.
+
+  Tracking uses two angular rates (see ADR-0016): `slew_rate` (fast) when the ray is not hitting any enemy; `track_rate` (slow) when firing on an enemy. Both are active during charge and firing.
+
+  Damage is per tick with optional linear ramp (see ADR-0015): `damage` scales from base to `damage × ramp_max` over `ramp_ticks` ticks of continuous on-target contact. Ramp resets to zero on any tick the beam is not hitting an enemy.
+
+  `Artillery`-role and `Battlecruiser` hull class ships typically carry beams: slow charge, high sustained damage, long cooldown.
 
 ### Projectile subtypes
 

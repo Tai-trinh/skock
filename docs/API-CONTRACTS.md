@@ -124,7 +124,30 @@ The `weapon` block inside a ship:
 }
 ```
 
-`crit_chance` (0.0–1.0) and `crit_damage` (multiplier, e.g. 2.0 = double damage) are optional — omitted means no crits. Crit roll uses the battle RNG (xoshiro256+) so results are deterministic. `ammo` is optional — omitted means unlimited. When present, the weapon can only fire that many times before it is exhausted. `turn_rate` and `fuse_ticks` apply to missiles only; beams add `charge_ticks` and `duration_ticks`; fields irrelevant to the weapon type are omitted.
+`crit_chance` (0.0–1.0) and `crit_damage` (multiplier, e.g. 2.0 = double damage) are optional — omitted means no crits. Crit roll uses the battle RNG (xoshiro256+) so results are deterministic. `ammo` is optional — omitted means unlimited. When present, the weapon can only fire that many times before it is exhausted. `turn_rate` and `fuse_ticks` apply to missiles only. Beams use a different field set:
+
+```json
+"weapon": {
+  "type": "beam",
+  "damage": 8,
+  "range": 250,
+  "cooldown_ticks": 120,
+  "charge_ticks": 60,
+  "duration_ticks": 45,
+  "beam_width": 6,
+  "track_rate": 0.02,
+  "slew_rate": 0.15,
+  "ramp_ticks": 20,
+  "ramp_max": 2.5
+}
+```
+
+- `beam_width` — full diameter of the beam ray for hit detection (see beam hit detection in ARCHITECTURE.md).
+- `track_rate` — angular velocity (rad/tick) while firing on an enemy; slow, creates the sustained-aim pressure.
+- `slew_rate` — angular velocity (rad/tick) while not hitting any enemy; fast re-acquisition.
+- `ramp_ticks` / `ramp_max` — optional linear damage ramp (see ADR-0015). Omitted means flat damage. Formula: `damage × lerp(1.0, ramp_max, min(on_target_ticks / ramp_ticks, 1.0))`.
+
+Fields irrelevant to the weapon type are omitted.
 
 Doctrines and equipment use a shared data-driven effects vocabulary. The sim understands each effect type by name and applies it — no per-item hardcoded logic. New items that use existing effect types require no sim code changes.
 

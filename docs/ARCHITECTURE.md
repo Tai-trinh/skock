@@ -162,9 +162,27 @@ Point defense (`PointDefense` role) uses `target_priority: "projectile"`. Each t
 
 Swept segment test (see ADR-0013): each tick the projectile's movement is treated as a line segment `prev_pos → pos` (derived as `pos - velocity`). A hit occurs when the minimum distance from any circle center in the target ship's hull hit shape to the segment is ≤ `(circle.radius + projectile.hit_radius)`. `projectile.hit_radius` is a per-subtype default from sim config (e.g. `torpedo: 4`, `seeking_missile: 1`), overridable via `hit_radius` in the weapon block.
 
+### Beam entity state
+
+```
+{
+  source:                 ShipId,
+  target:                 ShipId,
+  current_angle:          I16F16,   // radians, ship-local heading toward target
+  phase:                  "charging" | "firing",
+  charge_ticks_remaining: u32,      // counts down during charge phase
+  damage_ticks_remaining: u32,      // counts down during firing phase
+  on_target_ticks:        u32,      // ramp counter; resets to 0 on any off-target tick
+}
+```
+
+Created at charge start. Destroyed when: charge is cancelled by stun, target dies, or `damage_ticks_remaining` reaches 0.
+
 ### Beam hit detection
 
-Ray from source toward the nearest valid target. For each candidate ship, checks minimum distance from the ray to each circle center in the ship's hull hit shape; a hit occurs when that distance ≤ `(beam_width / 2 + circle.radius)`. Hits the first ship (sorted by distance from source) that satisfies the test. Ray stops at the first hit — client draws the beam terminating at the hit ship.
+Each tick during the firing phase: fire a ray from `source.pos` in `current_angle` direction. For each enemy ship (ordered by distance from source), check minimum distance from the ray to each circle center in the ship's hull hit shape; hit if distance ≤ `(beam_width / 2 + circle.radius)`. Damage the first ship that satisfies the test. Ray stops at the first hit — client draws the beam terminating at the hit ship.
+
+Angular velocity each tick (both phases): `slew_rate` when no enemy was hit this tick, `track_rate` when an enemy was hit.
 
 ### Damage resolution *(see ADR-0011)*
 
