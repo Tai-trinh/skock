@@ -1,5 +1,0 @@
-@startuml
-class BattleLogParser <<static>> {
-    + {static} Parse(bytes:byte[]) : BattleLog
-}
-@enduml

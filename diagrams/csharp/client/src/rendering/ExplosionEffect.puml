@@ -1,8 +1,0 @@
-@startuml
-class ExplosionEffect <<partial>> {
-    + Spawn(worldPos:Vector2, radius:float, fleet:byte) : void
-    + <<override>> _Process(delta:double) : void
-    + <<override>> _Draw() : void
-}
-Node2D <|-- ExplosionEffect
-@enduml

@@ -1,6 +1,0 @@
-@startuml
-class LocalSimRunner <<sealed>> {
-    + Run(seed:ulong, fleetAPath:string, fleetBPath:string) : (BattleLog Log, BattleResult Result)
-}
-ISimRunner <|-- LocalSimRunner
-@enduml

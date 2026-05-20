@@ -1,8 +1,0 @@
-@startuml
-class DebugOverlay <<partial>> {
-    + <<override>> _Ready() : void
-    + <<override>> _Input(@event:InputEvent) : void
-    + UpdateFromSnapshot(ships:ShipSnapshot[], selectedId:uint) : void
-}
-CanvasLayer <|-- DebugOverlay
-@enduml

@@ -1,5 +1,0 @@
-@startuml
-class AdmiralEffectsRegistry <<static>> {
-    + {static} ForAdmiral(id:string) : IReadOnlyList<AdmiralShipEffect>
-}
-@enduml

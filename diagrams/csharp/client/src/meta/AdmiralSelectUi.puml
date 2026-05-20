@@ -1,6 +1,0 @@
-@startuml
-class AdmiralSelectUi <<partial>> {
-    + <<override>> _Ready() : void
-}
-Control <|-- AdmiralSelectUi
-@enduml

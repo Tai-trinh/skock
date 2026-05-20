@@ -1,8 +1,0 @@
-@startuml
-class HitscanEffect <<partial>> {
-    + <<override>> _Ready() : void
-    + Spawn(sourceWorld:Vector2, targetWorld:Vector2, fleet:byte, simScale:float) : void
-    + <<override>> _Process(delta:double) : void
-}
-Node2D <|-- HitscanEffect
-@enduml

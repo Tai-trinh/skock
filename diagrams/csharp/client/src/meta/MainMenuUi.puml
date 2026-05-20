@@ -1,6 +1,0 @@
-@startuml
-class MainMenuUi <<partial>> {
-    + <<override>> _Ready() : void
-}
-Control <|-- MainMenuUi
-@enduml

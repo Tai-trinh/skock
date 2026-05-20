@@ -1,9 +1,0 @@
-@startuml
-class BeamNode <<partial>> {
-    + BeamId : uint <<get>>
-    + <<override>> _Ready() : void
-    + Init(id:uint, fleet:byte) : void
-    + ApplySnapshot(snap:BeamSnapshot, simScale:float) : void
-}
-Node2D <|-- BeamNode
-@enduml
