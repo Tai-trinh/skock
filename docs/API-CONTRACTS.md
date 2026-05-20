@@ -1,5 +1,40 @@
 Wire formats and binary protocols for Skock's inter-process interfaces.
 
+## Admiral binary protocol
+
+The `skock-admiral` binary is **one-shot**: C# spawns it, writes one JSON line to stdin, reads one JSON line from stdout, and the binary exits.
+
+**Input** (C# → stdin, one line):
+```json
+{ "player_id": "offline:abc123" }
+```
+
+**Output** (binary → stdout, one line):
+```json
+{
+  "run_seed": 9876543210,
+  "offers": [
+    {
+      "admiral_id": "kira",
+      "admiral_name": "Admiral Kira",
+      "faction_id": "gallforce",
+      "faction_name": "Gallforce",
+      "bonus_text": "All Fighters +15% speed.",
+      "starting_salvage": 60,
+      "starting_tech": 0,
+      "starting_hangar_capacity": 12,
+      "starting_fleet": { "...": "full FleetJsonData with admiral_effects and faction_effects populated" }
+    }
+  ]
+}
+```
+
+Always exactly 3 offers, one per distinct faction. `run_seed` is generated from OS entropy by the binary and used to deterministically select the offers (same seed → same 3 admirals). C# stores `run_seed` when the player selects an admiral and passes it to all subsequent binaries (dockyard, sim).
+
+`starting_fleet` is a fully resolved `FleetJsonData`. `admiral_effects` and `faction_effects` are populated with the selected admiral's and faction's effects in the shared data-driven vocabulary — the sim applies them at battle start. Stats are not pre-baked.
+
+**Errors** — fatal errors go to stderr as `RESULT:{"error":"...", "message":"..."}` and the binary exits non-zero. Catalog integrity failures (fewer than 3 factions with admirals) are caught at binary startup.
+
 ## Dockyard binary protocol
 
 The `skock-dockyard` binary runs for the duration of one dockyard visit. The pipe stays open; C# and the binary exchange newline-delimited JSON messages (one JSON object per line).
