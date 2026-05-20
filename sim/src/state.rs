@@ -1,7 +1,7 @@
 use fixed::types::{I16F16, I32F32};
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
-use types::{BeamId, HullClass, ProjectileId, ProjectileSubtype, Role, ShipId, WeaponType};
+use types::{BeamId, HullClass, ProjectileId, ProjectileSubtype, Role, ShipId};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pos2 {
@@ -67,40 +67,46 @@ impl Fleet {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum WeaponKind {
+    Hitscan {
+        miss_chance: I16F16,
+    },
+    Projectile {
+        subtype: ProjectileSubtype,
+        speed: I16F16,
+        /// Turn rate for seeking missiles (rad/tick).
+        turn_rate: I16F16,
+        fuse_ticks: u32,
+        explosion_radius: I16F16,
+        explosion_damage: I16F16,
+        hit_radius: I16F16,
+    },
+    Beam {
+        charge_ticks: u32,
+        duration_ticks: u32,
+        beam_width: I16F16,
+        /// Angular velocity (rad/tick) while not hitting any enemy.
+        slew_rate: I16F16,
+        /// Angular velocity (rad/tick) while firing on an enemy.
+        track_rate: I16F16,
+        ramp_ticks: u32,
+        ramp_max: I16F16,
+        /// ID of the currently active beam entity, if any.
+        active_beam_id: Option<BeamId>,
+    },
+}
+
 #[derive(Debug, Clone)]
 pub struct WeaponState {
-    pub weapon_type: WeaponType,
     pub damage: I16F16,
     pub range: I16F16,
     pub cooldown_ticks: u32,
     pub cooldown_remaining: u32,
-    pub miss_chance: I16F16,
     pub crit_chance: I16F16,
     pub crit_damage: I16F16,
     pub ammo: Option<u32>,
-
-    // ── Projectile weapon fields ──────────────────────────────────────────────
-    pub subtype: Option<ProjectileSubtype>,
-    pub projectile_speed: I16F16,
-    /// Turn rate for seeking missiles (rad/tick).
-    pub proj_turn_rate: I16F16,
-    pub fuse_ticks: u32,
-    pub explosion_radius: I16F16,
-    pub explosion_damage: I16F16,
-    pub proj_hit_radius: I16F16,
-
-    // ── Beam weapon fields ────────────────────────────────────────────────────
-    pub charge_ticks: u32,
-    pub duration_ticks: u32,
-    pub beam_width: I16F16,
-    /// Angular velocity (rad/tick) while not hitting any enemy.
-    pub slew_rate: I16F16,
-    /// Angular velocity (rad/tick) while firing on an enemy.
-    pub track_rate: I16F16,
-    pub ramp_ticks: u32,
-    pub ramp_max: I16F16,
-    /// ID of the currently active beam entity, if any.
-    pub active_beam_id: Option<BeamId>,
+    pub kind: WeaponKind,
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +181,8 @@ pub struct BeamEntity {
     pub id: BeamId,
     pub source_id: ShipId,
     pub owner_fleet: Fleet,
+    /// Cached position of the source ship, updated each tick. Avoids a ships-map lookup in log.rs.
+    pub source_pos: Pos2,
     /// Current absolute angle (radians) of the beam ray, measured from +x axis.
     pub current_angle: I16F16,
     pub phase: BeamPhase,

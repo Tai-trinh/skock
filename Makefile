@@ -8,7 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs
+.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-rust win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs
 
 install-docker:
 	sudo apt-get install -y x11-xserver-utils
@@ -70,6 +70,9 @@ win-test-cs:
 win-build-sim:
 	cargo.exe build -p sim --release
 
+win-build-rust: win-build-sim
+	cargo.exe build -p dockyard --release
+
 win-test-rust:
 	cargo.exe test
 
@@ -83,4 +86,4 @@ win-fmt:
 win-start-godot:
 	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
 
-win-all: win-fmt win-build-sim win-build-godot win-test-rust win-test-cs
+win-all: win-fmt win-build-rust win-build-godot win-test-rust win-test-cs

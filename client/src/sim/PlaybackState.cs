@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Skock.Sim;
 
@@ -8,6 +9,7 @@ namespace Skock.Sim;
 public sealed class PlaybackState
 {
     private readonly BattleLog _log;
+    private int _lastEventTick = -1;
 
     public bool IsLoaded => _log.Ticks.Length > 0;
     public int TotalTicks => _log.Ticks.Length;
@@ -42,5 +44,17 @@ public sealed class PlaybackState
         var indexB = Math.Min(indexA + 1, TotalTicks - 1);
         var t = Time - indexA;
         return (_log.Ticks[indexA], _log.Ticks[indexB], t);
+    }
+
+    /// <summary>
+    /// Returns events for every tick advanced since the last call, including ticks skipped in a
+    /// single frame. Call once per rendered frame after Advance().
+    /// </summary>
+    public IEnumerable<LogEvent[]> ConsumeNewEvents()
+    {
+        var current = (int)Math.Floor(Time);
+        for (var i = _lastEventTick + 1; i <= current; i++)
+            yield return _log.Ticks[i].Events;
+        _lastEventTick = current;
     }
 }

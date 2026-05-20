@@ -30,13 +30,18 @@ public partial class BattleRenderer : Node2D
     private Label _resultLabel = null!;
     private DebugOverlay _debugOverlay = null!;
 
+    // ── Seam ──────────────────────────────────────────────────────────────────
+
+    /// Override before this node is added to the scene tree to substitute a different adapter
+    /// (e.g. StoredLogSimRunner for debug replay). Defaults to LocalSimRunner when null.
+    public ISimRunner? SimRunner { get; set; }
+
     // ── State ─────────────────────────────────────────────────────────────────
 
     private PlaybackState? _playback;
     private readonly Dictionary<uint, ShipNode> _shipNodes = [];
     private readonly Dictionary<uint, ProjectileNode> _projNodes = [];
     private readonly Dictionary<uint, BeamNode> _beamNodes = [];
-    private int _lastEventTick = -1;
     private Control? _inspectorOverlay;
     private ConfirmationDialog _abandonConfirm = null!;
     private Task? _recordTask;
@@ -115,11 +120,13 @@ public partial class BattleRenderer : Node2D
             opponentFleet
         );
 
+        var simRunner = SimRunner ?? new LocalSimRunner(run.SimBinaryPath);
         _ = Task.Run(() =>
         {
             try
             {
-                LoadFromSimRun(seed, fleetA, fleetBPath, run.SimBinaryPath);
+                var (log, result) = simRunner.Run(seed, fleetA, fleetBPath);
+                Callable.From(() => Initialize(log, result)).CallDeferred();
             }
             catch (Exception e)
             {
@@ -166,47 +173,12 @@ public partial class BattleRenderer : Node2D
         GetTree().ChangeSceneToFile("res://scenes/MainMenu.tscn");
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
-    public void LoadFromFile(string msgpackPath)
-    {
-        var bytes = Godot.FileAccess.GetFileAsBytes(msgpackPath);
-        var log = BattleLogParser.Parse(bytes);
-        var result = new BattleResult
-        {
-            Winner = "unknown",
-            Ticks = (uint)log.Ticks.Length,
-            Reason = "loaded_from_file",
-        };
-        Initialize(log, result);
-    }
-
-    public void LoadFromSimRun(
-        ulong seed,
-        string fleetAPath,
-        string fleetBPath,
-        string simBinPath,
-        string? configPath = null
-    )
-    {
-        var (logBytes, result) = SimRunner.Run(
-            simBinPath,
-            seed,
-            fleetAPath,
-            fleetBPath,
-            configPath
-        );
-        var log = BattleLogParser.Parse(logBytes);
-        Callable.From(() => Initialize(log, result)).CallDeferred();
-    }
-
     // ── Private ───────────────────────────────────────────────────────────────
 
     private void Initialize(BattleLog log, BattleResult result)
     {
         _playback = new PlaybackState(log, result);
         RebuildShipNodes(log);
-        _lastEventTick = -1;
     }
 
     private void RebuildShipNodes(BattleLog log)
@@ -238,26 +210,15 @@ public partial class BattleRenderer : Node2D
             return;
 
         var (tickA, tickB, t) = _playback.CurrentFrame();
-        var currentTickIndex = (int)Math.Floor(_playback.Time);
 
-        // Fire events for any ticks we've advanced past since last frame
-        FirePendingEvents(currentTickIndex, tickA);
+        foreach (var events in _playback.ConsumeNewEvents())
+            FireTickEvents(events);
 
         RenderShips(tickA, tickB, t);
         RenderProjectiles(tickA, tickB, t);
         RenderBeams(tickA);
         UpdateDebugLabel(tickA);
         _debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
-    }
-
-    private void FirePendingEvents(int currentTickIndex, TickRecord currentTick)
-    {
-        if (currentTickIndex <= _lastEventTick)
-            return;
-
-        // Fire events for the current tick (and any skipped ticks we don't have direct access to)
-        FireTickEvents(currentTick.Events);
-        _lastEventTick = currentTickIndex;
     }
 
     private void FireTickEvents(LogEvent[] events)

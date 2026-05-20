@@ -2,11 +2,11 @@ use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
-use types::{FleetJson, HullClass, ProjectileSubtype, ShipDef, ShipId, WeaponDef, WeaponType};
+use types::{FleetJson, HullClass, ProjectileSubtype, ShipDef, ShipId, WeaponDef};
 
 use crate::{
     config::SimConfig,
-    state::{BoidWeights, Fleet, Pos2, Ship, SimState, Vec2, WeaponState},
+    state::{BoidWeights, Fleet, Pos2, Ship, SimState, Vec2, WeaponKind, WeaponState},
 };
 
 pub fn spawn_fleet(
@@ -134,9 +134,6 @@ pub fn build_ship(
 }
 
 fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
-    // Default all optional fields to zero; only set what the variant provides.
-    let zero = I16F16::ZERO;
-
     match w {
         WeaponDef::Hitscan {
             damage,
@@ -147,32 +144,14 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
             crit_damage,
             ammo,
         } => WeaponState {
-            weapon_type: WeaponType::Hitscan,
             damage: I16F16::from_num(*damage),
             range: I16F16::from_num(*range),
             cooldown_ticks: *cooldown_ticks,
             cooldown_remaining: 0,
-            miss_chance: I16F16::from_num(*miss_chance),
             crit_chance: I16F16::from_num(*crit_chance),
             crit_damage: I16F16::from_num(*crit_damage),
             ammo: *ammo,
-            // Projectile fields
-            subtype: None,
-            projectile_speed: zero,
-            proj_turn_rate: zero,
-            fuse_ticks: 0,
-            explosion_radius: zero,
-            explosion_damage: zero,
-            proj_hit_radius: zero,
-            // Beam fields
-            charge_ticks: 0,
-            duration_ticks: 0,
-            beam_width: zero,
-            slew_rate: zero,
-            track_rate: zero,
-            ramp_ticks: 0,
-            ramp_max: I16F16::ONE,
-            active_beam_id: None,
+            kind: WeaponKind::Hitscan { miss_chance: I16F16::from_num(*miss_chance) },
         },
 
         WeaponDef::Projectile {
@@ -190,7 +169,6 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
             ammo,
         } => {
             let st = subtype.unwrap_or(ProjectileSubtype::SeekingMissile);
-            // Look up default hit radius from config if not overridden
             let key = match st {
                 ProjectileSubtype::SeekingMissile => "seeking_missile",
                 ProjectileSubtype::Torpedo => "torpedo",
@@ -199,31 +177,22 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
             let hit_r = config.projectile_hit_radii.get(key).copied().unwrap_or(2.0);
 
             WeaponState {
-                weapon_type: WeaponType::Projectile,
                 damage: I16F16::from_num(*damage),
                 range: I16F16::from_num(*range),
                 cooldown_ticks: *cooldown_ticks,
                 cooldown_remaining: 0,
-                miss_chance: zero,
                 crit_chance: I16F16::from_num(*crit_chance),
                 crit_damage: I16F16::from_num(*crit_damage),
                 ammo: *ammo,
-                subtype: Some(st),
-                projectile_speed: I16F16::from_num(*projectile_speed),
-                proj_turn_rate: I16F16::from_num(*turn_rate),
-                fuse_ticks: *fuse_ticks,
-                explosion_radius: I16F16::from_num(*explosion_radius),
-                explosion_damage: I16F16::from_num(*explosion_damage),
-                proj_hit_radius: I16F16::from_num(hit_r),
-                // Beam fields unused
-                charge_ticks: 0,
-                duration_ticks: 0,
-                beam_width: zero,
-                slew_rate: zero,
-                track_rate: zero,
-                ramp_ticks: 0,
-                ramp_max: I16F16::ONE,
-                active_beam_id: None,
+                kind: WeaponKind::Projectile {
+                    subtype: st,
+                    speed: I16F16::from_num(*projectile_speed),
+                    turn_rate: I16F16::from_num(*turn_rate),
+                    fuse_ticks: *fuse_ticks,
+                    explosion_radius: I16F16::from_num(*explosion_radius),
+                    explosion_damage: I16F16::from_num(*explosion_damage),
+                    hit_radius: I16F16::from_num(hit_r),
+                },
             }
         }
 
@@ -242,32 +211,23 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
             crit_damage,
             ammo,
         } => WeaponState {
-            weapon_type: WeaponType::Beam,
             damage: I16F16::from_num(*damage),
             range: I16F16::from_num(*range),
             cooldown_ticks: *cooldown_ticks,
             cooldown_remaining: 0,
-            miss_chance: zero,
             crit_chance: I16F16::from_num(*crit_chance),
             crit_damage: I16F16::from_num(*crit_damage),
             ammo: *ammo,
-            // Projectile fields unused
-            subtype: None,
-            projectile_speed: zero,
-            proj_turn_rate: zero,
-            fuse_ticks: 0,
-            explosion_radius: zero,
-            explosion_damage: zero,
-            proj_hit_radius: zero,
-            // Beam fields
-            charge_ticks: *charge_ticks,
-            duration_ticks: *duration_ticks,
-            beam_width: I16F16::from_num(*beam_width),
-            slew_rate: I16F16::from_num(*slew_rate),
-            track_rate: I16F16::from_num(*track_rate),
-            ramp_ticks: *ramp_ticks,
-            ramp_max: I16F16::from_num(*ramp_max),
-            active_beam_id: None,
+            kind: WeaponKind::Beam {
+                charge_ticks: *charge_ticks,
+                duration_ticks: *duration_ticks,
+                beam_width: I16F16::from_num(*beam_width),
+                slew_rate: I16F16::from_num(*slew_rate),
+                track_rate: I16F16::from_num(*track_rate),
+                ramp_ticks: *ramp_ticks,
+                ramp_max: I16F16::from_num(*ramp_max),
+                active_beam_id: None,
+            },
         },
     }
 }

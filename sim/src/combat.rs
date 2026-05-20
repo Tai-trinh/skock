@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 
 use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
-use types::{BeamId, HullClass, ProjectileId, ProjectileSubtype, ShipId, WeaponType};
+use types::{BeamId, HullClass, ProjectileId, ProjectileSubtype, ShipId};
 
 use crate::{
     config::SimConfig,
     geometry::{dist_sq, min_dist_sq_to_segment},
-    state::{BeamEntity, BeamPhase, Event, Fleet, Pos2, Projectile, SimState, Vec2},
+    state::{BeamEntity, BeamPhase, Event, Fleet, Pos2, Projectile, SimState, Vec2, WeaponKind},
 };
 
 // ── RNG ───────────────────────────────────────────────────────────────────────
@@ -59,19 +59,25 @@ fn fire_hitscan(state: &mut SimState) {
         let (fleet, pos, range_sq, damage, miss_chance, crit_chance, crit_damage, cooldown_ticks) = {
             let ship = &state.ships[&id];
             let w = match &ship.weapon {
-                Some(w) if w.weapon_type == WeaponType::Hitscan && w.cooldown_remaining == 0 => w,
+                Some(w)
+                    if matches!(w.kind, WeaponKind::Hitscan { .. })
+                        && w.cooldown_remaining == 0 =>
+                {
+                    w
+                }
                 _ => continue,
             };
             if w.ammo.is_some_and(|a| a == 0) {
                 continue;
             }
+            let WeaponKind::Hitscan { miss_chance } = w.kind else { unreachable!() };
             let r = I32F32::from_num(w.range);
             (
                 ship.fleet,
                 ship.pos,
                 r * r,
                 w.damage,
-                w.miss_chance,
+                miss_chance,
                 w.crit_chance,
                 w.crit_damage,
                 w.cooldown_ticks,
@@ -120,7 +126,7 @@ fn fire_hitscan(state: &mut SimState) {
     }
 }
 
-fn spawn_projectiles(state: &mut SimState, config: &SimConfig) {
+fn spawn_projectiles(state: &mut SimState, _config: &SimConfig) {
     // Snapshot ship data needed for target selection before touching projectiles
     let ship_snapshot: Vec<(ShipId, Fleet, Pos2)> =
         state.ships.iter().map(|(id, s)| (*id, s.fleet, s.pos)).collect();
@@ -131,24 +137,34 @@ fn spawn_projectiles(state: &mut SimState, config: &SimConfig) {
     for id in ship_ids {
         let Some(ship) = state.ships.get(&id) else { continue };
         let w = match &ship.weapon {
-            Some(w) if w.weapon_type == WeaponType::Projectile && w.cooldown_remaining == 0 => w,
+            Some(w)
+                if matches!(w.kind, WeaponKind::Projectile { .. }) && w.cooldown_remaining == 0 =>
+            {
+                w
+            }
             _ => continue,
         };
         if w.ammo.is_some_and(|a| a == 0) {
             continue;
         }
 
+        let WeaponKind::Projectile {
+            subtype,
+            speed,
+            turn_rate,
+            fuse_ticks,
+            explosion_radius: expl_radius,
+            explosion_damage: expl_damage,
+            hit_radius,
+        } = w.kind
+        else {
+            unreachable!()
+        };
+
         let fleet = ship.fleet;
         let pos = ship.pos;
         let heading = ship.heading;
-        let subtype = w.subtype.unwrap_or(ProjectileSubtype::SeekingMissile);
-        let speed = w.projectile_speed;
-        let turn_rate = w.proj_turn_rate;
         let damage = w.damage;
-        let fuse_ticks = w.fuse_ticks;
-        let expl_radius = w.explosion_radius;
-        let expl_damage = w.explosion_damage;
-        let hit_radius = w.proj_hit_radius;
         let crit_chance = w.crit_chance;
         let crit_damage = w.crit_damage;
         let cooldown_ticks = w.cooldown_ticks;
@@ -201,16 +217,7 @@ fn spawn_projectiles(state: &mut SimState, config: &SimConfig) {
             }
         };
 
-        let proj_hit_radius = if hit_radius > I16F16::ZERO {
-            hit_radius
-        } else {
-            let key = match subtype {
-                ProjectileSubtype::SeekingMissile => "seeking_missile",
-                ProjectileSubtype::Torpedo => "torpedo",
-                ProjectileSubtype::Mine => "mine",
-            };
-            I16F16::from_num(config.projectile_hit_radii.get(key).copied().unwrap_or(2.0))
-        };
+        let proj_hit_radius = hit_radius;
 
         let fuse = if fuse_ticks > 0 { fuse_ticks } else { 180 };
         let proj_id = state.alloc_projectile_id();
@@ -257,9 +264,8 @@ fn start_beams(state: &mut SimState) {
         let Some(ship) = state.ships.get(&id) else { continue };
         let w = match &ship.weapon {
             Some(w)
-                if w.weapon_type == WeaponType::Beam
-                    && w.cooldown_remaining == 0
-                    && w.active_beam_id.is_none() =>
+                if matches!(w.kind, WeaponKind::Beam { active_beam_id: None, .. })
+                    && w.cooldown_remaining == 0 =>
             {
                 w
             }
@@ -269,17 +275,24 @@ fn start_beams(state: &mut SimState) {
             continue;
         }
 
+        let WeaponKind::Beam {
+            charge_ticks,
+            duration_ticks,
+            beam_width,
+            slew_rate,
+            track_rate,
+            ramp_ticks,
+            ramp_max,
+            ..
+        } = w.kind
+        else {
+            unreachable!()
+        };
+
         let fleet = ship.fleet;
         let pos = ship.pos;
         let range = w.range;
         let damage = w.damage;
-        let beam_width = w.beam_width;
-        let charge_ticks = w.charge_ticks;
-        let duration_ticks = w.duration_ticks;
-        let slew_rate = w.slew_rate;
-        let track_rate = w.track_rate;
-        let ramp_ticks = w.ramp_ticks;
-        let ramp_max = w.ramp_max;
         let crit_chance = w.crit_chance;
         let crit_damage = w.crit_damage;
         let cooldown_ticks = w.cooldown_ticks;
@@ -301,6 +314,7 @@ fn start_beams(state: &mut SimState) {
                 id: beam_id,
                 source_id: id,
                 owner_fleet: fleet,
+                source_pos: pos,
                 current_angle: initial_angle,
                 phase: BeamPhase::Charging,
                 charge_ticks_remaining: charge_ticks.max(1),
@@ -320,7 +334,9 @@ fn start_beams(state: &mut SimState) {
 
         if let Some(ship) = state.ships.get_mut(&id) {
             if let Some(w) = ship.weapon.as_mut() {
-                w.active_beam_id = Some(beam_id);
+                if let WeaponKind::Beam { ref mut active_beam_id, .. } = w.kind {
+                    *active_beam_id = Some(beam_id);
+                }
                 w.cooldown_remaining = cooldown_ticks;
             }
         }
@@ -634,8 +650,11 @@ pub fn resolve_beams(state: &mut SimState, config: &SimConfig) {
         state.ships.iter().map(|(id, s)| (*id, s.fleet, s.pos, s.hull_class)).collect();
 
     for bid in beam_ids {
-        let Some(beam) = state.beams.get(&bid) else { continue };
-        let source_id = beam.source_id;
+        // Narrow the borrow to just extract source_id, then release it before the mutable update.
+        let source_id = match state.beams.get(&bid) {
+            Some(b) => b.source_id,
+            None => continue,
+        };
 
         if !state.ships.contains_key(&source_id) {
             beams_to_remove.push(bid);
@@ -643,7 +662,9 @@ pub fn resolve_beams(state: &mut SimState, config: &SimConfig) {
         }
 
         let source_pos = state.ships[&source_id].pos;
+        state.beams.get_mut(&bid).unwrap().source_pos = source_pos;
 
+        let beam = state.beams.get(&bid).unwrap();
         match beam.phase {
             BeamPhase::Charging => {
                 let beam = state.beams.get_mut(&bid).unwrap();
@@ -771,7 +792,9 @@ pub fn resolve_beams(state: &mut SimState, config: &SimConfig) {
         if let Some(beam) = state.beams.remove(bid) {
             if let Some(ship) = state.ships.get_mut(&beam.source_id) {
                 if let Some(w) = ship.weapon.as_mut() {
-                    w.active_beam_id = None;
+                    if let WeaponKind::Beam { ref mut active_beam_id, .. } = w.kind {
+                        *active_beam_id = None;
+                    }
                 }
             }
         }

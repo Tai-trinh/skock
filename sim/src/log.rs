@@ -217,19 +217,15 @@ pub fn write_tick(out: &mut impl Write, state: &SimState) -> io::Result<()> {
     let beams: Vec<BeamSnapshot> = state
         .beams
         .values()
-        .map(|b| {
-            let source_pos =
-                state.ships.get(&b.source_id).map(|s| s.pos).unwrap_or(crate::state::Pos2::ZERO);
-            BeamSnapshot {
-                id: b.id.0,
-                fleet: fleet_byte(b.owner_fleet),
-                source_pos_x: source_pos.x.to_bits(),
-                source_pos_y: source_pos.y.to_bits(),
-                current_angle: b.current_angle.to_bits(),
-                phase: phase_byte(b.phase),
-                beam_width: b.beam_width.to_bits(),
-                range: b.range.to_bits(),
-            }
+        .map(|b| BeamSnapshot {
+            id: b.id.0,
+            fleet: fleet_byte(b.owner_fleet),
+            source_pos_x: b.source_pos.x.to_bits(),
+            source_pos_y: b.source_pos.y.to_bits(),
+            current_angle: b.current_angle.to_bits(),
+            phase: phase_byte(b.phase),
+            beam_width: b.beam_width.to_bits(),
+            range: b.range.to_bits(),
         })
         .collect();
 
