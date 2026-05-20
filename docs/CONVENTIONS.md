@@ -1,5 +1,3 @@
-Sim determinism rules and working conventions for Skock.
-
 ## Sim determinism (never break these)
 
 Breaking determinism is a silent, catastrophic bug. Given the same seed and fleet snapshots, every sim run must produce byte-identical output.
@@ -21,4 +19,3 @@ Breaking determinism is a silent, catastrophic bug. Given the same seed and flee
 
 - Read only the files needed for the current task. Don't load the whole codebase.
 - When a module stabilises, add a short `README.md` in its folder instead of expanding root context.
-- If something here contradicts newer guidance in chat, ask.

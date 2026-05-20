@@ -2,11 +2,11 @@
 
 ## Prefer Brevity
 
-* Omit unnecessary words, comments, and abstractions.
-* Prefer simple, direct solutions over clever or complex ones.
-* Let clear naming reduce the need for explanation.
-* If something can be shorter without losing clarity, make it shorter.
-* Brevity should not sacrifice readability—clarity comes first.
+- Omit unnecessary words, comments, and abstractions.
+- Prefer simple, direct solutions over clever or complex ones.
+- Let clear naming reduce the need for explanation.
+- If something can be shorter without losing clarity, make it shorter.
+- Brevity should not sacrifice readability—clarity comes first.
 
 ## Formatting
 
@@ -131,14 +131,22 @@ private readonly Dictionary<uint, ShipNode> _shipNodes = [];
 
 Prefer `switch` expressions over `switch` statements when returning a value — they enforce exhaustiveness and read as data, not control flow.
 
-## Prefer Result Types Over Exceptions
+## Prefer Result Types Over Exceptions (C#)
 
-Do not use try/catch for normal control flow. Use Result (or Either/Option) types instead.
+Use [LanguageExt](https://github.com/louthy/language-ext) Result types for fallible C# operations instead of throwing or catching exceptions for control flow.
 
-* Make failures explicit in the return type (Result<T, E>).
-* Handle errors via pattern matching or combinators.
-* Avoid generic catches.
-* Reserve exceptions for truly exceptional, unrecoverable cases.
+- `Fin<A>` — operation succeeds with `A` or fails with a typed `Error`. Use for interface methods that wrap the Rust binary or remote server.
+- `Option<A>` — value may be absent. Prefer over `null` or nullable reference types.
+
+```csharp
+// Good
+Task<Fin<DockOffersResult>> GetOffersAsync(DockSessionInput input);
+
+// Avoid — forces callers into try/catch for business outcomes
+Task<DockOffersResult> GetOffersAsync(DockSessionInput input);
+```
+
+Reserve exceptions for truly unrecoverable failures: missing binary, IO errors, process crashes. Do not use try/catch for normal control flow.
 
 ## Godot scene design
 
@@ -245,15 +253,6 @@ No `FIXME`, `HACK`, or bare `TODO` without a scope. TODOs are reviewed at the st
 
 Always set `CreateNoWindow = true` on `ProcessStartInfo` when spawning a helper binary from the Godot client. Without it, Windows opens a visible console window for every subprocess (sim, dockyard, any future binary). `UseShellExecute` must also be `false` whenever stdin/stdout are redirected.
 
-The Godot editor resolves binary paths from `target/release/`. Always build helper binaries with `--release` before running the game:
-
-```
-cargo.exe build -p sim --release
-cargo.exe build -p dockyard --release
-```
-
-A missing binary is silent from the UI perspective: the `LocalDockyardAdapter` constructor throws, `OpenSessionAsync` catches it, and the dockyard renders empty. If the dockyard shows nothing to shop, verify the release binaries exist first.
-
 ## What is never allowed
 
 - Dead code left behind "just in case" — delete it; git history exists
@@ -261,10 +260,6 @@ A missing binary is silent from the UI perspective: the `LocalDockyardAdapter` c
 - `unwrap()` in sim code on paths that can fail at runtime — use `expect("invariant: ...")` with an explanation, or propagate the error
 - `clone()` as a shortcut when a borrow would work — flag it with `// TODO(perf): clone`
 - Magic numbers without a named constant
-
-## Self-review checklist
-
-See [Workflows](docs/WORKFLOWS.md) — before-commit checklist.
 
 ## When to pay debt
 

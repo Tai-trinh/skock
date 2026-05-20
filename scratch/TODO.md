@@ -13,6 +13,7 @@ Low-priority design notes and balance questions. Not coding context — move her
 - Revisit Dreadnought weapon stats and role balance once playtested.
 - Revisit ship roles — add Shield projector (support ship that extends shields to nearby friendlies) once core roles are playtested.
 - Revisit targeting logic after playtesting — nearest enemy may produce boring behaviour at scale.
+- Consider damage falloff by distance for explosion radius once basic explosions are playtested.
 
 ## Boids
 
@@ -43,6 +44,8 @@ Low-priority design notes and balance questions. Not coding context — move her
 ## Economy / shop
 
 - Shop economy needs playtesting — reroll costs, Tech drop rates, doctrine bonus magnitudes, rare equipment pool.
+- Tune Salvage payout multipliers (`JumpNumber × 10` base, `× 15` victory bonus) via playtesting.
+- Tune Tech drop scaling (1/2/3 Tech at jumps 1–3/4–6/7–8) via playtesting.
 
 ## Client / meta
 

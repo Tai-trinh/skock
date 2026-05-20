@@ -2,8 +2,6 @@
 
 Battles are fully deterministic: replaying a battle with the same seed and fleet snapshots produces byte-identical results on any machine, enabling local replays and server-side anti-cheat verification. The multiplayer layer is simple: retrieve an opponent's fleet from the server and auto-battle it locally.
 
-Deferred design notes and balance TODOs belong in [`scratch/TODO.md`](scratch/TODO.md), not here.
-
 ## Battlefield
 
 1000 × 1000 unit coordinate space, origin at center. Fleet A spawns around x = -400, fleet B around x = +400. Ships arranged in their fleet's `formation` at spawn with small deterministic position noise (seeded from the battle seed via xoshiro256+) — ships look organic rather than perfectly geometric. Mothership always anchors back-center with no noise. Weapon ranges meaningful in the 50–300 unit range.
@@ -53,8 +51,8 @@ Ships are the primary combo pieces. Doctrines are the synergizers — they activ
 4. Your fleet warps in from the left; the opponent warps in from the right.
 5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. The attrition design goal is to always crown a victor — escalating damage should eliminate at least one Mothership before 120 seconds in all realistic cases. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
 6. Earn resources based on outcome:
-   - `Salvage` — flat payout every battle regardless of outcome: `JumpNumber × 10`. Victory adds a flat bonus: `JumpNumber × 15`. Scaling with jump number keeps the payout meaningful as costs grow; the base payout prevents death spirals — a losing player always recovers enough to rebuild. TODO: tune multipliers via playtesting.
-   - `Tech` — victories only. Scales with JumpNumber: 1 Tech (jumps 1–3), 2 Tech (jumps 4–6), 3 Tech (jumps 7–8). TODO: tune via playtesting.
+   - `Salvage` — flat payout every battle regardless of outcome: `JumpNumber × 10`. Victory adds a flat bonus: `JumpNumber × 15`. Scaling with jump number keeps the payout meaningful as costs grow; the base payout prevents death spirals — a losing player always recovers enough to rebuild.
+   - `Tech` — victories only. Scales with JumpNumber: 1 Tech (jumps 1–3), 2 Tech (jumps 4–6), 3 Tech (jumps 7–8).
 
 ### Between jumps
 
@@ -82,8 +80,7 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 - **Torpedo** — straight-line, no homing (or very low turn rate). High damage, long lifetime. Interceptable by point defense. May carry an explosive payload (see below).
 - **Drifting bomb / mine** — launched with an initial velocity then drifts unpowered. Detonates on proximity (radius trigger). No target tracking. Can be shot down by point defense. Always explosive.
 
-**Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits both friendly and enemy ships. The explosion is a renderer event (`explosion_detonated`) with a position and radius for visual effect. TODO: consider damage falloff by distance once basic explosions are playtested.
-
+**Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits both friendly and enemy ships. The explosion is a renderer event (`explosion_detonated`) with a position and radius for visual effect.
 
 ### Events
 
@@ -103,13 +100,11 @@ Ships are identified by two fields plus an optional weight designation. Display 
 
 **`weight`** *(optional)* — `Light` or `Heavy`. Omitted = standard. Light = faster, less armor. Heavy = slower, more armor.
 
-`Dreadnought` hull class — high HP, high armor/shields, high tonnage. Carries a short-range hitscan weapon — not toothless, but not a damage dealer. Boid weights favour pushing toward enemies and holding position. Purpose: soak hits and shield ships behind them. TODO: revisit Dreadnought weapon stats and role balance once playtested.
-
-TODO: revisit ship roles — add Shield projector (support ship that extends shields to nearby friendlies) once core roles are playtested.
+`Dreadnought` hull class — high HP, high armor/shields, high tonnage. Carries a short-range hitscan weapon — not toothless, but not a damage dealer. Boid weights favour pushing toward enemies and holding position. Purpose: soak hits and shield ships behind them.
 
 **Hull hit shape** — a ship's collision geometry: a list of circles in ship-local space, each defined by a forward/lateral offset and a radius. Circles rotate with the ship's heading. Most ships are a single circle; elongated hulls (Battlecruiser, Dreadnought) use two circles staggered along the forward axis. Per hull class, tuned in sim config. Used for projectile and beam hit detection; mine proximity and explosion damage use ship center only.
 
-**Targeting:** default is nearest enemy. Ships have an optional `target_priority` field that overrides targeting for specific roles (e.g. `PointDefense` targets incoming projectiles first, then nearest enemy). Defined per ship in the fleet JSON. TODO: revisit targeting logic after playtesting — nearest enemy may produce boring behaviour at scale.
+**Targeting:** default is nearest enemy. Ships have an optional `target_priority` field that overrides targeting for specific roles (e.g. `PointDefense` targets incoming projectiles first, then nearest enemy). Defined per ship in the fleet JSON.
 
 **Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance. Both work together: boids handle positioning, range check handles firing permission.
 
@@ -126,7 +121,7 @@ Forces are a weighted sum per ship: `separation`, `cohesion`, `alignment`, `seek
 
 ## Client
 
-**Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Start with one faction; add more as art and balance allows. Admirals belong to a faction.
+**Factions:** each fleet belongs to a faction. Faction determines hull mesh set (visual identity) and confers passive fleet bonuses via `faction_effects` in the fleet JSON. Admirals belong to a faction.
 
 **Admiral:** the first decision of every run. The player picks one admiral from a selection screen before jump 1. Each admiral comes with a small starting fleet (2–3 ships that match their archetype) and a permanent passive bonus via `admiral_effects`. `admiral_id` is opaque to the sim; the client uses it to look up the admiral's portrait and starting fleet definition. Locked for the full run once chosen.
 
