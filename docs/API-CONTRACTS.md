@@ -64,7 +64,7 @@ Fleet JSON top-level structure:
 }
 ```
 
-`formation` controls spawn layout. Mothership always anchors back-center regardless of formation type. Formations are inspired by historical naval tactics. Initial formation: `wedge` only. Candidates for future additions: `line_of_battle` (broadside line), `echelon` (diagonal stagger), `encirclement` (flanking wings), `defensive_circle` (ships orbiting the Mothership). TODO: add formations once wedge is playtested and the formation system is proven.
+`formation` controls spawn layout. Mothership always anchors back-center regardless of formation type. Formations are inspired by historical naval tactics. Initial formation: `wedge` only.
 
 Wedge ordering front to back by hull class: `Dreadnought` → `Corvette` → `Frigate` → `Destroyer` → `Cruiser` → `Battlecruiser` → `Mothership`. Dreadnoughts absorb first contact at the tip; Battlecruisers anchor near the Mothership; Mothership at the rear.
 
@@ -185,9 +185,6 @@ Known effect types:
 
 Both `armor` and shield fields are optional — omitted means no armor or shields. `armor` is a damage reduction fraction (0.10 = 10% of incoming damage absorbed). Shields are a separate HP pool depleted before hull HP. `shield_recharge_rate` is HP restored to shields per tick (optional, omitted means shields do not recharge). Hull HP does not regenerate by default — revisit if playtesting reveals a need.
 
-TODO: revisit ship stat block — more fields likely needed once boid tuning and combat balancing begins (e.g. weapon range, point-defense radius, tonnage, shield regen rate).
-TODO: revisit weapon block — more fields may be needed (e.g. splash radius for mines/torpedoes, beam width, projectile speed).
-TODO: revisit proc-based effects (`on_hit_received`, `on_kill`, `on_low_hp`, etc.) once sim code has enough flesh to reason about the trigger/effect pipeline concretely.
 
 ## Sim ↔ client interface
 
@@ -209,8 +206,7 @@ State snapshot and events for the same tick are one record. Godot builds the scr
 
 **Render loop:** interpolated. Renderer runs at display framerate. Each frame computes `t ∈ [0,1]` between the two nearest sim ticks and lerps ship positions and headings. Events fire when `t` crosses a tick boundary. State snapshots allow seeking to any tick directly without replaying from tick 0.
 
-**Playback controls:** play + speed control (1×, 2×, 4×). No scrubbing in initial build. TODO: add scrubbing if players request it.
+**Playback controls:** play + speed control (1×, 2×, 4×). No scrubbing in initial build.
 
-**Debug overlay** *(toggled by key during battle playback)*: displays raw tick state for a selected ship — position, velocity, HP, shields, active status effects, boid weights, current target, weapon cooldown. Reads directly from the in-memory battle log at the current playback tick. Built first — validates log correctness during sim and renderer development. TODO: add player-facing fleet stats panel (damage dealt/received, ships destroyed, weapons fired) once debug overlay confirms log data is correct.
+**Debug overlay** *(toggled by key during battle playback)*: displays raw tick state for a selected ship — position, velocity, HP, shields, active status effects, boid weights, current target, weapon cooldown. Reads directly from the in-memory battle log at the current playback tick. Built first — validates log correctness during sim and renderer development.
 
-TODO: validate schema against renderer needs once the engine layer is being built.
