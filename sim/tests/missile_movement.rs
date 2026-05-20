@@ -15,6 +15,7 @@ struct ProjSnap {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct TickRec {
     tick: u32,
     projectiles: Vec<ProjSnap>,
@@ -76,8 +77,6 @@ fn missiles_move_each_tick() {
             Ok(t) => t,
             Err(_) => break,
         };
-        let consumed = rmp_serde::to_vec_named(&serde_json::Value::Null).unwrap().len(); // won't work
-                                                                                         // Use a different approach: decode with tracking
         for p in &tick.projectiles {
             ticks_with_proj.push((tick.tick, p.id, p.pos_x, p.pos_y));
         }
