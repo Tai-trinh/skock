@@ -346,11 +346,34 @@ public partial class RunState : Node, IRunData
                     CooldownTicks = 45,
                 },
             },
-            Ships =
-            [
-                BlueprintCatalog.All[0].Instantiate(),
-                BlueprintCatalog.All[0].Instantiate(),
-                BlueprintCatalog.All[0].Instantiate(),
-            ],
+            Ships = [DefaultCorvette(), DefaultCorvette(), DefaultCorvette()],
+        };
+
+    private static ShipDefData DefaultCorvette() =>
+        new()
+        {
+            BlueprintDrawingId = "corvette_a",
+            HullClass = HullClass.Corvette,
+            Role = Role.Fighter,
+            Hp = 60,
+            MaxHp = 60,
+            Speed = 8,
+            Acceleration = 2.5,
+            TurnRate = 1.5,
+            BoidWeights = new BoidWeightsData
+            {
+                Separation = 1.5,
+                Cohesion = 0.3,
+                Alignment = 0.3,
+                SeekEnemy = 1.5,
+                MaintainRange = 1.0,
+            },
+            Weapon = new WeaponDefData
+            {
+                Type = "hitscan",
+                Damage = 15,
+                Range = 120,
+                CooldownTicks = 30,
+            },
         };
 }

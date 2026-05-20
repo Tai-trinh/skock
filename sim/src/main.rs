@@ -61,7 +61,12 @@ fn main() {
     let stdout = io::stdout();
     let mut out = BufWriter::new(stdout.lock());
 
-    if let Err(e) = log::write_header(&mut out) {
+    let write_header_fn: fn(&mut BufWriter<_>) -> io::Result<()> =
+        if args.debug { log::write_header_json } else { log::write_header };
+    let write_tick_fn: fn(&mut BufWriter<_>, &SimState) -> io::Result<()> =
+        if args.debug { log::write_tick_json } else { log::write_tick };
+
+    if let Err(e) = write_header_fn(&mut out) {
         emit_error("io_error", &e.to_string());
         std::process::exit(1);
     }
@@ -69,7 +74,7 @@ fn main() {
     let result = loop {
         let result = run_tick(&mut state, &config);
 
-        if let Err(e) = log::write_tick(&mut out, &state) {
+        if let Err(e) = write_tick_fn(&mut out, &state) {
             emit_error("io_error", &e.to_string());
             std::process::exit(1);
         }

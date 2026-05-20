@@ -42,6 +42,7 @@ public partial class BattleRenderer : Node2D
     private readonly Dictionary<uint, ShipNode> _shipNodes = [];
     private readonly Dictionary<uint, ProjectileNode> _projNodes = [];
     private readonly Dictionary<uint, BeamNode> _beamNodes = [];
+    private int _lastEventTick = -1;
     private Control? _inspectorOverlay;
     private ConfirmationDialog _abandonConfirm = null!;
     private Task? _recordTask;
@@ -179,6 +180,7 @@ public partial class BattleRenderer : Node2D
     {
         _playback = new PlaybackState(log, result);
         RebuildShipNodes(log);
+        _lastEventTick = -1;
     }
 
     private void RebuildShipNodes(BattleLog log)
@@ -210,15 +212,26 @@ public partial class BattleRenderer : Node2D
             return;
 
         var (tickA, tickB, t) = _playback.CurrentFrame();
+        var currentTickIndex = (int)Math.Floor(_playback.Time);
 
-        foreach (var events in _playback.ConsumeNewEvents())
-            FireTickEvents(events);
+        // Fire events for any ticks we've advanced past since last frame
+        FirePendingEvents(currentTickIndex, tickA);
 
         RenderShips(tickA, tickB, t);
         RenderProjectiles(tickA, tickB, t);
         RenderBeams(tickA);
         UpdateDebugLabel(tickA);
         _debugOverlay.UpdateFromSnapshot(tickA.Ships, 0);
+    }
+
+    private void FirePendingEvents(int currentTickIndex, TickRecord currentTick)
+    {
+        if (currentTickIndex <= _lastEventTick)
+            return;
+
+        // Fire events for the current tick (and any skipped ticks we don't have direct access to)
+        FireTickEvents(currentTick.Events);
+        _lastEventTick = currentTickIndex;
     }
 
     private void FireTickEvents(LogEvent[] events)

@@ -74,6 +74,21 @@ fn insert_ship(state: &mut SimState, fleet: Fleet, pos: Pos2) -> ShipId {
 }
 
 #[test]
+fn torpedo_advances_position_every_tick() {
+    let config = SimConfig::default_embedded();
+    let mut state = make_state();
+    let speed = 7.0f64;
+    let id = insert_torpedo(&mut state, Pos2::ZERO, Vec2::from_f64(speed, 0.0), 100);
+
+    for tick in 1..=5 {
+        advance_projectiles(&mut state, &config);
+        let x = state.projectiles[&id].pos.x.to_num::<f64>();
+        let expected = speed * tick as f64;
+        assert!((x - expected).abs() < 0.02, "tick {tick}: expected x≈{expected}, got {x}");
+    }
+}
+
+#[test]
 fn torpedo_moves_in_velocity_direction_each_tick() {
     let config = SimConfig::default_embedded();
     let mut state = make_state();

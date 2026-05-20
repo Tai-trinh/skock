@@ -17,11 +17,6 @@ classDiagram
     class BattleOutcomeResolver {
         +Resolve(run, result, inputs, playerSnapshot, opponentSnapshot) Task<PostBattleTransition>
     }
-    class Blueprint {
-        +Instantiate() ShipDefData
-    }
-    class BlueprintCatalog {
-    }
     class DockSessionInput {
     }
     class FleetShipRef {

@@ -169,6 +169,19 @@ public sealed class ShipDefData
                     MissChance = Weapon.MissChance,
                     CritChance = Weapon.CritChance,
                     CritDamage = Weapon.CritDamage,
+                    Subtype = Weapon.Subtype,
+                    ProjectileSpeed = Weapon.ProjectileSpeed,
+                    ProjectileTurnRate = Weapon.ProjectileTurnRate,
+                    FuseTicks = Weapon.FuseTicks,
+                    ExplosionRadius = Weapon.ExplosionRadius,
+                    ExplosionDamage = Weapon.ExplosionDamage,
+                    ChargeTicks = Weapon.ChargeTicks,
+                    DurationTicks = Weapon.DurationTicks,
+                    BeamWidth = Weapon.BeamWidth,
+                    SlewRate = Weapon.SlewRate,
+                    TrackRate = Weapon.TrackRate,
+                    RampTicks = Weapon.RampTicks,
+                    RampMax = Weapon.RampMax,
                 },
         };
 }
@@ -217,6 +230,63 @@ public sealed class WeaponDefData
     [JsonPropertyName("crit_damage")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double CritDamage { get; set; }
+
+    // ── Projectile fields (type = "projectile") ───────────────────────────────
+
+    // ProjectileSubtype serialises as snake_case: "seeking_missile", "torpedo", "mine".
+    [JsonPropertyName("subtype")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Subtype { get; set; }
+
+    [JsonPropertyName("projectile_speed")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double ProjectileSpeed { get; set; }
+
+    [JsonPropertyName("turn_rate")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double ProjectileTurnRate { get; set; }
+
+    [JsonPropertyName("fuse_ticks")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int FuseTicks { get; set; }
+
+    [JsonPropertyName("explosion_radius")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double ExplosionRadius { get; set; }
+
+    [JsonPropertyName("explosion_damage")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double ExplosionDamage { get; set; }
+
+    // ── Beam fields (type = "beam") ───────────────────────────────────────────
+
+    [JsonPropertyName("charge_ticks")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int ChargeTicks { get; set; }
+
+    [JsonPropertyName("duration_ticks")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int DurationTicks { get; set; }
+
+    [JsonPropertyName("beam_width")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double BeamWidth { get; set; }
+
+    [JsonPropertyName("slew_rate")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double SlewRate { get; set; }
+
+    [JsonPropertyName("track_rate")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double TrackRate { get; set; }
+
+    [JsonPropertyName("ramp_ticks")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int RampTicks { get; set; }
+
+    [JsonPropertyName("ramp_max")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double RampMax { get; set; }
 }
 
 public static class ShipDisplay

@@ -32,6 +32,7 @@ The `IDockyard` C# interface is the seam. `LocalDockyardAdapter` (offline) spawn
 - Player identity (PlayerID) is introduced as a first-class input to the binary. In offline mode a stable local UUID is generated and stored. In online mode the platform ID (Steam, Apple, etc.) is used. The binary uses the PlayerID to gate metaprogression-unlocked content — the lookup mechanism for offline mode is deferred.
 - `SalvageShip` moves from `IRunStore` to `IDockyard`: salvage yield (`tonnage × 3`) is a game rule and must be enforced by Rust.
 - `System.Random`-based offer generation in `DockUi.cs` is deleted. `TierRerolls` save-state field is retained; `ResearchRerolls[4]` is added to track rerolls per research track.
+- `Blueprint.cs` (C# blueprint catalog) is deleted. Blueprint data — display name, salvage cost, tonnage, full ship def — is returned by the dockyard binary in `ShipSlotOffer` at offer time. There is no C#-side catalog to drift.
 
 ## Trade-off rejected
 
