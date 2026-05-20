@@ -1,0 +1,85 @@
+@startuml
+enum HullClass {
+    Corvette,
+    Frigate,
+    Destroyer,
+    Cruiser,
+    Battlecruiser,
+    Dreadnought,
+}
+enum Role {
+    Fighter,
+    Missile,
+    Torpedo,
+    Mine,
+    PointDefense,
+    Artillery,
+    Railgun,
+}
+class HullClassExtensions <<static>> {
+    + {static} Tonnage(h:HullClass) : int
+}
+class FleetJsonData <<sealed>> {
+    + Faction : string <<get>> <<set>> = ""
+    + AdmiralId : string <<get>> <<set>> = ""
+    + Formation : string <<get>> <<set>> = "wedge"
+    + Mothership : ShipDefData <<get>> <<set>>
+    + Ships : List<ShipDefData> <<get>> <<set>>
+    + Doctrines : List<object> <<get>> <<set>>
+    + RoleEquipment : List<object> <<get>> <<set>>
+    + FactionEffects : List<object> <<get>> <<set>>
+    + AdmiralEffects : List<object> <<get>> <<set>>
+}
+class ShipDefData <<sealed>> {
+    + IsMothership : bool <<get>> <<set>>
+    + BlueprintDrawingId : string <<get>> <<set>> = ""
+    + HullClass : HullClass <<get>> <<set>>
+    + Role : Role <<get>> <<set>>
+    + Weight : string? <<get>> <<set>>
+    + Hp : double <<get>> <<set>>
+    + MaxHp : double <<get>> <<set>>
+    + Speed : double <<get>> <<set>>
+    + Acceleration : double <<get>> <<set>>
+    + TurnRate : double <<get>> <<set>>
+    + BoidWeights : BoidWeightsData <<get>> <<set>>
+    + Armor : double <<get>> <<set>>
+    + ShieldHp : double <<get>> <<set>>
+    + ShieldMaxHp : double <<get>> <<set>>
+    + ShieldRechargeRate : double <<get>> <<set>>
+    + Weapon : WeaponDefData? <<get>> <<set>>
+    + Equipment : List<object> <<get>> <<set>>
+    + Clone() : ShipDefData
+}
+class BoidWeightsData <<sealed>> {
+    + Separation : double <<get>> <<set>> = 1.0
+    + Cohesion : double <<get>> <<set>> = 1.0
+    + Alignment : double <<get>> <<set>> = 1.0
+    + SeekEnemy : double <<get>> <<set>> = 1.0
+    + MaintainRange : double <<get>> <<set>> = 1.0
+}
+class WeaponDefData <<sealed>> {
+    + Type : string <<get>> <<set>> = "hitscan"
+    + Damage : double <<get>> <<set>>
+    + Range : double <<get>> <<set>>
+    + CooldownTicks : int <<get>> <<set>>
+    + MissChance : double <<get>> <<set>>
+    + CritChance : double <<get>> <<set>>
+    + CritDamage : double <<get>> <<set>>
+    + Subtype : string? <<get>> <<set>>
+    + ProjectileSpeed : double <<get>> <<set>>
+    + ProjectileTurnRate : double <<get>> <<set>>
+    + FuseTicks : int <<get>> <<set>>
+    + ExplosionRadius : double <<get>> <<set>>
+    + ExplosionDamage : double <<get>> <<set>>
+    + ChargeTicks : int <<get>> <<set>>
+    + DurationTicks : int <<get>> <<set>>
+    + BeamWidth : double <<get>> <<set>>
+    + SlewRate : double <<get>> <<set>>
+    + TrackRate : double <<get>> <<set>>
+    + RampTicks : int <<get>> <<set>>
+    + RampMax : double <<get>> <<set>>
+}
+class ShipDisplay <<static>> {
+    + {static} NameFor(ship:ShipDefData) : string
+}
+@enduml

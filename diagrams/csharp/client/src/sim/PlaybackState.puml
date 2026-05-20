@@ -1,0 +1,14 @@
+@startuml
+class PlaybackState <<sealed>> {
+    + IsLoaded : bool <<get>>
+    + TotalTicks : int <<get>>
+    + Result : BattleResult? <<get>>
+    + Time : float <<get>>
+    + PlaybackSpeed : float <<get>> <<set>> = 1f
+    + IsFinished : bool <<get>>
+    + PlaybackState(log:BattleLog, result:BattleResult)
+    + Advance(delta:double, tickRate:int) : void
+    + CurrentFrame() : (TickRecord A, TickRecord B, float T)
+    + ConsumeNewEvents() : IEnumerable<LogEvent[]>
+}
+@enduml

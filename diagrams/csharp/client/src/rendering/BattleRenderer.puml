@@ -1,0 +1,10 @@
+@startuml
+class BattleRenderer <<partial>> {
+    + TickRate : int <<get>> <<set>> = 30
+    + SimRunner : ISimRunner? <<get>> <<set>>
+    + <<override>> _Ready() : void
+    + <<override>> _Process(delta:double) : void
+    + <<override>> _UnhandledInput(@event:InputEvent) : void
+}
+Node2D <|-- BattleRenderer
+@enduml

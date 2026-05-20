@@ -1,0 +1,11 @@
+@startuml
+class LocalRunStore <<sealed>> {
+    + LocalRunStore(statePath:string, fleetPath:string)
+    + Load() : Task<RunSnapshot?>
+    + Save(snapshot:RunSnapshot) : Task
+    + Delete() : Task
+    + StartRun(admiral:Admiral) : Task<RunSnapshot>
+    + GetBattleSeed() : Task<ulong>
+}
+IRunStore <|-- LocalRunStore
+@enduml

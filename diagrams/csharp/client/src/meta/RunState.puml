@@ -1,0 +1,52 @@
+@startuml
+enum RunEndReason {
+    Defeat,
+    Victory,
+}
+class RunState <<partial>> {
+    + {static} Instance : RunState <<get>>
+    + RunEndReason : RunEndReason <<get>>
+    + ProjectDir : string <<get>> = ""
+    + SimBinaryPath : string <<get>> = ""
+    + DockBinaryPath : string <<get>> = ""
+    + PlayerFleetPath : string <<get>> = ""
+    + FallbackFleetPath : string <<get>> = ""
+    + Settings : UserSettings <<get>>
+    + PlayerId : string <<get>> <<set>>
+    + RunSeed : ulong <<get>> <<set>>
+    + Salvage : int <<get>> <<set>> = 50
+    + Tech : int <<get>> <<set>> = 0
+    + HangarCapacity : int <<get>> <<set>> = 10
+    + JumpNumber : int <<get>> <<set>> = 1
+    + LossCount : int <<get>> <<set>> = 0
+    + AdmiralId : string <<get>> <<set>> = ""
+    + Fleet : FleetJsonData <<get>> <<set>>
+    + TierRerolls : int[] <<get>> <<set>>
+    + ResearchRerolls : int[] <<get>> <<set>>
+    + UpgradePurchases : Dictionary<string, int> <<get>> <<set>>
+    + UsedTonnage : int <<get>>
+    + FreeTonnage : int <<get>>
+    + IsRunOver : bool <<get>>
+    + HasActiveRun : bool <<get>> <<set>>
+    + IsBattleActive : bool <<get>>
+    + IsRunComplete : bool <<get>> <<set>>
+    + CurrentOpponentFleet : FleetJsonData? <<get>>
+    + Catalog : IAdmiralStore <<get>>
+    + Stats : IStatsStore <<get>>
+    + <<override>> _Ready() : void
+    + Save() : Task
+    + SaveSettings() : void
+    + <<async>> StartRun(admiral:Admiral) : Task
+    + <<async>> AbandonCurrentRun() : Task
+    + GetOpponentFleetPath() : string
+    + <<async>> SaveAndQuitToMenu() : Task
+    + OpenDockyardSession() : IDockyard
+    + BuildDockSessionInput() : DockSessionInput
+    + ApplyDockSessionDelta(delta:DockDelta) : void
+    + GetBattleSeed() : Task<ulong>
+    + BeginBattle(inputs:BattleInputs, opponentFleet:FleetJsonData?) : void
+    + <<async>> RecordBattleResult(result:BattleResult) : Task
+}
+Node <|-- RunState
+IRunData <|-- RunState
+@enduml

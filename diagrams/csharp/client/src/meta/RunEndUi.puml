@@ -1,0 +1,6 @@
+@startuml
+class RunEndUi <<partial>> {
+    + <<override>> _Ready() : void
+}
+Control <|-- RunEndUi
+@enduml

@@ -1,0 +1,82 @@
+@startuml
+class LogHeader <<sealed>> {
+    + SchemaVersion : uint <<get>> <<init>>
+}
+class TickRecord <<sealed>> {
+    + Tick : uint <<get>> <<init>>
+    + Ships : ShipSnapshot[] <<get>> <<init>>
+    + Projectiles : ProjectileSnapshot[] <<get>> <<init>>
+    + Beams : BeamSnapshot[] <<get>> <<init>>
+    + Events : LogEvent[] <<get>> <<init>>
+}
+class ShipSnapshot <<sealed>> {
+    + Id : uint <<get>> <<init>>
+    + Fleet : byte <<get>> <<init>>
+    + BlueprintDrawingId : string <<get>> <<init>> = ""
+    + IsMothership : bool <<get>> <<init>>
+    + PosX : long <<get>> <<init>>
+    + PosY : long <<get>> <<init>>
+    + Heading : int <<get>> <<init>>
+    + Hp : int <<get>> <<init>>
+    + MaxHp : int <<get>> <<init>>
+    + ShieldHp : int <<get>> <<init>>
+    + ShieldMaxHp : int <<get>> <<init>>
+    + WorldX : float <<get>>
+    + WorldY : float <<get>>
+    + HeadingRad : float <<get>>
+    + HpFraction : float <<get>>
+}
+class ProjectileSnapshot <<sealed>> {
+    + Id : uint <<get>> <<init>>
+    + Fleet : byte <<get>> <<init>>
+    + PosX : long <<get>> <<init>>
+    + PosY : long <<get>> <<init>>
+    + Heading : int <<get>> <<init>>
+    + Subtype : byte <<get>> <<init>>
+    + WorldX : float <<get>>
+    + WorldY : float <<get>>
+    + HeadingRad : float <<get>>
+}
+class BeamSnapshot <<sealed>> {
+    + Id : uint <<get>> <<init>>
+    + Fleet : byte <<get>> <<init>>
+    + SourcePosX : long <<get>> <<init>>
+    + SourcePosY : long <<get>> <<init>>
+    + CurrentAngle : int <<get>> <<init>>
+    + Phase : byte <<get>> <<init>>
+    + BeamWidth : int <<get>> <<init>>
+    + Range : int <<get>> <<init>>
+    + SourceWorldX : float <<get>>
+    + SourceWorldY : float <<get>>
+    + AngleRad : float <<get>>
+    + BeamWidthUnits : float <<get>>
+    + RangeUnits : float <<get>>
+}
+class LogEvent <<sealed>> {
+    + Type : string <<get>> <<init>> = ""
+    + SourceId : uint <<get>> <<init>>
+    + TargetId : uint <<get>> <<init>>
+    + Damage : int <<get>> <<init>>
+    + Fleet : byte <<get>> <<init>>
+    + SourcePosX : long <<get>> <<init>>
+    + SourcePosY : long <<get>> <<init>>
+    + TargetPosX : long <<get>> <<init>>
+    + TargetPosY : long <<get>> <<init>>
+    + Id : uint <<get>> <<init>>
+    + PosX : long <<get>> <<init>>
+    + PosY : long <<get>> <<init>>
+    + Radius : int <<get>> <<init>>
+    + SourceWorldX : float <<get>>
+    + SourceWorldY : float <<get>>
+    + TargetWorldX : float <<get>>
+    + TargetWorldY : float <<get>>
+    + ExplosionWorldX : float <<get>>
+    + ExplosionWorldY : float <<get>>
+    + RadiusUnits : float <<get>>
+}
+class BattleLog <<sealed>> {
+    + Header : LogHeader <<get>>
+    + Ticks : TickRecord[] <<get>>
+    + BattleLog(header:LogHeader, ticks:TickRecord[])
+}
+@enduml

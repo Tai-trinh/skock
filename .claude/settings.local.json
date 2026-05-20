@@ -11,7 +11,9 @@
       "Bash(xargs cat)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Skill(tech-debt)"
+      "Skill(tech-debt)",
+      "Bash(./target/debug/skock-admiral.exe)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

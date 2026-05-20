@@ -1,0 +1,15 @@
+@startuml
+class JumpRecord <<sealed>> {
+    + JumpNumber : int <<get>> <<init>>
+    + Won : bool <<get>> <<init>>
+    + DurationTicks : uint <<get>> <<init>>
+    + EnemiesKilledByHullClass : IReadOnlyDictionary<string, int> <<get>> <<init>>
+    + OwnShipsLostByHullClass : IReadOnlyDictionary<string, int> <<get>> <<init>>
+    + DamageDealt : float <<get>> <<init>>
+    + DamageTaken : float <<get>> <<init>>
+    + PlayerFleetSnapshot : FleetJsonData <<get>> <<init>>
+    + OpponentFleetSnapshot : FleetJsonData <<get>> <<init>>
+    + PlayerUpgrades : IReadOnlyDictionary<string, int> <<get>> <<init>>
+    + PlayerAdmiralId : string <<get>> <<init>> = ""
+}
+@enduml

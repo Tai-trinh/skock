@@ -1,0 +1,5 @@
+@startuml
+interface IDockyard {
+}
+IAsyncDisposable <|-- IDockyard
+@enduml
