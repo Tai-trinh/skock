@@ -62,7 +62,7 @@ det:
 ## Windows targets:
 
 install-win:
-	powershell.exe -ExecutionPolicy Bypass -File install-deps.ps1
+	powershell.exe -ExecutionPolicy Bypass -File scripts/install-deps.ps1
 
 win-test-cs:
 	dotnet.exe test client.tests/skock.tests.csproj
@@ -84,6 +84,6 @@ win-fmt:
 	csharpier.exe format client/
 
 win-start-godot:
-	powershell.exe -ExecutionPolicy Bypass -File start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
+	powershell.exe -ExecutionPolicy Bypass -File scripts/start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
 
 win-all: win-fmt win-build-rust win-build-godot win-test-rust win-test-cs
