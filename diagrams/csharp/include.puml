@@ -2,6 +2,7 @@
 !include .\\client\src\meta\AdmiralCatalog.puml
 !include .\\client\src\meta\AdmiralEffectsRegistry.puml
 !include .\\client\src\meta\AdmiralSelectUi.puml
+!include .\\client\src\meta\AdmiralSession.puml
 !include .\\client\src\meta\BattleInputs.puml
 !include .\\client\src\meta\BattleOutcomeResolver.puml
 !include .\\client\src\meta\DockSession.puml
@@ -15,6 +16,7 @@
 !include .\\client\src\meta\IStatsStore.puml
 !include .\\client\src\meta\JumpRecord.puml
 !include .\\client\src\meta\LifetimeStats.puml
+!include .\\client\src\meta\LocalAdmiralAdapter.puml
 !include .\\client\src\meta\LocalAdmiralStore.puml
 !include .\\client\src\meta\LocalDockyardAdapter.puml
 !include .\\client\src\meta\LocalRunStore.puml

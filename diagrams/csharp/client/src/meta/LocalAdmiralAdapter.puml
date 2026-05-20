@@ -1,0 +1,6 @@
+@startuml
+class LocalAdmiralAdapter <<sealed>> {
+    + LocalAdmiralAdapter(binaryPath:string)
+    + <<async>> GetOffersAsync(playerId:string) : Task<AdmiralOffersResult>
+}
+@enduml

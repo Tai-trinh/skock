@@ -29,6 +29,7 @@ public partial class RunState : Node, IRunData
     public string ProjectDir { get; private set; } = "";
     public string SimBinaryPath { get; private set; } = "";
     public string DockBinaryPath { get; private set; } = "";
+    public string AdmiralBinaryPath { get; private set; } = "";
     public string PlayerFleetPath { get; private set; } = "";
     public string FallbackFleetPath { get; private set; } = "";
 
@@ -91,6 +92,7 @@ public partial class RunState : Node, IRunData
 
         SimBinaryPath = Path.Combine(binDir, "skock-sim.exe");
         DockBinaryPath = Path.Combine(binDir, "skock-dockyard.exe");
+        AdmiralBinaryPath = Path.Combine(binDir, "skock-admiral.exe");
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")
@@ -128,9 +130,11 @@ public partial class RunState : Node, IRunData
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
-    public async Task StartRun(Admiral admiral)
+    public async Task StartRun(Admiral admiral, ulong? runSeed = null)
     {
         var snapshot = await _store.StartRun(admiral);
+        if (runSeed.HasValue)
+            snapshot.RunSeed = runSeed.Value;
         ApplySnapshot(snapshot);
         Stats.Reset();
         await _store.Save(ToSnapshot());

@@ -9,6 +9,7 @@ class RunState <<partial>> {
     + ProjectDir : string <<get>> = ""
     + SimBinaryPath : string <<get>> = ""
     + DockBinaryPath : string <<get>> = ""
+    + AdmiralBinaryPath : string <<get>> = ""
     + PlayerFleetPath : string <<get>> = ""
     + FallbackFleetPath : string <<get>> = ""
     + Settings : UserSettings <<get>>
@@ -36,7 +37,7 @@ class RunState <<partial>> {
     + <<override>> _Ready() : void
     + Save() : Task
     + SaveSettings() : void
-    + <<async>> StartRun(admiral:Admiral) : Task
+    + <<async>> StartRun(admiral:Admiral, runSeed:ulong?) : Task
     + <<async>> AbandonCurrentRun() : Task
     + GetOpponentFleetPath() : string
     + <<async>> SaveAndQuitToMenu() : Task

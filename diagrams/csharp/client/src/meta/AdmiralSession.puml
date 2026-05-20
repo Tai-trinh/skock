@@ -1,0 +1,17 @@
+@startuml
+class AdmiralOffersResult <<sealed>> {
+    + RunSeed : ulong <<get>> <<init>>
+    + Offers : List<AdmiralOfferDto> <<get>> <<init>>
+}
+class AdmiralOfferDto <<sealed>> {
+    + AdmiralId : string <<get>> <<init>> = ""
+    + AdmiralName : string <<get>> <<init>> = ""
+    + FactionId : string <<get>> <<init>> = ""
+    + FactionName : string <<get>> <<init>> = ""
+    + BonusText : string <<get>> <<init>> = ""
+    + StartingSalvage : int <<get>> <<init>>
+    + StartingTech : int <<get>> <<init>>
+    + StartingHangarCapacity : int <<get>> <<init>>
+    + StartingFleet : FleetJsonData <<get>> <<init>>
+}
+@enduml

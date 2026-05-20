@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Godot;
 
 namespace Skock.Meta;
@@ -9,19 +10,18 @@ public partial class AdmiralSelectUi : Control
     public override void _Ready()
     {
         _admiralCards = GetNode<HBoxContainer>("MarginContainer/VBox/AdmiralCards");
-        BuildCards();
+        _ = LoadOffersAsync();
     }
 
-    private void BuildCards()
+    private async Task LoadOffersAsync()
     {
-        foreach (var admiral in RunState.Instance.Catalog.GetAdmirals())
-        {
-            var card = BuildCard(admiral);
-            _admiralCards.AddChild(card);
-        }
+        var adapter = new LocalAdmiralAdapter(RunState.Instance.AdmiralBinaryPath);
+        var result = await adapter.GetOffersAsync(RunState.Instance.PlayerId);
+        foreach (var offer in result.Offers)
+            _admiralCards.AddChild(BuildCard(offer, result.RunSeed));
     }
 
-    private PanelContainer BuildCard(Admiral admiral)
+    private PanelContainer BuildCard(AdmiralOfferDto offer, ulong runSeed)
     {
         var panel = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         var vbox = new VBoxContainer();
@@ -29,7 +29,7 @@ public partial class AdmiralSelectUi : Control
 
         var nameLabel = new Label
         {
-            Text = admiral.Name,
+            Text = offer.AdmiralName,
             HorizontalAlignment = HorizontalAlignment.Center,
         };
         nameLabel.AddThemeFontSizeOverride("font_size", 20);
@@ -38,15 +38,14 @@ public partial class AdmiralSelectUi : Control
         vbox.AddChild(new HSeparator());
 
         vbox.AddChild(
-            new Label { Text = admiral.BonusText, AutowrapMode = TextServer.AutowrapMode.WordSmart }
+            new Label { Text = offer.BonusText, AutowrapMode = TextServer.AutowrapMode.WordSmart }
         );
 
         vbox.AddChild(new HSeparator());
 
-        var fleetLabel = new Label { Text = "Starting fleet:" };
-        vbox.AddChild(fleetLabel);
+        vbox.AddChild(new Label { Text = "Starting fleet:" });
 
-        foreach (var ship in admiral.StartingFleet.Ships)
+        foreach (var ship in offer.StartingFleet.Ships)
         {
             vbox.AddChild(
                 new Label
@@ -60,7 +59,7 @@ public partial class AdmiralSelectUi : Control
             new Label
             {
                 Text =
-                    $"\nSalvage: {admiral.StartingSalvage}   Tech: {admiral.StartingTech}   Hangar: {admiral.StartingHangarCapacity}T",
+                    $"\nSalvage: {offer.StartingSalvage}   Tech: {offer.StartingTech}   Hangar: {offer.StartingHangarCapacity}T",
             }
         );
 
@@ -68,16 +67,28 @@ public partial class AdmiralSelectUi : Control
         vbox.AddChild(spacer);
 
         var selectBtn = new Button { Text = "SELECT" };
-        var captured = admiral;
-        selectBtn.Pressed += () => OnAdmiralSelected(captured);
+        selectBtn.Pressed += () => OnAdmiralSelected(offer, runSeed);
         vbox.AddChild(selectBtn);
 
         return panel;
     }
 
-    private async void OnAdmiralSelected(Admiral admiral)
+    private async void OnAdmiralSelected(AdmiralOfferDto offer, ulong runSeed)
     {
-        await RunState.Instance.StartRun(admiral);
+        offer.StartingFleet.Mothership.IsMothership = true;
+        var admiral = new Admiral
+        {
+            Id = offer.AdmiralId,
+            Name = offer.AdmiralName,
+            FactionId = offer.FactionId,
+            BonusText = offer.BonusText,
+            StartingSalvage = offer.StartingSalvage,
+            StartingTech = offer.StartingTech,
+            StartingHangarCapacity = offer.StartingHangarCapacity,
+            StartingFleet = offer.StartingFleet,
+            ShipEffects = AdmiralEffectsRegistry.ForAdmiral(offer.AdmiralId),
+        };
+        await RunState.Instance.StartRun(admiral, runSeed);
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");
     }
 }
