@@ -15,3 +15,7 @@ client/build/
 # Player save files (generated at runtime)
 player_fleet.json
 player_state.json
+
+# VS Code — track shared recommendations, ignore user-specific settings
+.vscode/**
+!.vscode/extensions.json

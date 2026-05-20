@@ -1,0 +1,7 @@
+@startuml
+class BattleInputs <<sealed>> {
+    + Seed : ulong <<get>> <<init>>
+    + FleetAJson : string <<get>> <<init>> = ""
+    + FleetBJson : string <<get>> <<init>> = ""
+}
+@enduml

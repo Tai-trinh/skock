@@ -1,0 +1,5 @@
+@startuml
+class FleetInspector <<static>> {
+    + {static} Build(fleet:FleetJsonData, upgrades:IReadOnlyDictionary<string, int>?, isPlayerFleet:bool) : Control
+}
+@enduml

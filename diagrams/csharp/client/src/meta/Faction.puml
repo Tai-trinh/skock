@@ -1,0 +1,6 @@
+@startuml
+class Faction <<sealed>> {
+    + Id : string <<get>> <<set>> = ""
+    + Name : string <<get>> <<set>> = ""
+}
+@enduml

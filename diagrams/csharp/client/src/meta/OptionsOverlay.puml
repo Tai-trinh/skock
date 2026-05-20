@@ -1,0 +1,9 @@
+@startuml
+class OptionsOverlay <<partial>> {
+    + {static} Instance : OptionsOverlay <<get>>
+    + <<override>> _Ready() : void
+    + <<override>> _UnhandledInput(@event:InputEvent) : void
+    + Open() : void
+}
+CanvasLayer <|-- OptionsOverlay
+@enduml

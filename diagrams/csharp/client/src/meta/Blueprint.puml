@@ -1,0 +1,13 @@
+@startuml
+class Blueprint <<sealed>> {
+    + <<required>> Id : string <<get>> <<init>>
+    + <<required>> DisplayName : string <<get>> <<init>>
+    + <<required>> SalvageCost : int <<get>> <<init>>
+    + <<required>> Template : ShipDefData <<get>> <<init>>
+    + Tonnage : int <<get>>
+    + Instantiate() : ShipDefData
+}
+class BlueprintCatalog <<static>> {
+    + {static} <<readonly>> All : IReadOnlyList<Blueprint>
+}
+@enduml

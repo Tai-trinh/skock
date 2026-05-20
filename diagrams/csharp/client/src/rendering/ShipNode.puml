@@ -1,0 +1,9 @@
+@startuml
+class ShipNode <<partial>> {
+    + ShipId : uint <<get>>
+    + <<override>> _Ready() : void
+    + Init(id:uint, fleet:byte, isMothership:bool, blueprintDrawingId:string) : void
+    + ApplySnapshot(worldPos:Vector2, headingRad:float, hpFraction:float) : void
+}
+Node2D <|-- ShipNode
+@enduml
