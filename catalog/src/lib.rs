@@ -93,6 +93,7 @@ pub fn mine_layer(expl_damage: f64, expl_radius: f64, cooldown_ticks: u32) -> We
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn beam(
     damage: f64,
     range: f64,

@@ -472,7 +472,7 @@ pub fn advance_projectiles(state: &mut SimState, config: &SimConfig) {
 
             if min_dsq <= combined_r_sq {
                 let center_dsq = dist_sq(&pos, spos);
-                let is_closer = best_hit.map_or(true, |(best, _)| center_dsq < best);
+                let is_closer = best_hit.is_none_or(|(best, _)| center_dsq < best);
                 if is_closer {
                     best_hit = Some((center_dsq, *ship_id));
                 }
@@ -603,6 +603,7 @@ fn steer_missile(proj: &mut Projectile, ships: &[(ShipId, Fleet, Pos2, HullClass
     proj.heading = new_heading;
 }
 
+#[allow(clippy::too_many_arguments)]
 fn apply_explosion(
     state: &mut SimState,
     proj_id: ProjectileId,
@@ -835,7 +836,7 @@ fn beam_ray_first_hit(
         })
         .collect();
 
-    hits.sort_by(|(a, _), (b, _)| a.cmp(b));
+    hits.sort_by_key(|(a, _)| *a);
     hits.into_iter().next().map(|(_, id)| id)
 }
 

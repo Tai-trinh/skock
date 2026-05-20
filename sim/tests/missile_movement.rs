@@ -108,7 +108,7 @@ fn missiles_move_each_tick() {
     }
 
     let mut any_moved = false;
-    for (_id, entries) in &by_id {
+    for entries in by_id.values() {
         if entries.len() >= 2 {
             let (_, x0, y0) = entries[0];
             let (_, x1, y1) = entries[1];
