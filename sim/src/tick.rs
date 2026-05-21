@@ -36,6 +36,11 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
     // Phase 3: build spatial grid for boid neighbor queries
     let neighbor_radius = I32F32::from_num(config.boid_neighbor_radius);
     let neighbor_radius_sq = neighbor_radius * neighbor_radius;
+    let enemy_sep_radius = I32F32::from_num(config.boid_enemy_separation_radius);
+    let enemy_sep_radius_sq = enemy_sep_radius * enemy_sep_radius;
+    let separation_margin = I16F16::from_num(config.boid_separation_margin);
+    let max_turn = I16F16::from_num(config.boid_max_turn_rad);
+    let cos_max_turn = cordic::cos(max_turn);
     let grid = SpatialGrid::build(&state.ships, neighbor_radius);
 
     // Phase 4 & 5: compute boid forces and integrate
@@ -49,6 +54,8 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
                 &grid,
                 neighbor_radius_sq,
                 config.boid_max_neighbors as usize,
+                enemy_sep_radius_sq,
+                separation_margin,
             );
             (id, force)
         })
@@ -58,12 +65,44 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
         let ship = state.ships.get_mut(&id).expect("id from keys(), not yet removed");
         let force = forces[&id];
 
+        // Save current velocity for turn-rate clamping below.
+        let old_vx = I32F32::from_num(ship.vel.x);
+        let old_vy = I32F32::from_num(ship.vel.y);
+
         // Apply force scaled by acceleration
         let ax = force.x * ship.acceleration;
         let ay = force.y * ship.acceleration;
-
         ship.vel.x += ax;
         ship.vel.y += ay;
+
+        // Turn rate cap: limit angular change per tick so ships curve gracefully.
+        // Only active when the ship already has a heading (non-zero velocity).
+        let old_speed_sq = old_vx * old_vx + old_vy * old_vy;
+        if old_speed_sq > I32F32::ZERO {
+            let new_vx = I32F32::from_num(ship.vel.x);
+            let new_vy = I32F32::from_num(ship.vel.y);
+            let new_speed_sq = new_vx * new_vx + new_vy * new_vy;
+            if new_speed_sq > I32F32::ZERO {
+                let old_speed = cordic::sqrt(old_speed_sq);
+                let new_speed = cordic::sqrt(new_speed_sq);
+                let hx = I16F16::from_num(old_vx / old_speed);
+                let hy = I16F16::from_num(old_vy / old_speed);
+                let dx = I16F16::from_num(new_vx / new_speed);
+                let dy = I16F16::from_num(new_vy / new_speed);
+                let dot = hx * dx + hy * dy;
+                if dot < cos_max_turn {
+                    // Angle exceeds limit — rotate current heading toward desired by max_turn.
+                    let cross = hx * dy - hy * dx; // positive = desired is CCW from current
+                    let turn = if cross >= I16F16::ZERO { max_turn } else { -max_turn };
+                    let (sin_t, cos_t) = cordic::sin_cos(turn);
+                    let new_hx = hx * cos_t - hy * sin_t;
+                    let new_hy = hx * sin_t + hy * cos_t;
+                    let new_speed16 = I16F16::from_num(new_speed);
+                    ship.vel.x = new_hx * new_speed16;
+                    ship.vel.y = new_hy * new_speed16;
+                }
+            }
+        }
 
         // Clamp to max speed using wider type to avoid overflow
         let vx = I32F32::from_num(ship.vel.x);

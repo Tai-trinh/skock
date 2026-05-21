@@ -1,12 +1,12 @@
 @startuml
 class BattleEffects <<partial>> {
-    - <<const>> ShakeCorvette : float = 1.5f
-    - <<const>> ShakeFrigate : float = 2.5f
-    - <<const>> ShakeDestroyer : float = 4.0f
-    - <<const>> ShakeCruiser : float = 6.0f
-    - <<const>> ShakeBattlecruiser : float = 9.0f
-    - <<const>> ShakeDreadnought : float = 13.0f
-    - <<const>> ShakeMothership : float = 20.0f
+    - <<const>> ShakeCorvette : float = 3.0f
+    - <<const>> ShakeFrigate : float = 5.0f
+    - <<const>> ShakeDestroyer : float = 8.0f
+    - <<const>> ShakeCruiser : float = 12.0f
+    - <<const>> ShakeBattlecruiser : float = 18.0f
+    - <<const>> ShakeDreadnought : float = 26.0f
+    - <<const>> ShakeMothership : float = 40.0f
     - <<const>> ShakeDuration : float = 0.5f
     - <<const>> ShakeFreqX : float = 12.0f
     - <<const>> ShakeFreqY : float = 15.0f

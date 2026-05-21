@@ -194,6 +194,11 @@ pub fn build_ship(
         target_priority: def.target_priority,
         combat_stance: def.combat_stance,
         preferred_range,
+        hit_radius: {
+            let r =
+                config.hull_hit_radii.get(&format!("{:?}", def.hull_class)).copied().unwrap_or(8.0);
+            I16F16::from_num(r)
+        },
     }
 }
 

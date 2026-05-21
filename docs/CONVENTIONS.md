@@ -19,3 +19,4 @@ Breaking determinism is a silent, catastrophic bug. Given the same seed and flee
 
 - Read only the files needed for the current task. Don't load the whole codebase.
 - When a module stabilises, add a short `README.md` in its folder instead of expanding root context.
+- After any change to Rust sim types or config (new `Ship` fields, new `BoidWeights` fields, new `SimConfig` fields, changed ship behaviour), check `catalog/src/lib.rs` and update ship blueprints, the `boids()` helper, and any direct `BoidWeightsDef`/`ShipDef` structs as needed. The catalog is the single source of all live ship definitions and must stay in sync with the sim.

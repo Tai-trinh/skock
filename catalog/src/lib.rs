@@ -144,7 +144,7 @@ fn boids(
     maintain_range: f64,
 ) -> BoidWeightsDef {
     BoidWeightsDef {
-        separation,
+        separation: separation * 1.5,
         cohesion,
         alignment,
         seek_nearest,
@@ -769,7 +769,7 @@ pub fn mothership_template(faction_id: &str) -> ShipDef {
             acceleration: 0.3,
             turn_rate: 0.1,
             boid_weights: BoidWeightsDef {
-                separation: 2.0,
+                separation: 3.0,
                 cohesion: 0.0,
                 alignment: 0.0,
                 seek_nearest: 0.2,
@@ -797,7 +797,7 @@ pub fn mothership_template(faction_id: &str) -> ShipDef {
             acceleration: 0.2,
             turn_rate: 0.08,
             boid_weights: BoidWeightsDef {
-                separation: 2.0,
+                separation: 3.0,
                 cohesion: 0.0,
                 alignment: 0.0,
                 seek_nearest: 0.2,
@@ -825,7 +825,7 @@ pub fn mothership_template(faction_id: &str) -> ShipDef {
             acceleration: 0.4,
             turn_rate: 0.12,
             boid_weights: BoidWeightsDef {
-                separation: 2.0,
+                separation: 3.0,
                 cohesion: 0.0,
                 alignment: 0.0,
                 seek_nearest: 0.2,

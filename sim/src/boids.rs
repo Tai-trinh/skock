@@ -61,10 +61,14 @@ pub fn compute_forces(
     grid: &SpatialGrid,
     neighbor_radius_sq: I32F32,
     max_neighbors: usize,
+    enemy_sep_radius_sq: I32F32,
+    separation_margin: I16F16,
 ) -> Vec2 {
     // ── Friendly neighbors: grid candidates → filter → N nearest ─────────────
 
     let neighbor_radius = cordic::sqrt(neighbor_radius_sq);
+    let enemy_sep_radius = cordic::sqrt(enemy_sep_radius_sq);
+    let sep_margin = I32F32::from_num(separation_margin);
 
     let mut friendly_candidates: Vec<(I32F32, ShipId)> = grid
         .candidates(&ship.pos)
@@ -98,9 +102,15 @@ pub fn compute_forces(
         let other = &ships[&other_id];
         let dist = cordic::sqrt(d_sq);
 
-        // Separation: push away, weighted by inverse distance
+        // Hull-radius-aware separation: full force inside combined hull radii + margin,
+        // linear taper to zero at neighbor_radius.
+        let min_dist = I32F32::from_num(ship.hit_radius + other.hit_radius) + sep_margin;
         let away = dir(&other.pos, &ship.pos);
-        let strength = (neighbor_radius - dist) / neighbor_radius;
+        let strength = if dist <= min_dist {
+            I32F32::ONE
+        } else {
+            (neighbor_radius - dist) / (neighbor_radius - min_dist)
+        };
         sep += away * I16F16::from_num(strength);
 
         // Cohesion: accumulate center of mass
@@ -108,23 +118,44 @@ pub fn compute_forces(
         coh_sum.y += other.pos.y;
         coh_count += 1;
 
-        // Alignment: match neighbor velocity
-        ali += other.vel;
-        ali_count += 1;
+        // Alignment: normalize neighbor velocity to get heading only (not speed).
+        let vx = I32F32::from_num(other.vel.x);
+        let vy = I32F32::from_num(other.vel.y);
+        let vel_sq = vx * vx + vy * vy;
+        if vel_sq > I32F32::ZERO {
+            let speed = cordic::sqrt(vel_sq);
+            ali += Vec2 { x: I16F16::from_num(vx / speed), y: I16F16::from_num(vy / speed) };
+            ali_count += 1;
+        }
     }
 
-    // ── Enemy scan: nearest, mass centroid, mothership ───────────────────────
+    // ── Enemy scan: nearest, mass centroid, mothership, separation ────────────
 
     let mut nearest_enemy: Option<(I32F32, &Ship)> = None;
     let mut enemy_mass_sum = Pos2::ZERO;
     let mut enemy_mass_count: i32 = 0;
     let mut enemy_mothership: Option<&Ship> = None;
+    let mut enemy_sep = Vec2::ZERO;
 
     for other in ships.values() {
         if other.fleet == ship.fleet {
             continue;
         }
         let d_sq = dist_sq(&ship.pos, &other.pos);
+
+        // Enemy separation: push away from any enemy within the tighter radius.
+        if d_sq < enemy_sep_radius_sq && d_sq > I32F32::ZERO {
+            let dist = cordic::sqrt(d_sq);
+            let min_dist = I32F32::from_num(ship.hit_radius + other.hit_radius) + sep_margin;
+            let away = dir(&other.pos, &ship.pos);
+            let strength = if dist <= min_dist {
+                I32F32::ONE
+            } else {
+                (enemy_sep_radius - dist) / (enemy_sep_radius - min_dist)
+            };
+            enemy_sep += away * I16F16::from_num(strength);
+        }
+
         if nearest_enemy.is_none_or(|(d, _)| d_sq < d) {
             nearest_enemy = Some((d_sq, other));
         }
@@ -141,6 +172,7 @@ pub fn compute_forces(
     let mut total = Vec2::ZERO;
 
     total += sep * ship.boid_weights.separation;
+    total += enemy_sep * ship.boid_weights.separation;
 
     if coh_count > 0 {
         let avg = Pos2 {

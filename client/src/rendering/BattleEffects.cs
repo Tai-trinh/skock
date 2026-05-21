@@ -13,15 +13,15 @@ public partial class BattleEffects : Node
     // ── Screen shake config — programmer-adjustable ───────────────────────────
 
     /// Peak camera offset (pixels) when a Corvette is destroyed.
-    private const float ShakeCorvette = 1.5f;
-    private const float ShakeFrigate = 2.5f;
-    private const float ShakeDestroyer = 4.0f;
-    private const float ShakeCruiser = 6.0f;
-    private const float ShakeBattlecruiser = 9.0f;
-    private const float ShakeDreadnought = 13.0f;
+    private const float ShakeCorvette = 3.0f;
+    private const float ShakeFrigate = 5.0f;
+    private const float ShakeDestroyer = 8.0f;
+    private const float ShakeCruiser = 12.0f;
+    private const float ShakeBattlecruiser = 18.0f;
+    private const float ShakeDreadnought = 26.0f;
 
     /// Peak camera offset (pixels) when the Mothership is destroyed.
-    private const float ShakeMothership = 20.0f;
+    private const float ShakeMothership = 40.0f;
 
     /// Seconds for shake to fully decay after a hit.
     private const float ShakeDuration = 0.5f;
@@ -110,8 +110,8 @@ public partial class BattleEffects : Node
             return;
 
         var i = _cursors[name];
-        // Stop and restart so rapid repeats don't get lost.
         pool[i].Stop();
+        pool[i].VolumeDb = Mathf.LinearToDb(RunState.Instance.Settings.SfxVolume);
         pool[i].Play();
         _cursors[name] = (i + 1) % pool.Length;
     }

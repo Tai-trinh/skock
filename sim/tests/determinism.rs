@@ -21,7 +21,7 @@ const FLEET_B: &str = include_str!("../test_data/fleet_b.json");
 fn determinism_seed_42() {
     assert_eq!(
         hash_battle(42, FLEET_A, FLEET_B),
-        "5f07cfcb53445d5a9c89d48067255c5306a94af6bc8a83bf832233427401bf56",
+        "dd43b4d1b578718c38629fd7796efe0c6624789c9b366a9981b005f397908d53",
     );
 }
 
@@ -29,7 +29,7 @@ fn determinism_seed_42() {
 fn determinism_seed_1337() {
     assert_eq!(
         hash_battle(1337, FLEET_A, FLEET_B),
-        "8a5930a7f43f39bf750e326177ee09f48dcdd40a46d35afe34ba6b1ff9fe2b86",
+        "3e562cf977e9f0c827e4a1ded8a6392a9a1a856f20f4244771fea8d95627b020",
     );
 }
 
@@ -37,7 +37,7 @@ fn determinism_seed_1337() {
 fn determinism_seed_99999() {
     assert_eq!(
         hash_battle(99999, FLEET_A, FLEET_B),
-        "93dc700fdf56ad9ccf2a926d96e3a84bc28e29b1fcc3f08b7ba0dd25cf38ae5c",
+        "77daf58cd6d24f01d8204c0450a86f97dd5e2d06a13d32f783737a0ce6363e15",
     );
 }
 

@@ -67,6 +67,7 @@ fn insert_beam_ship(state: &mut SimState, fleet: Fleet, pos: Pos2, range: f64) -
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::from_num(range),
+            hit_radius: I16F16::from_num(5),
         },
     );
     id
@@ -108,6 +109,7 @@ fn insert_ship(state: &mut SimState, fleet: Fleet, pos: Pos2) -> ShipId {
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::ZERO,
+            hit_radius: I16F16::from_num(5),
         },
     );
     id

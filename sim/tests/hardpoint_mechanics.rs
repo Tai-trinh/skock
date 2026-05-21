@@ -75,6 +75,7 @@ fn insert_hitscan_ship(
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::from_num(range),
+            hit_radius: I16F16::from_num(5),
         },
     );
     id
@@ -108,6 +109,7 @@ fn insert_target(state: &mut SimState, fleet: Fleet, pos: Pos2) -> ShipId {
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::ZERO,
+            hit_radius: I16F16::from_num(5),
         },
     );
     id
@@ -222,6 +224,7 @@ fn two_hardpoints_produce_two_independent_fire_events() {
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::from_num(100),
+            hit_radius: I16F16::from_num(5),
         },
     );
     insert_target(&mut state, Fleet::B, Pos2::from_f64(50.0, 0.0));
@@ -291,6 +294,7 @@ fn salvo_count_three_spawns_three_projectiles() {
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::from_num(200),
+            hit_radius: I16F16::from_num(5),
         },
     );
     insert_target(&mut state, Fleet::B, Pos2::from_f64(100.0, 0.0));
@@ -357,6 +361,7 @@ fn fire_forward_offset_shifts_projectile_spawn_along_heading() {
             target_priority: TargetPriority::Nearest,
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::from_num(200),
+            hit_radius: I16F16::from_num(5),
         },
     );
     insert_target(&mut state, Fleet::B, Pos2::from_f64(100.0, 0.0));

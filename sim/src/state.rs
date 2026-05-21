@@ -156,6 +156,7 @@ pub struct Ship {
     pub target_priority: TargetPriority,
     pub combat_stance: CombatStance,
     pub preferred_range: I16F16,
+    pub hit_radius: I16F16,
 }
 
 // ── Projectile entity ─────────────────────────────────────────────────────────

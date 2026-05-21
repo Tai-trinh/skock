@@ -280,7 +280,7 @@ public partial class BattleRenderer : Node2D
         // Visual: expanding debris ring scaled to hull size.
         var effect = new ShipDestroyedEffect();
         _effectsContainer.AddChild(effect);
-        effect.Spawn(pos, magnitude * 2f, ev.Fleet);
+        effect.Spawn(pos, magnitude * 8f, ev.Fleet);
 
         // Audio + shake.
         _effects.Play(

@@ -4,11 +4,18 @@ class ShipDestroyedEffect <<partial>> {
     - {static} <<readonly>> FleetBColor : Color
     - {static} <<readonly>> FireColor : Color
     - <<const>> FadeDuration : int = 45
-    - <<const>> DebrisCount : int = 8
+    - <<const>> DebrisCount : int = 16
+    - <<const>> BulkheadCount : int = 8
     - _radius : float
     - _baseColor : Color
     - _framesLeft : int
     - <<readonly>> _debris : (Vector2 vel, float len)[]
+    - <<readonly>> _bulkheads : (
+        Vector2 vel,
+        float totalRotation,
+        float initAngle,
+        Vector2 halfSize
+    )[]
     + Spawn(worldPos:Vector2, radius:float, fleet:byte) : void
     + <<override>> _Process(delta:double) : void
     + <<override>> _Draw() : void
