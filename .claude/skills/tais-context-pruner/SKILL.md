@@ -13,6 +13,12 @@ Read every instruction file in scope, run three passes to build a findings list,
 2. Collect every `[text](path.md)` link from both files and read each linked file.
 3. Read `docs/adr/` if it exists — build a **topic map**: `{topic → ADR filename}` from each slug (e.g. `0002-fixed-point-math.md` → "fixed-point math").
 
+## GDD escape hatch
+
+Before cutting lore, flavor, design intent, or art direction: check if `docs/GDD.md` exists. If yes, mark **MOVE TO GDD** — append to GDD.md and strip from the source file. If GDD.md doesn't exist, create it with a minimal header first.
+
+Do NOT send implementation constraints to GDD.md. "Win condition: destroy the enemy Mothership" → CONTEXT.md. "Ships are the primary combo pieces" → GDD.md.
+
 ## ADR escape hatch
 
 Before flagging any cut, ask: is this (1) hard to reverse, (2) surprising without context, and (3) the result of a real trade-off?
@@ -35,7 +41,7 @@ Apply the **coding impact test** to every section, paragraph, or bullet: *If I r
 
 Flag as cut candidates if any of these are true:
 - **TODO / deferred** — "revisit after playtesting," unimplemented features, open questions. Claude can't act on them; they only age badly.
-- **Lore and flavor** — narrative framing, example names, bios, story rationale. The story doesn't change function signatures.
+- **Lore and flavor** — narrative framing, example names, bios, story rationale. Apply GDD escape hatch first — move, don't cut.
 - **Placeholder numbers** — costs, multipliers, slot counts marked as first-pass guesses or to-be-tuned. Misleads more than it guides.
 - **Specs for unbuilt systems** — full sections on systems the code doesn't implement yet. If the code doesn't exist, the spec is noise.
 - **Justifications that don't constrain** — "we chose X because Y" where Y doesn't prevent any alternative implementation. Belongs in a commit message, not a context file.
@@ -58,7 +64,7 @@ Do NOT flag:
 
 ## Grill loop
 
-After all three passes, present findings as a numbered list. Each finding: type (**CUT** / **MOVE TO ADR** / **ALREADY IN ADR**) and a one-line reason. For MOVE TO ADR, include a ready-to-save stub using the next available ADR number. End with: "Found N findings. Walk through them one at a time?"
+After all three passes, present findings as a numbered list. Each finding: type (**CUT** / **MOVE TO GDD** / **MOVE TO ADR** / **ALREADY IN ADR**) and a one-line reason. For MOVE TO ADR, include a ready-to-save stub using the next available ADR number. For MOVE TO GDD, name the section of `docs/GDD.md` it belongs in. End with: "Found N findings. Walk through them one at a time?"
 
 For each finding:
 1. Quote the relevant lines (max 5 — truncate longer blocks).

@@ -22,9 +22,12 @@ Read the target file, plan a split, grill through every placement with the user,
 | `docs/API-CONTRACTS.md` | Endpoint shapes, wire formats, external interfaces |
 | `docs/DATA-MODEL.md` | Schema, types, entity relationships |
 | `docs/CURRENT-TASK.md` | What's actively in flight, recent decisions (volatile — never mix with stable content) |
+| `docs/GDD.md` | Lore, flavor, design intent, art direction, audio, UI/UX vision, feel goals — not instruction context; Claude reads on demand, not by default |
 | `scratch/TODO.md` | Deferred work, open questions, "revisit after X" items from context docs (created lazily) |
 
 `docs/adr/` is managed by `/grill-with-docs`. Do not touch it. If a block genuinely doesn't fit any category above, ask before inventing a new filename.
+
+**GDD.md placement rule:** content goes to GDD.md if it answers "what should the game feel like / look like / sound like / mean?" rather than "what must the code do?" Lore framing, design intent, art style goals, and flavor justifications all belong in GDD.md, not in instruction files.
 
 ## Process
 

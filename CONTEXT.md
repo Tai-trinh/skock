@@ -1,10 +1,10 @@
 # Skock — Space Fleet Auto-Battler
 
-Battles are fully deterministic: replaying a battle with the same seed and fleet snapshots produces byte-identical results on any machine, enabling local replays and server-side anti-cheat verification. The multiplayer layer is simple: retrieve an opponent's fleet from the server and auto-battle it locally.
+Battles are fully deterministic: same seed + fleet snapshots → byte-identical output on any machine.
 
 ## Battlefield
 
-1000 × 1000 unit coordinate space, origin at center. Fleet A spawns around x = -400, fleet B around x = +400. Ships arranged in their fleet's `formation` at spawn with small deterministic position noise (seeded from the battle seed via xoshiro256+) — ships look organic rather than perfectly geometric. Mothership always anchors back-center with no noise. Weapon ranges meaningful in the 50–300 unit range.
+1000 × 1000 unit coordinate space, origin at center. Fleet A spawns around x = -400, fleet B around x = +400. Ships arranged in their fleet's `formation` at spawn with small deterministic position noise (seeded from the battle seed via xoshiro256+). Mothership always anchors back-center with no noise. Weapon ranges meaningful in the 50–300 unit range.
 
 ## Core constraints
 
@@ -33,10 +33,6 @@ The run visits **8 jump destinations** (jump 1–8). **JumpNumber only advances 
 The retry opponent is drawn fresh from the same jump's pool — not the same fleet fought before, keeping the dockyard visit meaningful.
 
 ### Shopping phase
-
-Ships are the primary combo pieces. Doctrines are the synergizers — they activate multiplicatively when you have enough ships of the right role/type to qualify. The combo-hunting loop: build a fleet composition, then find the doctrines that make it pop, or find a doctrine first and draft ships toward it.
-
-**Lore framing:** at each jump destination the player finds a dockyard offering a random selection of ships for commission (spend `Salvage`). Separately, the Mothership's research team surfaces a randomized set of doctrines and tech discoveries for the player to adopt (spend `Tech`). Offers refresh every jump, drawn from a weighted pool — the same ship type or doctrine can appear on multiple jumps. Scarcity comes from randomness and budget, not depletion.
 
 1. **Dockyard** — randomized selection of ships available to commission this jump, organized by hull class tier. Spend `Salvage` to add a ship to the fleet, or salvage an existing ship to recoup resources. Reroll any tier's offer by spending `Salvage`.
 2. **Research** — spend `Tech` across four tracks. Tech is earned from victories only — losses decimate the population, halting research. A player is expected to go deep on 1–2 tracks per run, not touch all four. Each track should feel meaningfully progressed within 3–4 Tech purchases. Winning more battles gives more Tech and therefore more choices — specialization depth is the reward for winning.

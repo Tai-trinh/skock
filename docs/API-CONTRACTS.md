@@ -52,7 +52,7 @@ The `skock-dockyard` binary runs for the duration of one dockyard visit. The pip
 
 **Errors** — non-fatal action errors return `{ "ok": false, "error": "not_in_offer" | "cannot_afford" | "maxed" | "invalid_index" | ... }`. Fatal errors (invalid JSON, session not started) go to stderr as `RESULT:{"error":"...", "message":"..."}` and the binary exits.
 
-**Determinism** — offer generation is a pure function of `(run_seed, jump_number, tier_rerolls, research_rerolls, player_unlocks)`. Given identical inputs, any machine produces identical offers. C# seam: `IDockyard` / `LocalDockyardAdapter` (offline subprocess) / `ServerDockyardAdapter` (online, TODO).
+**Determinism** — offer generation is a pure function of `(run_seed, jump_number, tier_rerolls, research_rerolls, player_unlocks)`. Given identical inputs, any machine produces identical offers. C# seam: `IDockyard` / `LocalDockyardAdapter` (offline subprocess).
 
 ## Fleet JSON specification
 
@@ -218,7 +218,7 @@ Known effect types:
 - `hp_regen` — restores HP per tick: `{ "type": "hp_regen", "value": 2 }`
 - `damage_reduction` — reduces all incoming damage by a fraction: `{ "type": "damage_reduction", "value": 0.15 }`
 
-Both `armor` and shield fields are optional — omitted means no armor or shields. `armor` is a damage reduction fraction (0.10 = 10% of incoming damage absorbed). Shields are a separate HP pool depleted before hull HP. `shield_recharge_rate` is HP restored to shields per tick (optional, omitted means shields do not recharge). Hull HP does not regenerate by default — revisit if playtesting reveals a need.
+Both `armor` and shield fields are optional — omitted means no armor or shields. `armor` is a damage reduction fraction (0.10 = 10% of incoming damage absorbed). Shields are a separate HP pool depleted before hull HP. `shield_recharge_rate` is HP restored to shields per tick (optional, omitted means shields do not recharge). Hull HP does not regenerate.
 
 
 ## Sim ↔ client interface
@@ -241,7 +241,7 @@ State snapshot and events for the same tick are one record. Godot builds the scr
 
 **Render loop:** interpolated. Renderer runs at display framerate. Each frame computes `t ∈ [0,1]` between the two nearest sim ticks and lerps ship positions and headings. Events fire when `t` crosses a tick boundary. State snapshots allow seeking to any tick directly without replaying from tick 0.
 
-**Playback controls:** play + speed control (1×, 2×, 4×). No scrubbing in initial build.
+**Playback controls:** play + speed control (1×, 2×, 4×).
 
 **Debug overlay** *(toggled by key during battle playback)*: displays raw tick state for a selected ship — position, velocity, HP, shields, active status effects, boid weights, current target, weapon cooldown. Reads directly from the in-memory battle log at the current playback tick. Built first — validates log correctness during sim and renderer development.
 

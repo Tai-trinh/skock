@@ -41,7 +41,7 @@ data/          — admirals.json, factions.json; loaded at startup, accessible a
 
 Meshes are looked up from a client-side dictionary at battle log load time. `blueprint_drawing_id` is an override for unique/named ships (e.g. the player's Mothership) that bypass the procedural assembly.
 
-**Placeholder ship graphics (pre-art):** geometric shapes drawn in code until final 3D meshes are ready.
+**Placeholder ship graphics:** geometric shapes drawn in code.
 
 | Hull class | Shape |
 |---|---|
@@ -55,9 +55,7 @@ Meshes are looked up from a client-side dictionary at battle log load time. `blu
 
 Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape.
 
-**Run state (pre-server):** serialized to a local JSON save file via Godot's file API. Human-editable — save file tampering is the player's problem in single-player. Replaced by server run state once the server is built. No SQLite or local DB.
-
-**Run state (online mode, planned post-offline):** the server owns a server-side Run ID assigned at run start. All run choices (fleet, Salvage, Tech, JumpNumber, LossCount) are stored in the server DB and fetched on login — local save is only a cache. If the local save and server record diverge, server wins. Matchmaking uses JumpNumber + LossCount as the progress dimensions. The opponent fleet DB is seeded with hand-authored curated fleets organised by these brackets. Future: curated fleets are benchmarked via the deterministic sim (seeded batch runs).
+**Run state (pre-server):** serialized to a local JSON save file via Godot's file API. Human-editable — save file tampering is the player's problem in single-player. No SQLite or local DB.
 
 **Scenes:**
 - `AdmiralSelect.tscn` — run start; player picks an admiral, sees starting fleet and passive bonus. Transitions to `Dockyard.tscn` on confirm.
@@ -65,15 +63,11 @@ Fleet A (player) and Fleet B (opponent) are distinguished by color, not shape.
 - `Battle.tscn` — battle playback. Transitions to `Dockyard.tscn` on win (next jump) or loss (retry same jump); transitions to `RunEnd.tscn` on winning jump 8 or on 3rd loss.
 - `RunEnd.tscn` — run result screen (win/loss stats, per-jump breakdown). Returns to `AdmiralSelect.tscn`.
 
-The existing `FleetBuilder.tscn` is superseded by `Dockyard.tscn` — rename and extend rather than rewrite. `FleetBuilderUi.cs` buy/salvage logic carries over directly.
-
 **Subprocess handling:** `System.Diagnostics.Process` (.NET standard API). Godot spawns the sim binary, waits for exit, reads stdout (MessagePack log) and stderr (battle result JSON).
 
 **Camera:** fixed, auto-fits battlefield bounds. No player pan/zoom in initial build.
 
 ## Placeholder VFX
-
-All graphics below are temporary — goal is something working to find the fun. TODO: replace each with final art once core loop is playtested.
 
 **Ship trails** — `Line2D` per ship, 30 historical positions, tapers via `WidthCurve` from ship width to 0, fleet color fading to transparent via gradient. Updated each tick by prepending current position and dropping the oldest.
 
@@ -95,9 +89,6 @@ All graphics below are temporary — goal is something working to find the fun. 
 3. Engine layer. Godot 4 (C#) scene that loads a battle log and renders it. Camera, ship sprites, projectile effects, victory screen.
 4. Meta layer. Shop, fleet builder, ship roster. All local first. No run map — encounters are linear, 1 through 8 in sequence.
 5. Local roguelite loop end-to-end. Single player, no server, full run start to finish. Playtest thoroughly — the game lives or dies here. **Rule:** no new weapon types or combat mechanics added before this step is complete. Combat complexity is content, not foundation.
-6. Server. Account system, fleet upload, opponent fetch. Async multiplayer dropped onto the existing single-player loop.
-7. Verification. Server-side replay simulation as a background worker.
-8. Polish, balance, content.
 
 ## Tech stack
 
@@ -127,7 +118,7 @@ The server re-runs the sim and dockyard binaries as subprocesses, same as the cl
 
 ## Player identity
 
-PlayerID is passed to the dockyard binary on every session open. The binary uses it to gate metaprogression-unlocked content — the lookup mechanism for offline mode is deferred (TODO: a local metaprogression store, offline-capable Rust + C# interface). In online mode the server resolves the player's unlocks from the database before routing the request to the dockyard binary.
+PlayerID is passed to the dockyard binary on every session open. The binary uses it to gate metaprogression-unlocked content. In online mode the server resolves the player's unlocks from the database before routing the request to the dockyard binary.
 
 ## Tick loop phase order
 
@@ -163,8 +154,6 @@ Godot reads stderr after sim exit, finds the `RESULT:` line, and inspects it. If
 At battle start, all effects from `doctrines`, `role_equipment`, `faction_effects`, and `admiral_effects` are walked once and multiplied into each ship's stats. The tick loop reads plain resolved numbers — no effect lookup mid-battle. The sim owns all effect resolution.
 
 **Current exception:** admiral effects are pre-applied by `BuildFleetForSim()` in C# — see ADR-0006.
-
-Proc-based effects (on_hit, on_kill) will be event-driven and layered on top of pre-resolved stats when implemented. TODO: add conditional trigger effects that activate on sim state conditions — e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. These are evaluated each tick against sim state, not pre-resolved.
 
 ### Fixed-point type assignments
 

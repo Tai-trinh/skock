@@ -58,3 +58,23 @@ Low-priority design notes and balance questions. Not coding context — move her
 - Define full admiral roster, starting fleets, and bonus magnitudes once the loop is playtested. Placeholder examples: Admiral Kira (2 Fighter Corvettes, all Fighters +15% speed), Admiral Voss (1 Artillery Frigate + 1 Destroyer, beam weapons +10% damage), Admiral Shen (1 Cruiser, Mothership hangar +4T).
 - Revisit active admiral abilities (battle triggers, once-per-run effects) once proc-based effects are implemented.
 - Define faction names and visual identity once more than one faction is needed.
+
+## Art (from ARCHITECTURE.md)
+
+- Replace placeholder ship graphics (geometric shapes) with final 3D meshes.
+- Replace all placeholder VFX (ship trails, hitscan lines, projectile shapes, beams) with final art once core loop is playtested.
+
+## Server / online (from ARCHITECTURE.md)
+
+Build order steps 6–8:
+- Server: account system, fleet upload, opponent fetch. Async multiplayer dropped onto the single-player loop.
+- Verification: server-side replay simulation as background worker.
+- Polish, balance, content.
+
+Online run state: server owns a run ID assigned at run start. All run choices (fleet, Salvage, Tech, JumpNumber, LossCount) stored in server DB, fetched on login — local save is only a cache; server wins on diverge. Matchmaking uses JumpNumber + LossCount. Opponent fleet DB seeded with hand-authored curated fleets organised by these brackets. Future: curated fleets benchmarked via deterministic sim (seeded batch runs).
+
+## Dockyard / meta (from ARCHITECTURE.md and API-CONTRACTS.md)
+
+- `ServerDockyardAdapter`: implement online dockyard seam (currently `LocalDockyardAdapter` only).
+- PlayerID metaprogression: local metaprogression store, offline-capable Rust + C# interface. Dockyard binary uses PlayerID to gate metaprogression-unlocked content — offline lookup not yet built.
+- Conditional trigger effects: e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. Evaluated per tick against sim state, not pre-resolved (distinct from proc-based on_hit/on_kill effects).
