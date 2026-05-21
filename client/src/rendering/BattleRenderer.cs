@@ -278,13 +278,8 @@ public partial class BattleRenderer : Node2D
 
     private void RenderShips(TickRecord tickA, TickRecord tickB, float t)
     {
-        var snapshotsB = new Dictionary<uint, ShipSnapshot>(tickB.Ships.Length);
-        foreach (var s in tickB.Ships)
-            snapshotsB[s.Id] = s;
-
-        var aliveIds = new HashSet<uint>(tickA.Ships.Length);
-        foreach (var snap in tickA.Ships)
-            aliveIds.Add(snap.Id);
+        var snapshotsB = tickB.Ships.ToDictionary(s => s.Id);
+        var aliveIds = tickA.Ships.Select(snap => snap.Id).ToHashSet();
 
         foreach (var (id, node) in _shipNodes)
             node.Visible = aliveIds.Contains(id);
@@ -318,14 +313,8 @@ public partial class BattleRenderer : Node2D
 
     private void RenderProjectiles(TickRecord tickA, TickRecord tickB, float t)
     {
-        // Build lookup for interpolation
-        var projB = new Dictionary<uint, ProjectileSnapshot>(tickB.Projectiles.Length);
-        foreach (var p in tickB.Projectiles)
-            projB[p.Id] = p;
-
-        var liveIds = new HashSet<uint>(tickA.Projectiles.Length);
-        foreach (var p in tickA.Projectiles)
-            liveIds.Add(p.Id);
+        var projB = tickB.Projectiles.ToDictionary(p => p.Id);
+        var liveIds = tickA.Projectiles.Select(p => p.Id).ToHashSet();
 
         // Create nodes for newly appearing projectiles
         foreach (var snap in tickA.Projectiles)
@@ -340,12 +329,7 @@ public partial class BattleRenderer : Node2D
         }
 
         // Remove nodes for projectiles that have disappeared
-        var toRemove = new List<uint>();
-        foreach (var id in _projNodes.Keys)
-        {
-            if (!liveIds.Contains(id))
-                toRemove.Add(id);
-        }
+        var toRemove = _projNodes.Keys.Where(id => !liveIds.Contains(id)).ToList();
         foreach (var id in toRemove)
         {
             _projNodes[id].QueueFree();
@@ -410,9 +394,7 @@ public partial class BattleRenderer : Node2D
 
     private void RenderBeams(TickRecord tickA)
     {
-        var liveIds = new HashSet<uint>(tickA.Beams.Length);
-        foreach (var b in tickA.Beams)
-            liveIds.Add(b.Id);
+        var liveIds = tickA.Beams.Select(b => b.Id).ToHashSet();
 
         // Create nodes for new beams
         foreach (var snap in tickA.Beams)
@@ -427,12 +409,7 @@ public partial class BattleRenderer : Node2D
         }
 
         // Remove ended beams
-        var toRemove = new List<uint>();
-        foreach (var id in _beamNodes.Keys)
-        {
-            if (!liveIds.Contains(id))
-                toRemove.Add(id);
-        }
+        var toRemove = _beamNodes.Keys.Where(id => !liveIds.Contains(id)).ToList();
         foreach (var id in toRemove)
         {
             _beamNodes[id].QueueFree();

@@ -118,6 +118,20 @@ foreach (var s in fleet.Ships)
     if (s.Hp > 0) survivors.Add(s.BlueprintDrawingId);
 ```
 
+This extends to collection construction. When building a `HashSet`, `List`, or `Dictionary` from a source, terminate a LINQ chain with `.ToHashSet()`, `.ToList()`, or `.ToDictionary()` rather than declaring an empty collection and filling it in a loop. Do not pre-size with a capacity argument — the `ToX()` methods handle that internally.
+
+```csharp
+// Good
+var liveIds = tickA.Projectiles.Select(p => p.Id).ToHashSet();
+var snapshots = tickB.Ships.ToDictionary(s => s.Id);
+var toRemove = _nodes.Keys.Where(id => !liveIds.Contains(id)).ToList();
+
+// Avoid
+var liveIds = new HashSet<uint>(tickA.Projectiles.Length);
+foreach (var p in tickA.Projectiles)
+    liveIds.Add(p.Id);
+```
+
 Use a `foreach` when the body has side effects, mutates external state, or when an early `break`/`continue` makes intent clearer than the LINQ equivalent.
 
 Use `const` for compile-time constants, `static readonly` for values computed once at class load time, `readonly` for instance fields set only in the constructor. Never use a mutable field when the value never changes after assignment.
