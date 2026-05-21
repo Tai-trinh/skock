@@ -30,12 +30,12 @@ A run ends after **winning at jump 8** or accumulating **3 losses**.
 
 The run visits **8 jump destinations** (jump 1–8). **JumpNumber only advances on a win.** A loss means the Mothership retreats, regroups at the same system's dockyard, and challenges a fresh rival fleet at that same jump — the player stays at jump N until they win it. Losing is a setback, not a skip. Pity salvage is awarded on loss (`JumpNumber × 10`) to prevent death spirals; no Tech is earned on a loss.
 
-The retry opponent is drawn fresh from the same jump's pool — not the same fleet fought before, keeping the dockyard visit meaningful.
+The retry opponent is drawn fresh from the same jump's pool.
 
 ### Shopping phase
 
 1. **Dockyard** — randomized selection of ships available to commission this jump, organized by hull class tier. Spend `Salvage` to add a ship to the fleet, or salvage an existing ship to recoup resources. Reroll any tier's offer by spending `Salvage`.
-2. **Research** — spend `Tech` across four tracks. Tech is earned from victories only — losses decimate the population, halting research. A player is expected to go deep on 1–2 tracks per run, not touch all four. Each track should feel meaningfully progressed within 3–4 Tech purchases. Winning more battles gives more Tech and therefore more choices — specialization depth is the reward for winning.
+2. **Research** — spend `Tech` across four tracks. Tech is earned from victories only — losses decimate the population, halting research.
    - **Mothership upgrades** — hangar capacity, Mothership weapons/armor. Permanent; always available.
    - **Doctrines** — role/fleet-scoped passive bonuses (e.g. all Fighters +10% speed). Randomized table per jump, rerollable with `Tech`.
    - **Role equipment** — rarer, higher-magnitude role-scoped items (e.g. all `Missile`-role ships gain shield regen). Randomized table, rerollable with `Tech`.
@@ -45,7 +45,7 @@ The retry opponent is drawn fresh from the same jump's pool — not the same fle
 
 3. Encounter a rival colony fleet contesting the same system. Rival fleets are hand-authored fleet JSON files shipped with the game, organized by difficulty tier and matched to the current jump number and win/loss ratio. When the server exists, real player fleets replace the hand-authored ones — the fleet JSON format is the bridge.
 4. Your fleet warps in from the left; the opponent warps in from the right.
-5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. The attrition design goal is to always crown a victor — escalating damage should eliminate at least one Mothership before 120 seconds in all realistic cases. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
+5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
 6. Earn resources based on outcome:
    - `Salvage` — flat payout every battle regardless of outcome: `JumpNumber × 10`. Victory adds a flat bonus: `JumpNumber × 15`. Scaling with jump number keeps the payout meaningful as costs grow; the base payout prevents death spirals — a losing player always recovers enough to rebuild.
    - `Tech` — victories only. Scales with JumpNumber: 1 Tech (jumps 1–3), 2 Tech (jumps 4–6), 3 Tech (jumps 7–8).
@@ -110,8 +110,4 @@ Ships are identified by two fields plus an optional weight designation. Display 
 All four effect sources (`doctrines`, `role_equipment`, `faction_effects`, `admiral_effects`) use the same data-driven effects vocabulary.
 
 **Run reset:** every run starts fresh from the chosen admiral's starting fleet. No ships, doctrines, or equipment carry over between runs. The admiral selection screen is the only persistent choice a player makes at run start.
-
-
-
-
 
