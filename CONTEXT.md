@@ -78,10 +78,6 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 
 **Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits both friendly and enemy ships. The explosion is a renderer event (`explosion_detonated`) with a position and radius for visual effect.
 
-### Events
-
-`projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`, `hitscan_fired`, `hitscan_missed`, `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
-
 ### Ship roles
 
 Ships are identified by two fields plus an optional weight designation. Display name = `[weight] [role] [hull_class]` e.g. **"Heavy Missile Destroyer"**, **"Light Torpedo Corvette"**, **"Railgun Frigate"**.
@@ -98,19 +94,9 @@ Ships are identified by two fields plus an optional weight designation. Display 
 
 `Dreadnought` hull class — high HP, high armor/shields, high tonnage. Carries a short-range hitscan weapon — not toothless, but not a damage dealer. Boid weights favour pushing toward enemies and holding position. Purpose: soak hits and shield ships behind them.
 
-**Hull hit shape** — a ship's collision geometry: a list of circles in ship-local space, each defined by a forward/lateral offset and a radius. Circles rotate with the ship's heading. Most ships are a single circle; elongated hulls (Battlecruiser, Dreadnought) use two circles staggered along the forward axis. Per hull class, tuned in sim config. Used for projectile and beam hit detection; mine proximity and explosion damage use ship center only.
-
 **Targeting:** default is nearest enemy. Ships have an optional `target_priority` field that overrides targeting for specific roles (e.g. `PointDefense` targets incoming projectiles first, then nearest enemy). Defined per ship in the fleet JSON.
 
 **Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance. Both work together: boids handle positioning, range check handles firing permission.
-
-
-## Boids
-
-Ships use boids-based movement with inertia and acceleration. Neighbor search uses a uniform spatial hash grid (`BTreeMap<(i32,i32), Vec<ShipId>>`), cell size = perception radius. Only the `boid_max_neighbors` nearest friendly neighbors are considered per ship.
-
-Forces are a weighted sum per ship: `separation`, `cohesion`, `alignment`, `seek_enemy`, `maintain_range`. Each ship role has a distinct weight profile — behavior changes by tuning weights, not code. Note: `seek_enemy` doubles as follow-leader (point it at an ally); `separation` doubles as flee-from-enemy (point it at a threat).
-
 
 
 
@@ -121,7 +107,7 @@ Forces are a weighted sum per ship: `separation`, `cohesion`, `alignment`, `seek
 
 **Admiral:** the first decision of every run. The player picks one admiral from a selection screen before jump 1. Each admiral comes with a small starting fleet (2–3 ships that match their archetype) and a permanent passive bonus via `admiral_effects`. `admiral_id` is opaque to the sim; the client uses it to look up the admiral's portrait and starting fleet definition. Locked for the full run once chosen.
 
-All four effect sources (`doctrines`, `role_equipment`, `faction_effects`, `admiral_effects`) use the same data-driven effects vocabulary. The sim concatenates all four into a single flat list and applies them identically — the source array is invisible at the sim layer. Keeping them as separate arrays in the fleet JSON makes the source of each bonus explicit for client-side debugging and UI display.
+All four effect sources (`doctrines`, `role_equipment`, `faction_effects`, `admiral_effects`) use the same data-driven effects vocabulary.
 
 **Run reset:** every run starts fresh from the chosen admiral's starting fleet. No ships, doctrines, or equipment carry over between runs. The admiral selection screen is the only persistent choice a player makes at run start.
 

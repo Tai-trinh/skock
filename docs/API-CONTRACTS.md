@@ -239,6 +239,8 @@ Reasons: `mothership_destroyed`, `timeout_draw`. `fleet_a_survivors` and `fleet_
 ```
 State snapshot and events for the same tick are one record. Godot builds the scrub index and event list in a single pass. No framing needed beyond MessagePack's own length encoding.
 
+**Events:** `projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`, `hitscan_fired`, `hitscan_missed`, `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
+
 **Render loop:** interpolated. Renderer runs at display framerate. Each frame computes `t ∈ [0,1]` between the two nearest sim ticks and lerps ship positions and headings. Events fire when `t` crosses a tick boundary. State snapshots allow seeking to any tick directly without replaying from tick 0.
 
 **Playback controls:** play + speed control (1×, 2×, 4×).
