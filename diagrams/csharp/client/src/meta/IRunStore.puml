@@ -1,4 +1,9 @@
 @startuml
 interface IRunStore {
+    Load() : Task<RunSnapshot?>
+    Save(snapshot:RunSnapshot) : Task
+    Delete() : Task
+    StartRun(admiral:Admiral) : Task<RunSnapshot>
+    GetBattleSeed() : Task<ulong>
 }
 @enduml

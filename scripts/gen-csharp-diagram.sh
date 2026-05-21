@@ -15,5 +15,5 @@ fi
 
 cd $REPO_ROOT
 mkdir -p "$OUT_DIR"
-$PUML_GEN "client/src" "$OUT_DIR" -dir -public -excludePaths obj,bin,.godot,addons
+$PUML_GEN "client/src" "$OUT_DIR" -dir -excludePaths obj,bin,.godot,addons
 git add "$OUT_DIR"

@@ -15,8 +15,9 @@ public partial class AdmiralSelectUi : Control
 
     private async Task LoadOffersAsync()
     {
-        var adapter = new LocalAdmiralAdapter(RunState.Instance.AdmiralBinaryPath);
-        var result = await adapter.GetOffersAsync(RunState.Instance.PlayerId);
+        var result = await RunState.Instance.AdmiralSelection.GetOffersAsync(
+            RunState.Instance.PlayerId
+        );
         foreach (var offer in result.Offers)
             _admiralCards.AddChild(BuildCard(offer, result.RunSeed));
     }
@@ -86,7 +87,6 @@ public partial class AdmiralSelectUi : Control
             StartingTech = offer.StartingTech,
             StartingHangarCapacity = offer.StartingHangarCapacity,
             StartingFleet = offer.StartingFleet,
-            ShipEffects = AdmiralEffectsRegistry.ForAdmiral(offer.AdmiralId),
         };
         await RunState.Instance.StartRun(admiral, runSeed);
         GetTree().ChangeSceneToFile("res://scenes/Dockyard.tscn");

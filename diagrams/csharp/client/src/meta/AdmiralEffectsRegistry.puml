@@ -1,5 +1,6 @@
 @startuml
 class AdmiralEffectsRegistry <<static>> {
+    - {static} <<readonly>> _effects : Dictionary<string, IReadOnlyList<AdmiralShipEffect>>
     + {static} ForAdmiral(id:string) : IReadOnlyList<AdmiralShipEffect>
 }
 @enduml

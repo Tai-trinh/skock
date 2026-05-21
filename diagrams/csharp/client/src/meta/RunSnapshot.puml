@@ -8,6 +8,8 @@ class RunSnapshot <<sealed>> {
     + JumpNumber : int <<get>> <<set>>
     + LossCount : int <<get>> <<set>>
     + AdmiralId : string <<get>> <<set>> = ""
+    + AdmiralName : string <<get>> <<set>> = ""
+    + AdmiralBonusText : string <<get>> <<set>> = ""
     + TierRerolls : int[]? <<get>> <<set>>
     + ResearchRerolls : int[]? <<get>> <<set>>
     + UpgradePurchases : Dictionary<string, int>? <<get>> <<set>>

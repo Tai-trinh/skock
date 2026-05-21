@@ -1,5 +1,12 @@
 @startuml
 class ExplosionEffect <<partial>> {
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - _startRadius : float
+    - _endRadius : float
+    - _baseColor : Color
+    - _framesLeft : int
+    - <<const>> FadeDuration : int = 20
     + Spawn(worldPos:Vector2, radius:float, fleet:byte) : void
     + <<override>> _Process(delta:double) : void
     + <<override>> _Draw() : void

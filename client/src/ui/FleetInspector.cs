@@ -36,9 +36,7 @@ public static class FleetInspector
         admiralInfo.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         header.AddChild(admiralInfo);
 
-        admiralInfo.AddChild(
-            new Label { Text = RunState.Instance.Catalog.NameFor(fleet.AdmiralId) }
-        );
+        admiralInfo.AddChild(new Label { Text = AdmiralNameFor(fleet.AdmiralId, isPlayerFleet) });
         admiralInfo.AddChild(
             new Label
             {
@@ -47,19 +45,15 @@ public static class FleetInspector
             }
         );
 
-        if (isPlayerFleet)
-        {
-            var admiral = RunState.Instance.Catalog.FindAdmiral(fleet.AdmiralId);
-            if (admiral is not null)
-                admiralInfo.AddChild(
-                    new Label
-                    {
-                        Text = admiral.BonusText,
-                        Modulate = new Color(0.9f, 0.85f, 0.5f),
-                        AutowrapMode = TextServer.AutowrapMode.Word,
-                    }
-                );
-        }
+        if (isPlayerFleet && !string.IsNullOrEmpty(RunState.Instance.AdmiralBonusText))
+            admiralInfo.AddChild(
+                new Label
+                {
+                    Text = RunState.Instance.AdmiralBonusText,
+                    Modulate = new Color(0.9f, 0.85f, 0.5f),
+                    AutowrapMode = TextServer.AutowrapMode.Word,
+                }
+            );
 
         // ── Upgrades (player side only) ────────────────────────────────────
         if (isPlayerFleet && upgrades is { Count: > 0 })
@@ -85,6 +79,15 @@ public static class FleetInspector
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private static string AdmiralNameFor(string admiralId, bool isPlayerFleet) =>
+        isPlayerFleet
+            ? RunState.Instance.AdmiralName
+            : admiralId switch
+            {
+                "none" or "" => "Unknown",
+                _ => admiralId,
+            };
+
     private static Control BuildPortrait(string admiralId, bool isPlayerFleet)
     {
         var container = new Control();
@@ -97,7 +100,7 @@ public static class FleetInspector
         };
         container.AddChild(bg);
 
-        var name = RunState.Instance.Catalog.NameFor(admiralId);
+        var name = AdmiralNameFor(admiralId, isPlayerFleet);
         var initial = name.Length > 0 ? name[0].ToString() : "?";
         var label = new Label
         {

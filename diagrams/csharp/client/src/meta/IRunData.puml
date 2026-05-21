@@ -1,4 +1,16 @@
 @startuml
 interface IRunData {
+    AdmiralId : string <<get>>
+    Salvage : int <<get>> <<set>>
+    Tech : int <<get>> <<set>>
+    HangarCapacity : int <<get>> <<set>>
+    JumpNumber : int <<get>> <<set>>
+    LossCount : int <<get>> <<set>>
+    Fleet : FleetJsonData <<get>> <<set>>
+    TierRerolls : int[] <<get>> <<set>>
+    UpgradePurchases : Dictionary<string, int> <<get>>
+    HasActiveRun : bool <<get>> <<set>>
+    IsRunComplete : bool <<get>> <<set>>
+    Stats : IStatsStore <<get>>
 }
 @enduml

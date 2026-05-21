@@ -1,5 +1,8 @@
 @startuml
 class DebugOverlay <<partial>> {
+    - _label : Label
+    - _visible : bool
+    - _selectedShipId : uint
     + <<override>> _Ready() : void
     + <<override>> _Input(@event:InputEvent) : void
     + UpdateFromSnapshot(ships:ShipSnapshot[], selectedId:uint) : void

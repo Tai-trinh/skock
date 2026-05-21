@@ -21,6 +21,8 @@ class RunState <<partial>> {
     + JumpNumber : int <<get>> <<set>> = 1
     + LossCount : int <<get>> <<set>> = 0
     + AdmiralId : string <<get>> <<set>> = ""
+    + AdmiralName : string <<get>> <<set>> = ""
+    + AdmiralBonusText : string <<get>> <<set>> = ""
     + Fleet : FleetJsonData <<get>> <<set>>
     + TierRerolls : int[] <<get>> <<set>>
     + ResearchRerolls : int[] <<get>> <<set>>
@@ -31,12 +33,16 @@ class RunState <<partial>> {
     + HasActiveRun : bool <<get>> <<set>>
     + IsBattleActive : bool <<get>>
     + IsRunComplete : bool <<get>> <<set>>
+    - _currentBattleInputs : BattleInputs?
     + CurrentOpponentFleet : FleetJsonData? <<get>>
-    + Catalog : IAdmiralStore <<get>>
+    + AdmiralSelection : IAdmiralSelection <<get>>
     + Stats : IStatsStore <<get>>
+    - _store : IRunStore
     + <<override>> _Ready() : void
+    - <<async>> LoadAsync() : Task
     + Save() : Task
     + SaveSettings() : void
+    - SettingsPath() : string
     + <<async>> StartRun(admiral:Admiral, runSeed:ulong?) : Task
     + <<async>> AbandonCurrentRun() : Task
     + GetOpponentFleetPath() : string
@@ -47,6 +53,10 @@ class RunState <<partial>> {
     + GetBattleSeed() : Task<ulong>
     + BeginBattle(inputs:BattleInputs, opponentFleet:FleetJsonData?) : void
     + <<async>> RecordBattleResult(result:BattleResult) : Task
+    - ToSnapshot() : RunSnapshot
+    - ApplySnapshot(snapshot:RunSnapshot) : void
+    - {static} DefaultFleet() : FleetJsonData
+    - {static} DefaultCorvette() : ShipDefData
 }
 Node <|-- RunState
 IRunData <|-- RunState

@@ -1,5 +1,7 @@
 @startuml
 class LocalStatsStore <<sealed>> {
+    - <<readonly>> _history : List<JumpRecord>
+    - <<readonly>> _lifetime : LifetimeStats
     + RecordBattle(record:JumpRecord, inputs:BattleInputs) : Task
     + RecordSalvageSpent(amount:int) : void
     + RecordTechSpent(amount:int) : void

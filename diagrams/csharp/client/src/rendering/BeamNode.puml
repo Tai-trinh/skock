@@ -1,5 +1,9 @@
 @startuml
 class BeamNode <<partial>> {
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - _line : Line2D
+    - _baseColor : Color
     + BeamId : uint <<get>>
     + <<override>> _Ready() : void
     + Init(id:uint, fleet:byte) : void

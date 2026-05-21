@@ -16,6 +16,8 @@ public sealed class RunSnapshot
     public int JumpNumber { get; set; }
     public int LossCount { get; set; }
     public string AdmiralId { get; set; } = "";
+    public string AdmiralName { get; set; } = "";
+    public string AdmiralBonusText { get; set; } = "";
     public int[]? TierRerolls { get; set; }
     public int[]? ResearchRerolls { get; set; }
     public Dictionary<string, int>? UpgradePurchases { get; set; }

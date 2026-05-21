@@ -1,4 +1,5 @@
 @startuml
 interface ISimRunner {
+    Run(seed:ulong, fleetAPath:string, fleetBPath:string) : (BattleLog Log, BattleResult Result)
 }
 @enduml

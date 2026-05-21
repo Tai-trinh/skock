@@ -1,10 +1,46 @@
 @startuml
 class BattleRenderer <<partial>> {
     + TickRate : int <<get>> <<set>> = 30
+    - <<const>> SimScale : float = 1f
+    - _camera : Camera2D
+    - _shipsContainer : Node2D
+    - _projectilesContainer : Node2D
+    - _beamsContainer : Node2D
+    - _effectsContainer : Node2D
+    - _debugLabel : Label
+    - _resultLabel : Label
+    - _debugOverlay : DebugOverlay
     + SimRunner : ISimRunner? <<get>> <<set>>
+    - _playback : PlaybackState?
+    - <<readonly>> _shipNodes : Dictionary<uint, ShipNode>
+    - <<readonly>> _projNodes : Dictionary<uint, ProjectileNode>
+    - <<readonly>> _beamNodes : Dictionary<uint, BeamNode>
+    - _lastEventTick : int
+    - _inspectorOverlay : Control?
+    - _abandonConfirm : ConfirmationDialog
+    - _recordTask : Task?
+    - <<readonly>> _mineRotation : Dictionary<uint, float>
+    - {static} <<readonly>> JsonOptions : JsonSerializerOptions
     + <<override>> _Ready() : void
+    - <<async>> InitBattleAsync() : Task
     + <<override>> _Process(delta:double) : void
     + <<override>> _UnhandledInput(@event:InputEvent) : void
+    - <<async>> OnAbandonConfirmed() : void
+    - Initialize(log:BattleLog, result:BattleResult) : void
+    - RebuildShipNodes(log:BattleLog) : void
+    - Render() : void
+    - FirePendingEvents(currentTickIndex:int, currentTick:TickRecord) : void
+    - FireTickEvents(events:LogEvent[]) : void
+    - SpawnHitscanEffect(ev:LogEvent) : void
+    - SpawnExplosionEffect(ev:LogEvent) : void
+    - RenderShips(tickA:TickRecord, tickB:TickRecord, t:float) : void
+    - RenderProjectiles(tickA:TickRecord, tickB:TickRecord, t:float) : void
+    - MineRotationTick(delta:double) : void
+    - RenderBeams(tickA:TickRecord) : void
+    - HandleInput() : void
+    - UpdateDebugLabel(tick:TickRecord) : void
+    - ShowResult() : void
+    - FitCamera() : void
 }
 Node2D <|-- BattleRenderer
 @enduml

@@ -1,6 +1,5 @@
 @startuml
 !include .\\client\src\meta\AdmiralCatalog.puml
-!include .\\client\src\meta\AdmiralEffectsRegistry.puml
 !include .\\client\src\meta\AdmiralSelectUi.puml
 !include .\\client\src\meta\AdmiralSession.puml
 !include .\\client\src\meta\BattleInputs.puml
@@ -9,7 +8,7 @@
 !include .\\client\src\meta\DockUi.puml
 !include .\\client\src\meta\Faction.puml
 !include .\\client\src\meta\FleetData.puml
-!include .\\client\src\meta\IAdmiralStore.puml
+!include .\\client\src\meta\IAdmiralSelection.puml
 !include .\\client\src\meta\IDockyard.puml
 !include .\\client\src\meta\IRunData.puml
 !include .\\client\src\meta\IRunStore.puml
@@ -17,7 +16,6 @@
 !include .\\client\src\meta\JumpRecord.puml
 !include .\\client\src\meta\LifetimeStats.puml
 !include .\\client\src\meta\LocalAdmiralAdapter.puml
-!include .\\client\src\meta\LocalAdmiralStore.puml
 !include .\\client\src\meta\LocalDockyardAdapter.puml
 !include .\\client\src\meta\LocalRunStore.puml
 !include .\\client\src\meta\LocalStatsStore.puml

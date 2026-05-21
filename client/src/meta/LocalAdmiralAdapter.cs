@@ -10,7 +10,7 @@ namespace Skock.Meta;
 //
 // TODO (online mode): implement ServerAdmiralAdapter for the same contract.
 // Swap point: AdmiralSelectUi.LoadOffersAsync().
-public sealed class LocalAdmiralAdapter
+public sealed class LocalAdmiralAdapter : IAdmiralSelection
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = null };
 

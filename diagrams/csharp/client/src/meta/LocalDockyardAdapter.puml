@@ -1,5 +1,10 @@
 @startuml
 class LocalDockyardAdapter <<sealed>> {
+    - {static} <<readonly>> JsonOpts : JsonSerializerOptions
+    - <<readonly>> _process : Process
+    - <<readonly>> _stdin : StreamWriter
+    - <<readonly>> _stdout : StreamReader
+    - _disposed : bool
     + LocalDockyardAdapter(binaryPath:string)
     + <<async>> GetOffersAsync(input:DockSessionInput) : Task<DockOffersResult>
     + <<async>> CommissionAsync(blueprintId:string) : Task<DockCommissionResult>
@@ -9,6 +14,8 @@ class LocalDockyardAdapter <<sealed>> {
     + <<async>> BuyResearchAsync(upgradeId:string) : Task<DockActionResult>
     + <<async>> ShoppingDoneAsync() : Task<DockSessionDelta>
     + <<async>> DisposeAsync() : ValueTask
+    - <<async>> SendReceiveAsync(message:object) : Task<string>
+    - {static} Deserialize(json:string) : T
 }
 class GetOffersEnvelope <<sealed>> {
     + Action : string <<get>>

@@ -1,6 +1,10 @@
 @startuml
 class RunEndUi <<partial>> {
     + <<override>> _Ready() : void
+    - {static} BuildJumpTable(table:VBoxContainer, history:IReadOnlyList<JumpRecord>, run:RunState) : void
+    - {static} BuildAccordionBody(record:JumpRecord, run:RunState) : Control
+    - OnNewRun() : void
+    - OnReturnToMenu() : void
 }
 Control <|-- RunEndUi
 @enduml

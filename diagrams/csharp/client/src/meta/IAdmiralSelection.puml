@@ -1,0 +1,5 @@
+@startuml
+interface IAdmiralSelection {
+    GetOffersAsync(playerId:string) : Task<AdmiralOffersResult>
+}
+@enduml

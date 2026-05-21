@@ -1,5 +1,12 @@
 @startuml
 interface IDockyard {
+    GetOffersAsync(input:DockSessionInput) : Task<DockOffersResult>
+    CommissionAsync(blueprintId:string) : Task<DockCommissionResult>
+    SalvageFleetShipAsync(index:int) : Task<DockSalvageResult>
+    RerollTierAsync(tierIndex:int) : Task<DockTierResult>
+    RerollResearchAsync(trackIndex:int) : Task<DockTrackResult>
+    BuyResearchAsync(upgradeId:string) : Task<DockActionResult>
+    ShoppingDoneAsync() : Task<DockSessionDelta>
 }
 IAsyncDisposable <|-- IDockyard
 @enduml

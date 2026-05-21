@@ -1,5 +1,6 @@
 @startuml
 class UserSettings <<sealed>> {
+    - {static} <<readonly>> JsonOptions : JsonSerializerOptions
     + MasterVolume : float <<get>> <<set>> = 1.0f
     + MusicVolume : float <<get>> <<set>> = 1.0f
     + SfxVolume : float <<get>> <<set>> = 1.0f
@@ -7,5 +8,6 @@ class UserSettings <<sealed>> {
     + Apply() : void
     + Save(path:string) : void
     + {static} Load(path:string) : UserSettings
+    - {static} SetBusVolume(busName:string, linear:float) : void
 }
 @enduml

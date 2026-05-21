@@ -1,5 +1,11 @@
 @startuml
 class FleetInspector <<static>> {
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - {static} <<readonly>> PortraitTextColor : Color
     + {static} Build(fleet:FleetJsonData, upgrades:IReadOnlyDictionary<string, int>?, isPlayerFleet:bool) : Control
+    - {static} AdmiralNameFor(admiralId:string, isPlayerFleet:bool) : string
+    - {static} BuildPortrait(admiralId:string, isPlayerFleet:bool) : Control
+    - {static} AddShipRow(parent:VBoxContainer, ship:ShipDefData) : void
 }
 @enduml

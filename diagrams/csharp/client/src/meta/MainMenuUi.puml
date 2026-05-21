@@ -1,6 +1,9 @@
 @startuml
 class MainMenuUi <<partial>> {
+    - _newRunConfirm : ConfirmationDialog
     + <<override>> _Ready() : void
+    - OnStartPressed() : void
+    - <<async>> StartNewRun() : void
 }
 Control <|-- MainMenuUi
 @enduml

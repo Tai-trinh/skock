@@ -6,5 +6,8 @@ enum PostBattleTransition {
 }
 class BattleOutcomeResolver <<static>> {
     + {static} <<async>> Resolve(run:IRunData, result:BattleResult, inputs:BattleInputs, playerSnapshot:FleetJsonData, opponentSnapshot:FleetJsonData) : Task<PostBattleTransition>
+    - {static} ApplySurvivorHp(run:IRunData, survivors:IReadOnlyList<ShipSurvivor>) : void
+    - {static} HealAllShips(run:IRunData) : void
+    - {static} CountByHullClass(killed:IReadOnlyList<KilledShip>) : Dictionary<string, int>
 }
 @enduml

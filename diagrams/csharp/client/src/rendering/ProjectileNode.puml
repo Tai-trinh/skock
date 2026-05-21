@@ -1,10 +1,26 @@
 @startuml
 class ProjectileNode <<partial>> {
+    - <<const>> SeekingMissile : byte = 0
+    - <<const>> Torpedo : byte = 1
+    - <<const>> Mine : byte = 2
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - <<const>> TrailLength : int = 10
+    - <<readonly>> _trailHistory : Vector2[]
+    - _trailCount : int = 0
+    - _subtype : byte
+    - _color : Color
+    - _trail : Line2D?
+    - _rotation : float
     + ProjId : uint <<get>>
     + <<override>> _Ready() : void
     + Init(id:uint, fleet:byte, subtype:byte) : void
     + ApplySnapshot(worldPos:Vector2, headingRad:float) : void
     + <<override>> _Draw() : void
+    - DrawMissileArrow() : void
+    - DrawTorpedoArc() : void
+    - DrawMineStar() : void
+    - {static} BuildTrailCurve() : Curve
 }
 Node2D <|-- ProjectileNode
 @enduml

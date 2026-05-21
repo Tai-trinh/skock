@@ -1,9 +1,28 @@
 @startuml
 class ShipNode <<partial>> {
+    - {static} <<readonly>> CorvetteShape : Vector2[]
+    - {static} <<readonly>> FrigateShape : Vector2[]
+    - {static} <<readonly>> DestroyerShape : Vector2[]
+    - {static} <<readonly>> CruiserShape : Vector2[]
+    - {static} <<readonly>> BattlecruiserShape : Vector2[]
+    - {static} <<readonly>> DreadnoughtShape : Vector2[]
+    - {static} <<readonly>> MothershipShape : Vector2[]
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - {static} <<readonly>> MothershipTint : Color
+    - _body : Polygon2D
+    - _trail : Line2D
+    - _baseColor : Color
+    - <<const>> TrailLength : int = 30
     + ShipId : uint <<get>>
     + <<override>> _Ready() : void
     + Init(id:uint, fleet:byte, isMothership:bool, blueprintDrawingId:string) : void
     + ApplySnapshot(worldPos:Vector2, headingRad:float, hpFraction:float) : void
+    - <<readonly>> _trailHistory : Vector2[]
+    - _trailCount : int = 0
+    - PrependTrailPoint(worldPos:Vector2) : void
+    - {static} BuildTrailCurve() : Curve
+    - {static} ShapeFor(drawingId:string) : Vector2[]
 }
 Node2D <|-- ShipNode
 @enduml

@@ -1,6 +1,11 @@
 @startuml
 class LocalSimRunner <<sealed>> {
+    - <<const>> ResultPrefix : string = "RESULT:"
     + Run(seed:ulong, fleetAPath:string, fleetBPath:string) : (BattleLog Log, BattleResult Result)
+    - {static} FindResultLine(stderr:string) : string?
+    - {static} ParseResult(json:string) : BattleResult
+    - {static} ParseSurvivors(root:JsonElement, key:string) : IReadOnlyList<ShipSurvivor>
+    - {static} ParseKilled(root:JsonElement, key:string) : IReadOnlyList<KilledShip>
 }
 ISimRunner <|-- LocalSimRunner
 @enduml

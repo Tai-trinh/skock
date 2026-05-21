@@ -1,9 +1,13 @@
 @startuml
 class OptionsOverlay <<partial>> {
     + {static} Instance : OptionsOverlay <<get>>
+    - _runSection : VBoxContainer
+    - _abandonConfirm : ConfirmationDialog
     + <<override>> _Ready() : void
     + <<override>> _UnhandledInput(@event:InputEvent) : void
     + Open() : void
+    - BuildUi() : void
+    - {static} SliderRow(label:string, value:float, onChange:Action<float>) : HBoxContainer
 }
 CanvasLayer <|-- OptionsOverlay
 @enduml

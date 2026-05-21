@@ -1,4 +1,10 @@
 @startuml
 interface IAdmiralStore {
+    Load() : Task
+    GetAdmirals() : IReadOnlyList<Admiral>
+    GetFactions() : IReadOnlyList<Faction>
+    FindAdmiral(id:string) : Admiral?
+    FindFaction(id:string) : Faction?
+    NameFor(admiralId:string) : string
 }
 @enduml

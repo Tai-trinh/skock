@@ -1,5 +1,9 @@
 @startuml
 class LocalAdmiralStore <<sealed>> {
+    - {static} <<readonly>> JsonOptions : JsonSerializerOptions
+    - <<readonly>> _dataDir : string
+    - _admirals : List<Admiral>
+    - _factions : List<Faction>
     + LocalAdmiralStore(dataDir:string)
     + Load() : Task
     + GetAdmirals() : IReadOnlyList<Admiral>
@@ -7,6 +11,8 @@ class LocalAdmiralStore <<sealed>> {
     + FindAdmiral(id:string) : Admiral?
     + FindFaction(id:string) : Faction?
     + NameFor(admiralId:string) : string
+    - LoadFactions() : List<Faction>
+    - LoadAdmirals() : List<Admiral>
 }
 class AdmiralDto <<sealed>> {
     + Id : string <<get>> <<set>> = ""

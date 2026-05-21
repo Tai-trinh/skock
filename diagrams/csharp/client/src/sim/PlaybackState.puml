@@ -1,5 +1,7 @@
 @startuml
 class PlaybackState <<sealed>> {
+    - <<readonly>> _log : BattleLog
+    - _lastEventTick : int
     + IsLoaded : bool <<get>>
     + TotalTicks : int <<get>>
     + Result : BattleResult? <<get>>

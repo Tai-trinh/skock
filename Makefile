@@ -72,6 +72,8 @@ win-build-sim:
 
 win-build-rust: win-build-sim
 	cargo.exe build -p dockyard --release
+	cargo.exe build -p catalog --release
+	cargo.exe build -p admiral --release
 
 win-test-rust:
 	cargo.exe test
@@ -81,6 +83,7 @@ win-build-godot:
 
 win-fmt:
 	cargo.exe fmt
+	cargo.exe clippy
 	csharpier.exe format client/
 
 win-start-godot:

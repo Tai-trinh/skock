@@ -51,6 +51,8 @@ public partial class RunState : Node, IRunData
     public int JumpNumber { get; set; } = 1;
     public int LossCount { get; set; } = 0;
     public string AdmiralId { get; set; } = "";
+    public string AdmiralName { get; set; } = "";
+    public string AdmiralBonusText { get; set; } = "";
     public FleetJsonData Fleet { get; set; } = DefaultFleet();
     public int[] TierRerolls { get; set; } = new int[4];
     public int[] ResearchRerolls { get; set; } = new int[4];
@@ -67,9 +69,9 @@ public partial class RunState : Node, IRunData
     private BattleInputs? _currentBattleInputs;
     public FleetJsonData? CurrentOpponentFleet { get; private set; }
 
-    // ── Admiral / faction catalog ─────────────────────────────────────────────
+    // ── Admiral selection ─────────────────────────────────────────────────────
 
-    public IAdmiralStore Catalog { get; private set; } = null!;
+    public IAdmiralSelection AdmiralSelection { get; private set; } = null!;
 
     // ── Statistics ────────────────────────────────────────────────────────────
 
@@ -98,8 +100,8 @@ public partial class RunState : Node, IRunData
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")
         );
 
-        // Swap LocalAdmiralStore for ServerAdmiralStore here when online mode is implemented.
-        Catalog = new LocalAdmiralStore(Path.Combine(ProjectDir, "data"));
+        // Swap LocalAdmiralAdapter for ServerAdmiralAdapter here when online mode is implemented.
+        AdmiralSelection = new LocalAdmiralAdapter(AdmiralBinaryPath);
         // Swap LocalStatsStore for ServerStatsStore here when online mode is implemented.
         Stats = new LocalStatsStore();
         // Swap LocalRunStore for ServerRunStore here when online mode is implemented.
@@ -113,7 +115,6 @@ public partial class RunState : Node, IRunData
 
     private async Task LoadAsync()
     {
-        await Catalog.Load();
         var snapshot = await _store.Load();
         if (snapshot is not null)
             ApplySnapshot(snapshot);
@@ -132,6 +133,8 @@ public partial class RunState : Node, IRunData
 
     public async Task StartRun(Admiral admiral, ulong? runSeed = null)
     {
+        AdmiralName = admiral.Name;
+        AdmiralBonusText = admiral.BonusText;
         var snapshot = await _store.StartRun(admiral);
         if (runSeed.HasValue)
             snapshot.RunSeed = runSeed.Value;
@@ -287,6 +290,8 @@ public partial class RunState : Node, IRunData
             JumpNumber = JumpNumber,
             LossCount = LossCount,
             AdmiralId = AdmiralId,
+            AdmiralName = AdmiralName,
+            AdmiralBonusText = AdmiralBonusText,
             Fleet = Fleet,
             TierRerolls = (int[])TierRerolls.Clone(),
             ResearchRerolls = (int[])ResearchRerolls.Clone(),
@@ -306,6 +311,8 @@ public partial class RunState : Node, IRunData
         JumpNumber = Math.Max(1, snapshot.JumpNumber);
         LossCount = snapshot.LossCount;
         AdmiralId = snapshot.AdmiralId;
+        AdmiralName = snapshot.AdmiralName;
+        AdmiralBonusText = snapshot.AdmiralBonusText;
         Fleet = snapshot.Fleet;
         TierRerolls = snapshot.TierRerolls ?? new int[4];
         ResearchRerolls = snapshot.ResearchRerolls ?? new int[4];

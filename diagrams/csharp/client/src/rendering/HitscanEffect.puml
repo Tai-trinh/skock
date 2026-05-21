@@ -1,5 +1,11 @@
 @startuml
 class HitscanEffect <<partial>> {
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - _line : Line2D
+    - _framesLeft : int
+    - <<const>> FadeDuration : int = 12
+    - _baseColor : Color
     + <<override>> _Ready() : void
     + Spawn(sourceWorld:Vector2, targetWorld:Vector2, fleet:byte, simScale:float) : void
     + <<override>> _Process(delta:double) : void

@@ -1,6 +1,9 @@
 @startuml
 class LocalAdmiralAdapter <<sealed>> {
+    - {static} <<readonly>> JsonOpts : JsonSerializerOptions
+    - <<readonly>> _binaryPath : string
     + LocalAdmiralAdapter(binaryPath:string)
     + <<async>> GetOffersAsync(playerId:string) : Task<AdmiralOffersResult>
 }
+IAdmiralSelection <|-- LocalAdmiralAdapter
 @enduml

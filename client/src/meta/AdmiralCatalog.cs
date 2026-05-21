@@ -1,13 +1,4 @@
-using System;
-using System.Collections.Generic;
-
 namespace Skock.Meta;
-
-public sealed class AdmiralShipEffect
-{
-    public required Func<ShipDefData, bool> Matches { get; init; }
-    public required Action<ShipDefData> Apply { get; init; }
-}
 
 public sealed class Admiral
 {
@@ -19,5 +10,4 @@ public sealed class Admiral
     public required int StartingTech { get; init; }
     public required int StartingHangarCapacity { get; init; }
     public required FleetJsonData StartingFleet { get; init; }
-    public required IReadOnlyList<AdmiralShipEffect> ShipEffects { get; init; }
 }

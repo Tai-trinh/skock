@@ -1,7 +1,29 @@
 @startuml
 class DockUi <<partial>> {
+    - _titleLabel : Label
+    - _resourcesLabel : Label
+    - _fleetContainer : VBoxContainer
+    - _dockContainer : VBoxContainer
+    - _researchContainer : HBoxContainer
+    - _statusLabel : Label
+    - _battleButton : Button
+    - _session : IDockyard?
+    - _offers : DockOffersResult?
+    - _state : DockResourceState
+    - _sessionFleet : List<SessionShip>
     + <<override>> _Ready() : void
     + <<override>> _ExitTree() : void
+    - <<async>> OpenSessionAsync() : Task
+    - Refresh() : void
+    - RebuildFleet() : void
+    - <<async>> OnSalvageShip(sessionIndex:int) : void
+    - RebuildDock() : void
+    - <<async>> OnRerollTier(tierIndex:int) : void
+    - <<async>> OnCommissionShip(slot:ShipSlotOffer) : void
+    - RebuildResearch() : void
+    - <<async>> OnRerollResearch(trackIndex:int) : void
+    - <<async>> OnBuyUpgrade(upgradeId:string) : void
+    - <<async>> OnBattlePressed() : void
 }
 class SessionShip <<sealed>> <<record>> {
     + CurrentIndex : int <<get>> <<init>>

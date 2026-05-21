@@ -1,4 +1,13 @@
 @startuml
 interface IStatsStore {
+    RecordBattle(record:JumpRecord, inputs:BattleInputs) : Task
+    RecordSalvageSpent(amount:int) : void
+    RecordTechSpent(amount:int) : void
+    RecordCapitalShipBought() : void
+    RecordRunVictory() : void
+    GetJumpHistory() : IReadOnlyList<JumpRecord>
+    GetLifetimeStats() : LifetimeStats
+    Reset() : void
+    LoadHistory(records:IReadOnlyList<JumpRecord>) : void
 }
 @enduml

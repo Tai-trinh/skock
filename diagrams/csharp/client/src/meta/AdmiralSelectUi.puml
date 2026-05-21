@@ -1,6 +1,10 @@
 @startuml
 class AdmiralSelectUi <<partial>> {
+    - _admiralCards : HBoxContainer
     + <<override>> _Ready() : void
+    - <<async>> LoadOffersAsync() : Task
+    - BuildCard(offer:AdmiralOfferDto, runSeed:ulong) : PanelContainer
+    - <<async>> OnAdmiralSelected(offer:AdmiralOfferDto, runSeed:ulong) : void
 }
 Control <|-- AdmiralSelectUi
 @enduml
