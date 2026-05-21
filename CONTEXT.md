@@ -94,9 +94,36 @@ Ships are identified by two fields plus an optional weight designation. Display 
 
 `Dreadnought` hull class — high HP, high armor/shields, high tonnage. Carries a short-range hitscan weapon — not toothless, but not a damage dealer. Boid weights favour pushing toward enemies and holding position. Purpose: soak hits and shield ships behind them.
 
-**Targeting:** default is nearest enemy. Ships have an optional `target_priority` field that overrides targeting for specific roles (e.g. `PointDefense` targets incoming projectiles first, then nearest enemy). Defined per ship in the fleet JSON.
+**Hardpoint:** one entry in a ship's `hardpoints` array. Each hardpoint fires independently on its own cooldown. A hardpoint carries: weapon archetype definition (hitscan/projectile/beam), fire point offset (local frame: `forward` along heading, `lateral` perpendicular), and salvo config.
 
-**Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance. Both work together: boids handle positioning, range check handles firing permission.
+**Salvo:** a hardpoint that fires multiple projectiles simultaneously per shot. Defined by `salvo_count` (number of projectiles) and `salvo_spread_angle` (total arc in radians, divided equally among projectiles, centred on the hardpoint's firing direction). `salvo_count = 1` is a single shot.
+
+**CombatStance:** ship-level field that drives the `maintain_range` boid force — how the ship positions relative to enemies.
+- `Standoff` — orbit at the range of the ship's longest-reach hardpoint.
+- `Brawl` — close as fast as possible; no maintain-range orbit.
+- `Broadside` — orbit at the shortest hardpoint range on the ship (the distance where every hardpoint can fire).
+
+**TargetPriority:** ship-level field that controls which enemy each hardpoint selects as its target.
+- `Nearest` — all hardpoints target the same closest in-range enemy.
+- `Spread` — each hardpoint independently targets the closest in-range enemy (measured from ship center); duplicates allowed when enemies are fewer than hardpoints.
+- `Heaviest` — all hardpoints target the highest-HP in-range enemy.
+- `Weakest` — all hardpoints target the most-damaged (lowest current HP) in-range enemy.
+- `MostThreatening` — all hardpoints target the highest-threat in-range enemy. Threat score = sum of `damage / cooldown_ticks` across all hardpoints on the enemy ship (estimated DPS). Computed on demand from fleet data; not stored in sim state.
+
+**Targeting:** each hardpoint checks `dist(ship_center, target) ≤ hardpoint.range` before firing. All strategies use ship center for proximity, not the hardpoint's fire point offset.
+
+**Hitscan accuracy scaling:** hitscan hardpoints support distance-dependent miss chance. `miss_chance_far` is the miss probability at `range`; `miss_chance_near` is the floor miss probability at or below `accurate_range`. Miss chance interpolates linearly between the two. If `miss_chance_far == miss_chance_near`, miss chance is fixed regardless of distance.
+
+**Boid seek forces:** `seek_enemy` weight is replaced by three configurable per-ship weights:
+- `seek_nearest` — force toward nearest enemy ship.
+- `seek_mass` — force toward the center of mass of all enemy ships.
+- `seek_mothership` — force toward the enemy Mothership specifically.
+
+**Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance (derived from `CombatStance` + hardpoints at spawn; not a fleet JSON field). Both work together: boids handle positioning, range check handles firing permission.
+
+**AddHardpoint effect:** a `FleetEffect` variant that appends a hardpoint to every ship matching a scope filter at sim spawn time. Stored in the fleet's effect arrays (`doctrines`, `role_equipment`, etc.) when purchased. The sim resolves the effective hardpoint list at spawn: base `ShipDef.hardpoints` + all matching `AddHardpoint` effects. The shared `catalog` crate exposes `fn describe_ship(def: &ShipDef, effective_hardpoints: &[HardpointDef]) -> String` and `fn label_hardpoint(h: &HardpointDef) -> String`; the dockyard binary calls these and includes the generated strings in fleet-info responses. No description strings are hand-authored in fleet JSON.
+
+**Multi-beam indexing:** `SimState.active_beams` is keyed `BTreeMap<(ShipId, usize), BeamId>` where `usize` is the hardpoint index. `BeamEntity` carries `hardpoint_index: usize`. A ship may have multiple simultaneous active beams — one per beam hardpoint. The old `BTreeMap<ShipId, BeamId>` (one beam per ship) is superseded.
 
 
 
