@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -16,16 +14,7 @@ public partial class DockUi : Control
     private Label _statusLabel = null!;
     private Button _battleButton = null!;
 
-    // ── Session state ─────────────────────────────────────────────────────────
-
-    private IDockyard? _session;
-    private DockOffersResult? _offers;
-    private DockResourceState _state = new();
-
-    // Mirrors the fleet during the session. Updated on commission/salvage.
-    private sealed record SessionShip(int CurrentIndex, string Name, int Tonnage);
-
-    private List<SessionShip> _sessionFleet = [];
+    private DockSessionModel? _model;
 
     // ── Godot lifecycle ───────────────────────────────────────────────────────
 
@@ -45,25 +34,25 @@ public partial class DockUi : Control
         _statusLabel = GetNode<Label>("MarginContainer/VBox/Footer/StatusLabel");
         _battleButton = GetNode<Button>("MarginContainer/VBox/Footer/BattleButton");
         _battleButton.Pressed += OnBattlePressed;
-        _battleButton.Disabled = true; // enabled once session is ready
+        _battleButton.Disabled = true;
 
         var run = RunState.Instance;
         _titleLabel.Text = $"DOCKYARD — Jump {run.JumpNumber} / 8";
 
-        // Snapshot fleet for local tracking before opening the session.
-        _sessionFleet = run
+        var initialFleet = run
             .Fleet.Ships.Select(
                 (s, i) => new SessionShip(i, ShipDisplay.NameFor(s), s.HullClass.Tonnage())
             )
             .ToList();
+        _model = new DockSessionModel(run.OpenDockyardSession(), initialFleet);
 
         _ = OpenSessionAsync();
     }
 
     public override void _ExitTree()
     {
-        if (_session is not null)
-            _ = _session.DisposeAsync().AsTask();
+        if (_model is not null)
+            _ = _model.DisposeAsync().AsTask();
     }
 
     // ── Session open ──────────────────────────────────────────────────────────
@@ -71,18 +60,14 @@ public partial class DockUi : Control
     private async Task OpenSessionAsync()
     {
         var run = RunState.Instance;
-        _session = run.OpenDockyardSession();
-        try
+        var error = await _model!.OpenAsync(run.BuildDockSessionInput());
+        if (error is not null)
         {
-            _offers = await _session.GetOffersAsync(run.BuildDockSessionInput());
-            _state = _offers.State;
-            _battleButton.Disabled = false;
-            Refresh();
+            _statusLabel.Text = $"Dockyard unavailable: {error}";
+            return;
         }
-        catch (Exception e)
-        {
-            _statusLabel.Text = $"Dockyard unavailable: {e.Message}";
-        }
+        _battleButton.Disabled = false;
+        Refresh();
     }
 
     // ── Full rebuild ──────────────────────────────────────────────────────────
@@ -92,8 +77,8 @@ public partial class DockUi : Control
         var run = RunState.Instance;
         _titleLabel.Text = $"DOCKYARD — Jump {run.JumpNumber} / 8";
         _resourcesLabel.Text =
-            $"Salvage: {_state.Salvage}   Tech: {_state.Tech}   "
-            + $"Tonnage: {_state.HangarUsed} / {_state.HangarCap}   "
+            $"Salvage: {_model!.ResourceState.Salvage}   Tech: {_model.ResourceState.Tech}   "
+            + $"Tonnage: {_model.ResourceState.HangarUsed} / {_model.ResourceState.HangarCap}   "
             + $"Losses: {run.LossCount} / 3";
         RebuildFleet();
         RebuildDock();
@@ -107,9 +92,9 @@ public partial class DockUi : Control
         foreach (var child in _fleetContainer.GetChildren())
             child.QueueFree();
 
-        for (var i = 0; i < _sessionFleet.Count; i++)
+        for (var i = 0; i < _model!.Fleet.Count; i++)
         {
-            var ship = _sessionFleet[i];
+            var ship = _model.Fleet[i];
             var yield = ship.Tonnage * 3;
             var btn = new Button { Text = $"{ship.Name}  [+{yield} salvage]" };
             var capturedIndex = i;
@@ -120,18 +105,14 @@ public partial class DockUi : Control
 
     private async void OnSalvageShip(int sessionIndex)
     {
-        if (_session is null)
-            return;
         var shipName =
-            sessionIndex < _sessionFleet.Count ? _sessionFleet[sessionIndex].Name : "ship";
-        var result = await _session.SalvageFleetShipAsync(sessionIndex);
+            sessionIndex < _model!.Fleet.Count ? _model.Fleet[sessionIndex].Name : "ship";
+        var result = await _model.SalvageAsync(sessionIndex);
         if (!result.Ok)
         {
             _statusLabel.Text = $"Cannot salvage: {result.Error}";
             return;
         }
-        _state = result.State!;
-        _sessionFleet.RemoveAt(sessionIndex);
         _statusLabel.Text = $"Salvaged {shipName} for {result.SalvageYield} salvage.";
         Refresh();
     }
@@ -143,10 +124,10 @@ public partial class DockUi : Control
         foreach (var child in _dockContainer.GetChildren())
             child.QueueFree();
 
-        if (_offers is null)
+        if (_model!.Offers is null)
             return;
 
-        foreach (var tier in _offers.ShipTiers)
+        foreach (var tier in _model.Offers.ShipTiers)
         {
             if (tier.Slots.Count == 0)
                 continue;
@@ -166,8 +147,10 @@ public partial class DockUi : Control
 
             foreach (var slot in tier.Slots)
             {
-                var canAfford = _state.Salvage >= slot.SalvageCost;
-                var hasTonnage = (_state.HangarCap - _state.HangarUsed) >= slot.Tonnage;
+                var canAfford = _model.ResourceState.Salvage >= slot.SalvageCost;
+                var hasTonnage =
+                    (_model.ResourceState.HangarCap - _model.ResourceState.HangarUsed)
+                    >= slot.Tonnage;
                 var btn = new Button
                 {
                     Text = $"{slot.DisplayName}  [{slot.Tonnage}T  {slot.SalvageCost} salvage]",
@@ -182,36 +165,24 @@ public partial class DockUi : Control
 
     private async void OnRerollTier(int tierIndex)
     {
-        if (_session is null)
-            return;
-        var result = await _session.RerollTierAsync(tierIndex);
+        var result = await _model!.RerollTierAsync(tierIndex);
         if (!result.Ok)
         {
             _statusLabel.Text = $"Cannot reroll: {result.Error}";
             return;
         }
-        _state = result.State!;
-        // Replace the tier in the cached offers.
-        var idx = _offers!.ShipTiers.FindIndex(t => t.TierIndex == tierIndex);
-        if (idx >= 0 && result.Tier is not null)
-            _offers.ShipTiers[idx] = result.Tier;
         _statusLabel.Text = "Dockyard updated.";
         Refresh();
     }
 
     private async void OnCommissionShip(ShipSlotOffer slot)
     {
-        if (_session is null)
-            return;
-        var result = await _session.CommissionAsync(slot.BlueprintId);
+        var result = await _model!.CommissionAsync(slot.BlueprintId);
         if (!result.Ok)
         {
             _statusLabel.Text = $"Cannot commission: {result.Error}";
             return;
         }
-        _state = result.State!;
-        // Track locally for fleet display (tonnage from slot offer).
-        _sessionFleet.Add(new SessionShip(_sessionFleet.Count, slot.DisplayName, slot.Tonnage));
         _statusLabel.Text = $"Commissioned {slot.DisplayName}.";
         Refresh();
     }
@@ -223,10 +194,10 @@ public partial class DockUi : Control
         foreach (var child in _researchContainer.GetChildren())
             child.QueueFree();
 
-        if (_offers is null)
+        if (_model!.Offers is null)
             return;
 
-        foreach (var track in _offers.ResearchTracks)
+        foreach (var track in _model.Offers.ResearchTracks)
         {
             if (track.Items.Count == 0)
                 continue;
@@ -251,7 +222,7 @@ public partial class DockUi : Control
                     Text =
                         $"{item.DisplayName}\n{item.Description}\n[{item.TechCost} Tech]{countText}"
                         + (maxed ? "\nMAXED" : ""),
-                    Disabled = _state.Tech < item.TechCost || maxed,
+                    Disabled = _model.ResourceState.Tech < item.TechCost || maxed,
                 };
                 var capturedId = item.UpgradeId;
                 btn.Pressed += () => OnBuyUpgrade(capturedId);
@@ -264,37 +235,24 @@ public partial class DockUi : Control
 
     private async void OnRerollResearch(int trackIndex)
     {
-        if (_session is null)
-            return;
-        var result = await _session.RerollResearchAsync(trackIndex);
+        var result = await _model!.RerollResearchAsync(trackIndex);
         if (!result.Ok)
         {
             _statusLabel.Text = $"Cannot reroll: {result.Error}";
             return;
         }
-        _state = result.State!;
-        var idx = _offers!.ResearchTracks.FindIndex(t => t.TrackIndex == trackIndex);
-        if (idx >= 0 && result.Track is not null)
-            _offers.ResearchTracks[idx] = result.Track;
         _statusLabel.Text = "Research updated.";
         Refresh();
     }
 
     private async void OnBuyUpgrade(string upgradeId)
     {
-        if (_session is null)
-            return;
-        var result = await _session.BuyResearchAsync(upgradeId);
+        var result = await _model!.BuyResearchAsync(upgradeId);
         if (!result.Ok)
         {
             _statusLabel.Text = $"Cannot research: {result.Error}";
             return;
         }
-        _state = result.State!;
-        // Refresh research track items to reflect updated purchased counts.
-        // The binary returns updated state but not the full track; rebuild all research from offers.
-        // To get updated purchased counts, refresh the affected track from the binary
-        // by checking what changed — for simplicity, fetch fresh offers on next Refresh().
         _statusLabel.Text = $"Researched: {upgradeId}.";
         Refresh();
     }
@@ -303,7 +261,7 @@ public partial class DockUi : Control
 
     private async void OnBattlePressed()
     {
-        if (_session is null)
+        if (_model?.Offers is null)
             return;
 
         if (RunState.Instance.Fleet.Ships.Count == 0)
@@ -314,7 +272,7 @@ public partial class DockUi : Control
 
         _battleButton.Disabled = true;
 
-        var sessionResult = await _session.ShoppingDoneAsync();
+        var sessionResult = await _model.ShoppingDoneAsync();
         if (!sessionResult.Ok || sessionResult.Delta is null)
         {
             _statusLabel.Text = $"Shopping error: {sessionResult.Error}";
@@ -323,7 +281,7 @@ public partial class DockUi : Control
         }
 
         var run = RunState.Instance;
-        run.ApplyDockSessionDelta(sessionResult.Delta, _offers!);
+        run.ApplyDockSessionDelta(sessionResult.Delta, _model.Offers);
         await run.Save();
         GetTree().ChangeSceneToFile("res://scenes/Battle.tscn");
     }

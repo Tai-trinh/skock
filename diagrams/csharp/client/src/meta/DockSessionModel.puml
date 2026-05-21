@@ -1,0 +1,19 @@
+@startuml
+class DockSessionModel <<sealed>> {
+    - <<readonly>> _session : IDockyard
+    - <<readonly>> _fleet : List<SessionShip>
+    + ResourceState : DockResourceState <<get>>
+    + Offers : DockOffersResult? <<get>>
+    + Fleet : IReadOnlyList<SessionShip> <<get>>
+    + DockSessionModel(session:IDockyard, initialFleet:IReadOnlyList<SessionShip>)
+    + <<async>> OpenAsync(input:DockSessionInput) : Task<string?>
+    + <<async>> CommissionAsync(blueprintId:string) : Task<DockCommissionResult>
+    + <<async>> SalvageAsync(sessionIndex:int) : Task<DockSalvageResult>
+    + <<async>> RerollTierAsync(tierIndex:int) : Task<DockTierResult>
+    + <<async>> RerollResearchAsync(trackIndex:int) : Task<DockTrackResult>
+    + <<async>> BuyResearchAsync(upgradeId:string) : Task<DockActionResult>
+    + ShoppingDoneAsync() : Task<DockSessionDelta>
+    + DisposeAsync() : ValueTask
+}
+IAsyncDisposable <|-- DockSessionModel
+@enduml

@@ -5,6 +5,7 @@
 !include .\\client\src\meta\BattleInputs.puml
 !include .\\client\src\meta\BattleOutcomeResolver.puml
 !include .\\client\src\meta\DockSession.puml
+!include .\\client\src\meta\DockSessionModel.puml
 !include .\\client\src\meta\DockUi.puml
 !include .\\client\src\meta\Faction.puml
 !include .\\client\src\meta\FleetData.puml

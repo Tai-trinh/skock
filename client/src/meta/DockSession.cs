@@ -232,6 +232,12 @@ public sealed class DockTrackResult
     public DockResourceState? State { get; init; }
 }
 
+// ── Local fleet mirror ────────────────────────────────────────────────────────
+
+// Lightweight snapshot of a ship held in the player's fleet during a dockyard session.
+// Owned by DockSessionModel; updated on commission and salvage.
+public sealed record SessionShip(int CurrentIndex, string Name, int Tonnage);
+
 // ── Session delta (returned by ShoppingDone) ──────────────────────────────────
 
 public sealed class DockSessionDelta

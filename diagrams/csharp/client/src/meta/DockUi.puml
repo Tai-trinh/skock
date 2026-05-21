@@ -7,10 +7,7 @@ class DockUi <<partial>> {
     - _researchContainer : HBoxContainer
     - _statusLabel : Label
     - _battleButton : Button
-    - _session : IDockyard?
-    - _offers : DockOffersResult?
-    - _state : DockResourceState
-    - _sessionFleet : List<SessionShip>
+    - _model : DockSessionModel?
     + <<override>> _Ready() : void
     + <<override>> _ExitTree() : void
     - <<async>> OpenSessionAsync() : Task
@@ -25,11 +22,5 @@ class DockUi <<partial>> {
     - <<async>> OnBuyUpgrade(upgradeId:string) : void
     - <<async>> OnBattlePressed() : void
 }
-class SessionShip <<sealed>> <<record>> {
-    + CurrentIndex : int <<get>> <<init>>
-    + Name : string <<get>> <<init>>
-    + Tonnage : int <<get>> <<init>>
-}
 Control <|-- DockUi
-DockUi +-- SessionShip
 @enduml

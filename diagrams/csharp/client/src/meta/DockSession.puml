@@ -85,6 +85,11 @@ class DockTrackResult <<sealed>> {
     + Track : ResearchTrackOffer? <<get>> <<init>>
     + State : DockResourceState? <<get>> <<init>>
 }
+class SessionShip <<sealed>> <<record>> {
+    + CurrentIndex : int <<get>> <<init>>
+    + Name : string <<get>> <<init>>
+    + Tonnage : int <<get>> <<init>>
+}
 class DockSessionDelta <<sealed>> {
     + Ok : bool <<get>> <<init>>
     + Error : string? <<get>> <<init>>
