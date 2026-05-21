@@ -226,7 +226,6 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
                 track_rate: I16F16::from_num(*track_rate),
                 ramp_ticks: *ramp_ticks,
                 ramp_max: I16F16::from_num(*ramp_max),
-                active_beam_id: None,
             },
         },
     }

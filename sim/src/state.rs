@@ -92,8 +92,6 @@ pub enum WeaponKind {
         track_rate: I16F16,
         ramp_ticks: u32,
         ramp_max: I16F16,
-        /// ID of the currently active beam entity, if any.
-        active_beam_id: Option<BeamId>,
     },
 }
 
@@ -251,6 +249,9 @@ pub struct SimState {
     pub next_projectile_id: u32,
     pub beams: BTreeMap<BeamId, BeamEntity>,
     pub next_beam_id: u32,
+    /// Maps each ship that currently has a live beam entity to that beam's ID.
+    /// Written exclusively by combat::beam — insert on spawn, remove on expiry.
+    pub active_beams: BTreeMap<ShipId, BeamId>,
     pub rng: Xoshiro256Plus,
     pub events: Vec<Event>,
     pub low_hp_flagged: BTreeMap<ShipId, bool>,
@@ -269,6 +270,7 @@ impl SimState {
             next_projectile_id: 0,
             beams: BTreeMap::new(),
             next_beam_id: 0,
+            active_beams: BTreeMap::new(),
             rng,
             events: Vec::new(),
             low_hp_flagged: BTreeMap::new(),
