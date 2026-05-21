@@ -1,0 +1,17 @@
+@startuml
+class ShipDestroyedEffect <<partial>> {
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - {static} <<readonly>> FireColor : Color
+    - <<const>> FadeDuration : int = 45
+    - <<const>> DebrisCount : int = 8
+    - _radius : float
+    - _baseColor : Color
+    - _framesLeft : int
+    - <<readonly>> _debris : (Vector2 vel, float len)[]
+    + Spawn(worldPos:Vector2, radius:float, fleet:byte) : void
+    + <<override>> _Process(delta:double) : void
+    + <<override>> _Draw() : void
+}
+Node2D <|-- ShipDestroyedEffect
+@enduml

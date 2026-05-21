@@ -19,6 +19,7 @@ class BattleRenderer <<partial>> {
     - _inspectorOverlay : Control?
     - _abandonConfirm : ConfirmationDialog
     - _recordTask : Task?
+    - _effects : BattleEffects
     - <<readonly>> _mineRotation : Dictionary<uint, float>
     - {static} <<readonly>> JsonOptions : JsonSerializerOptions
     + <<override>> _Ready() : void
@@ -31,6 +32,8 @@ class BattleRenderer <<partial>> {
     - Render() : void
     - FirePendingEvents(currentTickIndex:int, currentTick:TickRecord) : void
     - FireTickEvents(events:LogEvent[]) : void
+    - OnShipDestroyed(ev:LogEvent) : void
+    - SpawnHitscanImpactEffect(ev:LogEvent) : void
     - SpawnHitscanEffect(ev:LogEvent) : void
     - SpawnExplosionEffect(ev:LogEvent) : void
     - RenderShips(tickA:TickRecord, tickB:TickRecord, t:float) : void

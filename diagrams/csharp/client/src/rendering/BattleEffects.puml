@@ -1,0 +1,38 @@
+@startuml
+class BattleEffects <<partial>> {
+    - <<const>> ShakeCorvette : float = 1.5f
+    - <<const>> ShakeFrigate : float = 2.5f
+    - <<const>> ShakeDestroyer : float = 4.0f
+    - <<const>> ShakeCruiser : float = 6.0f
+    - <<const>> ShakeBattlecruiser : float = 9.0f
+    - <<const>> ShakeDreadnought : float = 13.0f
+    - <<const>> ShakeMothership : float = 20.0f
+    - <<const>> ShakeDuration : float = 0.5f
+    - <<const>> ShakeFreqX : float = 12.0f
+    - <<const>> ShakeFreqY : float = 15.0f
+    - <<const>> PoolSize : int = 8
+    - <<const>> SfxDir : string = "res://assets/sfx/"
+    + <<const>> SfxHitscan : string = "sfx_hitscan"
+    + <<const>> SfxBeam : string = "sfx_beam"
+    + <<const>> SfxTorpedoLaunch : string = "sfx_torpedo_launch"
+    + <<const>> SfxMissileLaunch : string = "sfx_missile_launch"
+    + <<const>> SfxMineDeploy : string = "sfx_mine_deploy"
+    + <<const>> SfxExplosionSmall : string = "sfx_explosion_small"
+    + <<const>> SfxExplosionLarge : string = "sfx_explosion_large"
+    + <<const>> SfxShipDestroyed : string = "sfx_ship_destroyed"
+    + <<const>> SfxMothershipDestroyed : string = "sfx_mothership_destroyed"
+    - {static} <<readonly>> AllSounds : string[]
+    - <<readonly>> _pools : Dictionary<string, AudioStreamPlayer[]>
+    - <<readonly>> _cursors : Dictionary<string, int>
+    - _camera : Camera2D
+    - _shakeT : float
+    - _shakeTween : Tween?
+    + Init(camera:Camera2D) : void
+    - LoadPools() : void
+    + Play(name:string) : void
+    + TriggerShake(magnitude:float) : void
+    + {static} ShakeMagnitudeFor(isMothership:bool, blueprintDrawingId:string) : float
+    + <<override>> _Process(delta:double) : void
+}
+Node <|-- BattleEffects
+@enduml

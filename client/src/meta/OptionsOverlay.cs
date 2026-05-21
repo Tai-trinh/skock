@@ -151,6 +151,22 @@ public partial class OptionsOverlay : CanvasLayer
         fsRow.AddChild(fsCheck);
         vbox.AddChild(fsRow);
 
+        var ssRow = new HBoxContainer();
+        var ssLabel = new Label
+        {
+            Text = "Screen Shake",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        var ssCheck = new CheckBox { ButtonPressed = s.ScreenShake };
+        ssCheck.Toggled += on =>
+        {
+            RunState.Instance.Settings.ScreenShake = on;
+            RunState.Instance.SaveSettings();
+        };
+        ssRow.AddChild(ssLabel);
+        ssRow.AddChild(ssCheck);
+        vbox.AddChild(ssRow);
+
         // Run section (shown only when a run is active)
         _runSection = new VBoxContainer();
         _runSection.AddThemeConstantOverride("separation", 8);

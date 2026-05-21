@@ -84,6 +84,8 @@ public partial class ShipNode : Node2D
     private const int TrailLength = 30;
 
     public uint ShipId { get; private set; }
+    public bool IsMothership { get; private set; }
+    public string BlueprintDrawingId { get; private set; } = "";
 
     // ── Godot lifecycle ───────────────────────────────────────────────────────
 
@@ -110,6 +112,8 @@ public partial class ShipNode : Node2D
     public void Init(uint id, byte fleet, bool isMothership, string blueprintDrawingId)
     {
         ShipId = id;
+        IsMothership = isMothership;
+        BlueprintDrawingId = blueprintDrawingId;
         _body.Polygon = isMothership ? MothershipShape : ShapeFor(blueprintDrawingId);
 
         var baseColor = fleet == 0 ? FleetAColor : FleetBColor;

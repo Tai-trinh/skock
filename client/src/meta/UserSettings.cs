@@ -12,6 +12,7 @@ public sealed class UserSettings
     public float MusicVolume { get; set; } = 1.0f;
     public float SfxVolume { get; set; } = 1.0f;
     public bool Fullscreen { get; set; } = false;
+    public bool ScreenShake { get; set; } = true;
 
     public void Apply()
     {

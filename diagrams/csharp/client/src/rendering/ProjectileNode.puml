@@ -1,8 +1,11 @@
 @startuml
 class ProjectileNode <<partial>> {
-    - <<const>> SeekingMissile : byte = 0
-    - <<const>> Torpedo : byte = 1
-    - <<const>> Mine : byte = 2
+    + <<const>> SubtypeMissile : byte = 0
+    + <<const>> SubtypeTorpedo : byte = 1
+    + <<const>> SubtypeMine : byte = 2
+    - <<const>> SeekingMissile : byte
+    - <<const>> Torpedo : byte
+    - <<const>> Mine : byte
     - {static} <<readonly>> FleetAColor : Color
     - {static} <<readonly>> FleetBColor : Color
     - <<const>> TrailLength : int = 10

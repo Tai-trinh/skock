@@ -1,0 +1,19 @@
+@startuml
+class HitscanImpactEffect <<partial>> {
+    - {static} <<readonly>> FleetAColor : Color
+    - {static} <<readonly>> FleetBColor : Color
+    - <<const>> FadeDuration : int = 8
+    - <<const>> SparkCount : int = 6
+    - <<const>> SparkSpeedMin : float = 20f
+    - <<const>> SparkSpeedMax : float = 45f
+    - <<const>> SparkLenMin : float = 2f
+    - <<const>> SparkLenMax : float = 6f
+    - <<readonly>> _sparks : (Vector2 vel, float len)[]
+    - _baseColor : Color
+    - _framesLeft : int
+    + Spawn(worldPos:Vector2, fleet:byte) : void
+    + <<override>> _Process(delta:double) : void
+    + <<override>> _Draw() : void
+}
+Node2D <|-- HitscanImpactEffect
+@enduml

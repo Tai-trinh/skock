@@ -46,6 +46,7 @@ public partial class BattleRenderer : Node2D
     private Control? _inspectorOverlay;
     private ConfirmationDialog _abandonConfirm = null!;
     private Task? _recordTask;
+    private BattleEffects _effects = null!;
 
     // Mine rotation accumulator (per projectile id → accumulated rotation)
     private readonly Dictionary<uint, float> _mineRotation = [];
@@ -71,6 +72,10 @@ public partial class BattleRenderer : Node2D
         AddChild(_effectsContainer);
         // Move ships container to front
         MoveChild(_shipsContainer, -1);
+
+        _effects = new BattleEffects();
+        AddChild(_effects);
+        _effects.Init(_camera);
 
         FitCamera();
         _resultLabel.Visible = false;
@@ -241,14 +246,56 @@ public partial class BattleRenderer : Node2D
             switch (ev.Type)
             {
                 case "hitscan_fired":
+                    SpawnHitscanEffect(ev);
+                    SpawnHitscanImpactEffect(ev);
+                    _effects.Play(BattleEffects.SfxHitscan);
+                    break;
                 case "hitscan_missed":
                     SpawnHitscanEffect(ev);
+                    _effects.Play(BattleEffects.SfxHitscan);
                     break;
                 case "projectile_explosion":
                     SpawnExplosionEffect(ev);
+                    _effects.Play(
+                        ev.RadiusUnits >= 20f
+                            ? BattleEffects.SfxExplosionLarge
+                            : BattleEffects.SfxExplosionSmall
+                    );
+                    break;
+                case "ship_destroyed":
+                    OnShipDestroyed(ev);
                     break;
             }
         }
+    }
+
+    private void OnShipDestroyed(LogEvent ev)
+    {
+        if (!_shipNodes.TryGetValue(ev.Id, out var node))
+            return;
+
+        var pos = node.Position;
+        var magnitude = BattleEffects.ShakeMagnitudeFor(node.IsMothership, node.BlueprintDrawingId);
+
+        // Visual: expanding debris ring scaled to hull size.
+        var effect = new ShipDestroyedEffect();
+        _effectsContainer.AddChild(effect);
+        effect.Spawn(pos, magnitude * 2f, ev.Fleet);
+
+        // Audio + shake.
+        _effects.Play(
+            node.IsMothership
+                ? BattleEffects.SfxMothershipDestroyed
+                : BattleEffects.SfxShipDestroyed
+        );
+        _effects.TriggerShake(magnitude);
+    }
+
+    private void SpawnHitscanImpactEffect(LogEvent ev)
+    {
+        var effect = new HitscanImpactEffect();
+        _effectsContainer.AddChild(effect);
+        effect.Spawn(new Vector2(ev.TargetWorldX, -ev.TargetWorldY) * SimScale, ev.Fleet);
     }
 
     private void SpawnHitscanEffect(LogEvent ev)
@@ -316,7 +363,7 @@ public partial class BattleRenderer : Node2D
         var projB = tickB.Projectiles.ToDictionary(p => p.Id);
         var liveIds = tickA.Projectiles.Select(p => p.Id).ToHashSet();
 
-        // Create nodes for newly appearing projectiles
+        // Create nodes for newly appearing projectiles and play their launch sound.
         foreach (var snap in tickA.Projectiles)
         {
             if (!_projNodes.ContainsKey(snap.Id))
@@ -325,6 +372,15 @@ public partial class BattleRenderer : Node2D
                 _projectilesContainer.AddChild(node);
                 node.Init(snap.Id, snap.Fleet, snap.Subtype);
                 _projNodes[snap.Id] = node;
+
+                var launchSfx = snap.Subtype switch
+                {
+                    ProjectileNode.SubtypeMissile => BattleEffects.SfxMissileLaunch,
+                    ProjectileNode.SubtypeTorpedo => BattleEffects.SfxTorpedoLaunch,
+                    ProjectileNode.SubtypeMine => BattleEffects.SfxMineDeploy,
+                    _ => BattleEffects.SfxTorpedoLaunch,
+                };
+                _effects.Play(launchSfx);
             }
         }
 
@@ -396,7 +452,7 @@ public partial class BattleRenderer : Node2D
     {
         var liveIds = tickA.Beams.Select(b => b.Id).ToHashSet();
 
-        // Create nodes for new beams
+        // Create nodes for new beams and play the one-shot fire sound.
         foreach (var snap in tickA.Beams)
         {
             if (!_beamNodes.ContainsKey(snap.Id))
@@ -405,6 +461,7 @@ public partial class BattleRenderer : Node2D
                 _beamsContainer.AddChild(node);
                 node.Init(snap.Id, snap.Fleet);
                 _beamNodes[snap.Id] = node;
+                _effects.Play(BattleEffects.SfxBeam);
             }
         }
 

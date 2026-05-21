@@ -27,11 +27,14 @@
 !include .\\client\src\meta\RunSnapshot.puml
 !include .\\client\src\meta\RunState.puml
 !include .\\client\src\meta\UserSettings.puml
+!include .\\client\src\rendering\BattleEffects.puml
 !include .\\client\src\rendering\BattleRenderer.puml
 !include .\\client\src\rendering\BeamNode.puml
 !include .\\client\src\rendering\ExplosionEffect.puml
 !include .\\client\src\rendering\HitscanEffect.puml
+!include .\\client\src\rendering\HitscanImpactEffect.puml
 !include .\\client\src\rendering\ProjectileNode.puml
+!include .\\client\src\rendering\ShipDestroyedEffect.puml
 !include .\\client\src\rendering\ShipNode.puml
 !include .\\client\src\sim\BattleLog.puml
 !include .\\client\src\sim\BattleLogParser.puml

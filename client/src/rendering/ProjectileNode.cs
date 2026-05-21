@@ -10,9 +10,14 @@ namespace Skock.Rendering;
 public partial class ProjectileNode : Node2D
 {
     // subtype constants matching Rust ProjectileSubtype byte encoding
-    private const byte SeekingMissile = 0;
-    private const byte Torpedo = 1;
-    private const byte Mine = 2;
+    public const byte SubtypeMissile = 0;
+    public const byte SubtypeTorpedo = 1;
+    public const byte SubtypeMine = 2;
+
+    // Keep private aliases for internal _Draw usage.
+    private const byte SeekingMissile = SubtypeMissile;
+    private const byte Torpedo = SubtypeTorpedo;
+    private const byte Mine = SubtypeMine;
 
     private static readonly Color FleetAColor = new(0.35f, 0.55f, 1f);
     private static readonly Color FleetBColor = new(1f, 0.35f, 0.35f);
