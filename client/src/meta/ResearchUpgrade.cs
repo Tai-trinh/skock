@@ -21,12 +21,12 @@ public static class ResearchCatalog
                 run.Fleet.Mothership.Hp += e.Delta;
                 break;
             case MothershipWeaponDamageEffect e:
-                if (run.Fleet.Mothership.Weapon is not null)
-                    run.Fleet.Mothership.Weapon.Damage += e.Delta;
+                foreach (var h in run.Fleet.Mothership.Hardpoints)
+                    h.Damage += e.Delta;
                 break;
             case MothershipWeaponRangeEffect e:
-                if (run.Fleet.Mothership.Weapon is not null)
-                    run.Fleet.Mothership.Weapon.Range += e.Delta;
+                foreach (var h in run.Fleet.Mothership.Hardpoints)
+                    h.Range += e.Delta;
                 break;
             case FleetHpEffect e:
                 foreach (var ship in run.Fleet.Ships)
@@ -41,21 +41,18 @@ public static class ResearchCatalog
                 break;
             case FleetWeaponDamageEffect e:
                 foreach (var ship in run.Fleet.Ships)
-                    if (ship.Weapon is not null)
-                        ship.Weapon.Damage += e.Delta;
+                foreach (var h in ship.Hardpoints)
+                    h.Damage += e.Delta;
                 break;
             case FleetWeaponRangeEffect e:
                 foreach (var ship in run.Fleet.Ships)
-                    if (ship.Weapon is not null)
-                        ship.Weapon.Range += e.Delta;
+                foreach (var h in ship.Hardpoints)
+                    h.Range += e.Delta;
                 break;
             case FleetWeaponCooldownEffect e:
                 foreach (var ship in run.Fleet.Ships)
-                    if (ship.Weapon is not null)
-                        ship.Weapon.CooldownTicks = Math.Max(
-                            e.Min,
-                            ship.Weapon.CooldownTicks + e.Delta
-                        );
+                foreach (var h in ship.Hardpoints)
+                    h.CooldownTicks = Math.Max(e.Min, h.CooldownTicks + e.Delta);
                 break;
             case FleetArmorEffect e:
                 foreach (var ship in run.Fleet.Ships)

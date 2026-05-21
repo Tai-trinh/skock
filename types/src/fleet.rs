@@ -39,9 +39,62 @@ pub struct ShipDef {
     #[serde(default)]
     pub shield_recharge_rate: f64,
     #[serde(default)]
-    pub weapon: Option<WeaponDef>,
+    pub hardpoints: Vec<HardpointDef>,
+    #[serde(default)]
+    pub combat_stance: CombatStance,
+    #[serde(default)]
+    pub target_priority: TargetPriority,
     #[serde(default)]
     pub equipment: Vec<FleetEffect>,
+}
+
+/// A single weapon mount on a ship. Each hardpoint fires independently.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HardpointDef {
+    /// Offset from ship center along the ship's forward axis (local frame).
+    #[serde(default)]
+    pub forward: f64,
+    /// Offset from ship center along the ship's lateral axis (local frame). Positive = starboard.
+    #[serde(default)]
+    pub lateral: f64,
+    /// Number of projectiles fired per shot (salvo). 1 = single shot.
+    #[serde(default = "default_salvo_count")]
+    pub salvo_count: u32,
+    /// Total spread arc in radians, divided equally among salvo projectiles.
+    #[serde(default)]
+    pub salvo_spread_angle: f64,
+    #[serde(flatten)]
+    pub weapon: WeaponDef,
+}
+
+/// Controls how the ship positions itself relative to enemies.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CombatStance {
+    /// Orbit at the range of the ship's longest-reach hardpoint.
+    #[default]
+    Standoff,
+    /// Close as fast as possible; no maintain-range orbit.
+    Brawl,
+    /// Orbit at the shortest hardpoint range (where every hardpoint can fire).
+    Broadside,
+}
+
+/// Controls which enemy each hardpoint selects as its target.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TargetPriority {
+    /// All hardpoints target the same closest in-range enemy.
+    #[default]
+    Nearest,
+    /// Each hardpoint independently targets the closest in-range enemy (greedy; duplicates allowed).
+    Spread,
+    /// All hardpoints target the highest-HP in-range enemy.
+    Heaviest,
+    /// All hardpoints target the most-damaged (lowest current HP) in-range enemy.
+    Weakest,
+    /// All hardpoints target the highest-threat in-range enemy (highest sum of damage/cooldown_ticks).
+    MostThreatening,
 }
 
 // ── Fleet effects ─────────────────────────────────────────────────────────────
@@ -89,6 +142,11 @@ pub enum FleetEffect {
     DamageReduction {
         value: f64,
     },
+    /// Appends a hardpoint to every ship matching the scope filter at sim spawn time.
+    AddHardpoint {
+        scope: Option<EffectScope>,
+        hardpoint: HardpointDef,
+    },
 }
 
 // ── Weapon definitions ────────────────────────────────────────────────────────
@@ -102,8 +160,15 @@ pub enum WeaponDef {
         damage: f64,
         range: f64,
         cooldown_ticks: u32,
+        /// Miss probability at `range`.
         #[serde(default)]
-        miss_chance: f64,
+        miss_chance_far: f64,
+        /// Floor miss probability at or below `accurate_range`.
+        #[serde(default)]
+        miss_chance_near: f64,
+        /// Distance at or below which miss chance equals `miss_chance_near`.
+        #[serde(default)]
+        accurate_range: f64,
         #[serde(default)]
         crit_chance: f64,
         #[serde(default = "default_one")]
@@ -173,6 +238,22 @@ impl WeaponDef {
             Self::Beam { range, .. } => *range,
         }
     }
+
+    pub fn damage(&self) -> f64 {
+        match self {
+            Self::Hitscan { damage, .. } => *damage,
+            Self::Projectile { damage, .. } => *damage,
+            Self::Beam { damage, .. } => *damage,
+        }
+    }
+
+    pub fn cooldown_ticks(&self) -> u32 {
+        match self {
+            Self::Hitscan { cooldown_ticks, .. } => *cooldown_ticks,
+            Self::Projectile { cooldown_ticks, .. } => *cooldown_ticks,
+            Self::Beam { cooldown_ticks, .. } => *cooldown_ticks,
+        }
+    }
 }
 
 /// Runtime weapon type tag — used by `WeaponState` to identify archetype at sim time.
@@ -203,13 +284,21 @@ pub struct BoidWeightsDef {
     #[serde(default = "default_one")]
     pub alignment: f64,
     #[serde(default = "default_one")]
-    pub seek_enemy: f64,
+    pub seek_nearest: f64,
+    #[serde(default)]
+    pub seek_mass: f64,
+    #[serde(default)]
+    pub seek_mothership: f64,
     #[serde(default = "default_one")]
     pub maintain_range: f64,
 }
 
 fn default_one() -> f64 {
     1.0
+}
+
+fn default_salvo_count() -> u32 {
+    1
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

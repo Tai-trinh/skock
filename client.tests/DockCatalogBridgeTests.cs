@@ -55,7 +55,10 @@ public sealed class DockCatalogBridgeTests
                     IsMothership = true,
                     MaxHp = 500,
                     Hp = 500,
-                    Weapon = new WeaponDefData { Damage = 20, Range = 100, CooldownTicks = 30 },
+                    Hardpoints =
+                    [
+                        new HardpointDefData { Damage = 20, Range = 100, CooldownTicks = 30 },
+                    ],
                 },
                 Ships =
                 [
@@ -65,7 +68,10 @@ public sealed class DockCatalogBridgeTests
                         Hp = 100,
                         Speed = 5,
                         Armor = 0,
-                        Weapon = new WeaponDefData { Damage = 10, Range = 80, CooldownTicks = 30 },
+                        Hardpoints =
+                        [
+                            new HardpointDefData { Damage = 10, Range = 80, CooldownTicks = 30 },
+                        ],
                     },
                 ],
             },
@@ -122,7 +128,7 @@ public sealed class DockCatalogBridgeTests
     {
         var run = ArmedRun();
         ResearchCatalog.ApplyEffect(run, new MothershipWeaponDamageEffect { Delta = 5 });
-        Assert.Equal(25, run.Fleet.Mothership.Weapon!.Damage);
+        Assert.Equal(25, run.Fleet.Mothership.Hardpoints[0].Damage);
     }
 
     [Fact]
@@ -130,7 +136,7 @@ public sealed class DockCatalogBridgeTests
     {
         var run = ArmedRun();
         ResearchCatalog.ApplyEffect(run, new MothershipWeaponRangeEffect { Delta = 40 });
-        Assert.Equal(140, run.Fleet.Mothership.Weapon!.Range);
+        Assert.Equal(140, run.Fleet.Mothership.Hardpoints[0].Range);
     }
 
     [Fact]
@@ -155,7 +161,7 @@ public sealed class DockCatalogBridgeTests
     {
         var run = ArmedRun();
         ResearchCatalog.ApplyEffect(run, new FleetWeaponDamageEffect { Delta = 5 });
-        Assert.Equal(15, run.Fleet.Ships[0].Weapon!.Damage);
+        Assert.Equal(15, run.Fleet.Ships[0].Hardpoints[0].Damage);
     }
 
     [Fact]
@@ -163,7 +169,7 @@ public sealed class DockCatalogBridgeTests
     {
         var run = ArmedRun();
         ResearchCatalog.ApplyEffect(run, new FleetWeaponRangeEffect { Delta = 20 });
-        Assert.Equal(100, run.Fleet.Ships[0].Weapon!.Range);
+        Assert.Equal(100, run.Fleet.Ships[0].Hardpoints[0].Range);
     }
 
     [Fact]
@@ -171,11 +177,11 @@ public sealed class DockCatalogBridgeTests
     {
         var run = ArmedRun();
         ResearchCatalog.ApplyEffect(run, new FleetWeaponCooldownEffect { Delta = -4, Min = 5 });
-        Assert.Equal(26, run.Fleet.Ships[0].Weapon!.CooldownTicks);
+        Assert.Equal(26, run.Fleet.Ships[0].Hardpoints[0].CooldownTicks);
 
         for (var i = 0; i < 10; i++)
             ResearchCatalog.ApplyEffect(run, new FleetWeaponCooldownEffect { Delta = -4, Min = 5 });
-        Assert.Equal(5, run.Fleet.Ships[0].Weapon!.CooldownTicks);
+        Assert.Equal(5, run.Fleet.Ships[0].Hardpoints[0].CooldownTicks);
     }
 
     [Fact]

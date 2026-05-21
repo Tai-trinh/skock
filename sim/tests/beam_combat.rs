@@ -4,7 +4,7 @@ use rand_xoshiro::Xoshiro256Plus;
 use sim::combat::{apply_damage, fire_weapons, resolve_beams};
 use sim::config::SimConfig;
 use sim::state::{BoidWeights, Fleet, Pos2, Ship, SimState, Vec2, WeaponKind, WeaponState};
-use types::{HullClass, Role, ShipId};
+use types::{CombatStance, HullClass, Role, ShipId, TargetPriority};
 
 fn make_state() -> SimState {
     SimState::new(Xoshiro256Plus::seed_from_u64(0))
@@ -37,10 +37,12 @@ fn insert_beam_ship(state: &mut SimState, fleet: Fleet, pos: Pos2, range: f64) -
                 separation: I16F16::ZERO,
                 cohesion: I16F16::ZERO,
                 alignment: I16F16::ZERO,
-                seek_enemy: I16F16::ZERO,
+                seek_nearest: I16F16::ZERO,
+                seek_mass: I16F16::ZERO,
+                seek_mothership: I16F16::ZERO,
                 maintain_range: I16F16::ZERO,
             },
-            weapon: Some(WeaponState {
+            weapons: vec![WeaponState {
                 damage: I16F16::from_num(10),
                 range: I16F16::from_num(range),
                 cooldown_ticks: 0,
@@ -48,6 +50,10 @@ fn insert_beam_ship(state: &mut SimState, fleet: Fleet, pos: Pos2, range: f64) -
                 crit_chance: I16F16::ZERO,
                 crit_damage: I16F16::ONE,
                 ammo: None,
+                fire_forward: I16F16::ZERO,
+                fire_lateral: I16F16::ZERO,
+                salvo_count: 1,
+                salvo_spread_angle: I16F16::ZERO,
                 kind: WeaponKind::Beam {
                     charge_ticks: 0, // start_beams clamps to max(1), so 1 charge tick
                     duration_ticks: 1,
@@ -57,7 +63,9 @@ fn insert_beam_ship(state: &mut SimState, fleet: Fleet, pos: Pos2, range: f64) -
                     ramp_ticks: 0,
                     ramp_max: I16F16::ONE,
                 },
-            }),
+            }],
+            target_priority: TargetPriority::Nearest,
+            combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::from_num(range),
         },
     );
@@ -91,10 +99,14 @@ fn insert_ship(state: &mut SimState, fleet: Fleet, pos: Pos2) -> ShipId {
                 separation: I16F16::ZERO,
                 cohesion: I16F16::ZERO,
                 alignment: I16F16::ZERO,
-                seek_enemy: I16F16::ZERO,
+                seek_nearest: I16F16::ZERO,
+                seek_mass: I16F16::ZERO,
+                seek_mothership: I16F16::ZERO,
                 maintain_range: I16F16::ZERO,
             },
-            weapon: None,
+            weapons: vec![],
+            target_priority: TargetPriority::Nearest,
+            combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::ZERO,
         },
     );
@@ -112,10 +124,10 @@ fn beam_spawns_beam_entity_and_registers_in_active_beams() {
 
     assert_eq!(state.beams.len(), 1, "one beam entity should be created");
     assert!(
-        state.active_beams.contains_key(&beam_ship),
+        state.active_beams.contains_key(&(beam_ship, 0)),
         "firing ship should be registered in active_beams"
     );
-    let beam_id = state.active_beams[&beam_ship];
+    let beam_id = state.active_beams[&(beam_ship, 0)];
     assert!(state.beams.contains_key(&beam_id), "active_beams entry should point to a live beam");
 }
 
@@ -153,7 +165,7 @@ fn active_beams_cleared_when_beam_expires_and_ship_can_fire_again() {
     resolve_beams(&mut state, &config);
     assert!(state.beams.is_empty(), "beam entity should be removed on expiry");
     assert!(
-        !state.active_beams.contains_key(&beam_ship),
+        !state.active_beams.contains_key(&(beam_ship, 0)),
         "active_beams should be cleared when beam expires"
     );
 
@@ -170,13 +182,13 @@ fn active_beams_cleared_when_source_ship_destroyed_mid_beam() {
     insert_ship(&mut state, Fleet::B, Pos2::from_f64(50.0, 0.0));
 
     fire_weapons(&mut state, &config);
-    assert!(state.active_beams.contains_key(&beam_ship), "beam should be active");
+    assert!(state.active_beams.contains_key(&(beam_ship, 0)), "beam should be active");
 
     // Destroy the source ship. active_beams still holds the stale entry.
     apply_damage(&mut state, beam_ship, I16F16::from_num(9999), Fleet::B);
     assert!(!state.ships.contains_key(&beam_ship), "source ship should be destroyed");
     assert!(
-        state.active_beams.contains_key(&beam_ship),
+        state.active_beams.contains_key(&(beam_ship, 0)),
         "active_beams still stale before resolve_beams"
     );
 
@@ -184,7 +196,7 @@ fn active_beams_cleared_when_source_ship_destroyed_mid_beam() {
     resolve_beams(&mut state, &config);
     assert!(state.beams.is_empty(), "orphaned beam entity should be removed");
     assert!(
-        !state.active_beams.contains_key(&beam_ship),
+        !state.active_beams.contains_key(&(beam_ship, 0)),
         "active_beams should be cleared when source ship dies"
     );
 }

@@ -15,15 +15,14 @@
       "separation": 2.0,
       "cohesion": 0.0,
       "alignment": 0.0,
-      "seek_enemy": 0.2,
+      "seek_nearest": 0.2,
+      "seek_mass": 0.0,
+      "seek_mothership": 0.0,
       "maintain_range": 1.0
     },
-    "weapon": {
-      "type": "hitscan",
-      "damage": 25,
-      "range": 200,
-      "cooldown_ticks": 45
-    }
+    "hardpoints": [
+      {"type": "hitscan", "damage": 25, "range": 200, "cooldown_ticks": 45}
+    ]
   },
   "ships": [
     {
@@ -39,15 +38,14 @@
         "separation": 1.5,
         "cohesion": 0.4,
         "alignment": 0.3,
-        "seek_enemy": 2.0,
+        "seek_nearest": 2.0,
+        "seek_mass": 0.0,
+        "seek_mothership": 0.0,
         "maintain_range": 1.0
       },
-      "weapon": {
-        "type": "hitscan",
-        "damage": 10,
-        "range": 80,
-        "cooldown_ticks": 15
-      }
+      "hardpoints": [
+        {"type": "hitscan", "damage": 10, "range": 80, "cooldown_ticks": 15}
+      ]
     },
     {
       "blueprint_drawing_id": "corvette_a",
@@ -62,15 +60,14 @@
         "separation": 1.5,
         "cohesion": 0.4,
         "alignment": 0.3,
-        "seek_enemy": 2.0,
+        "seek_nearest": 2.0,
+        "seek_mass": 0.0,
+        "seek_mothership": 0.0,
         "maintain_range": 1.0
       },
-      "weapon": {
-        "type": "hitscan",
-        "damage": 10,
-        "range": 80,
-        "cooldown_ticks": 15
-      }
+      "hardpoints": [
+        {"type": "hitscan", "damage": 10, "range": 80, "cooldown_ticks": 15}
+      ]
     },
     {
       "blueprint_drawing_id": "corvette_a",
@@ -85,15 +82,14 @@
         "separation": 1.5,
         "cohesion": 0.4,
         "alignment": 0.3,
-        "seek_enemy": 2.0,
+        "seek_nearest": 2.0,
+        "seek_mass": 0.0,
+        "seek_mothership": 0.0,
         "maintain_range": 1.0
       },
-      "weapon": {
-        "type": "hitscan",
-        "damage": 10,
-        "range": 80,
-        "cooldown_ticks": 15
-      }
+      "hardpoints": [
+        {"type": "hitscan", "damage": 10, "range": 80, "cooldown_ticks": 15}
+      ]
     }
   ],
   "doctrines": [],

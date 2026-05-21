@@ -113,9 +113,13 @@ pub fn compute_forces(
         ali_count += 1;
     }
 
-    // ── Nearest enemy: full scan — enemies have no perception radius cap ──────
+    // ── Enemy scan: nearest, mass centroid, mothership ───────────────────────
 
     let mut nearest_enemy: Option<(I32F32, &Ship)> = None;
+    let mut enemy_mass_sum = Pos2::ZERO;
+    let mut enemy_mass_count: i32 = 0;
+    let mut enemy_mothership: Option<&Ship> = None;
+
     for other in ships.values() {
         if other.fleet == ship.fleet {
             continue;
@@ -123,6 +127,12 @@ pub fn compute_forces(
         let d_sq = dist_sq(&ship.pos, &other.pos);
         if nearest_enemy.is_none_or(|(d, _)| d_sq < d) {
             nearest_enemy = Some((d_sq, other));
+        }
+        enemy_mass_sum.x += other.pos.x;
+        enemy_mass_sum.y += other.pos.y;
+        enemy_mass_count += 1;
+        if other.is_mothership {
+            enemy_mothership = Some(other);
         }
     }
 
@@ -146,20 +156,34 @@ pub fn compute_forces(
         total += avg * ship.boid_weights.alignment;
     }
 
-    if let Some((d_sq, enemy)) = nearest_enemy {
-        let to_enemy = dir(&ship.pos, &enemy.pos);
-        total += to_enemy * ship.boid_weights.seek_enemy;
+    if let Some((d_sq, nearest)) = nearest_enemy {
+        let to_nearest = dir(&ship.pos, &nearest.pos);
+        total += to_nearest * ship.boid_weights.seek_nearest;
 
         let dist = cordic::sqrt(d_sq);
         let preferred = I32F32::from_num(ship.preferred_range);
         if preferred > I32F32::ZERO {
             let diff = dist - preferred;
             let range_force = if diff > I32F32::ZERO {
-                to_enemy
+                to_nearest
             } else {
-                Vec2 { x: -to_enemy.x, y: -to_enemy.y }
+                Vec2 { x: -to_nearest.x, y: -to_nearest.y }
             };
             total += range_force * ship.boid_weights.maintain_range;
+        }
+    }
+
+    if enemy_mass_count > 0 && ship.boid_weights.seek_mass > I16F16::ZERO {
+        let centroid = Pos2 {
+            x: enemy_mass_sum.x / I32F32::from_num(enemy_mass_count),
+            y: enemy_mass_sum.y / I32F32::from_num(enemy_mass_count),
+        };
+        total += dir(&ship.pos, &centroid) * ship.boid_weights.seek_mass;
+    }
+
+    if let Some(ms) = enemy_mothership {
+        if ship.boid_weights.seek_mothership > I16F16::ZERO {
+            total += dir(&ship.pos, &ms.pos) * ship.boid_weights.seek_mothership;
         }
     }
 

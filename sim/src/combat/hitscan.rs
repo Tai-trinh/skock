@@ -1,82 +1,149 @@
-use fixed::types::I32F32;
-use types::ShipId;
+use fixed::types::{I16F16, I32F32};
+use types::{ShipId, TargetPriority};
 
-use crate::state::{Event, SimState, WeaponKind};
+use crate::{
+    geometry::dist_sq,
+    state::{Event, SimState, WeaponKind},
+};
 
 use super::{apply_damage, nearest_enemy_in_range, rng_frac};
 
 pub(super) fn fire_hitscan(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
-    for id in ship_ids {
-        if !state.ships.contains_key(&id) {
+
+    for ship_id in ship_ids {
+        if !state.ships.contains_key(&ship_id) {
             continue;
         }
-        let (fleet, pos, range_sq, damage, miss_chance, crit_chance, crit_damage, cooldown_ticks) = {
-            let ship = &state.ships[&id];
-            let w = match &ship.weapon {
-                Some(w)
-                    if matches!(w.kind, WeaponKind::Hitscan { .. })
-                        && w.cooldown_remaining == 0 =>
-                {
-                    w
-                }
-                _ => continue,
-            };
-            if w.ammo.is_some_and(|a| a == 0) {
-                continue;
+
+        let weapon_count = state.ships[&ship_id].weapons.len();
+        for hp_idx in 0..weapon_count {
+            fire_hardpoint_hitscan(state, ship_id, hp_idx);
+        }
+    }
+}
+
+fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) {
+    let (
+        fleet,
+        ship_pos,
+        target_priority,
+        range,
+        range_sq,
+        damage,
+        miss_far,
+        miss_near,
+        accurate_range_val,
+        crit_chance,
+        crit_damage,
+        cooldown_ticks,
+    ) = {
+        let ship = match state.ships.get(&ship_id) {
+            Some(s) => s,
+            None => return,
+        };
+        let w = match ship.weapons.get(hp_idx) {
+            Some(w)
+                if matches!(w.kind, WeaponKind::Hitscan { .. }) && w.cooldown_remaining == 0 =>
+            {
+                w
             }
-            let WeaponKind::Hitscan { miss_chance } = w.kind else { unreachable!() };
-            let r = I32F32::from_num(w.range);
-            (
-                ship.fleet,
-                ship.pos,
-                r * r,
-                w.damage,
-                miss_chance,
-                w.crit_chance,
-                w.crit_damage,
-                w.cooldown_ticks,
-            )
+            _ => return,
         };
-
-        let Some(target_id) = nearest_enemy_in_range(&state.ships, &pos, fleet, range_sq) else {
-            continue;
-        };
-        let target_pos = state.ships[&target_id].pos;
-
-        let miss_roll = rng_frac(&mut state.rng);
-        if miss_roll < miss_chance {
-            state.events.push(Event::HitscanMissed {
-                source_id: id,
-                target_id,
-                fleet,
-                source_pos_x: pos.x,
-                source_pos_y: pos.y,
-                target_pos_x: target_pos.x,
-                target_pos_y: target_pos.y,
-            });
-        } else {
-            let crit_roll = rng_frac(&mut state.rng);
-            let dmg = if crit_roll < crit_chance { damage * crit_damage } else { damage };
-            apply_damage(state, target_id, dmg, fleet);
-            state.events.push(Event::HitscanFired {
-                source_id: id,
-                target_id,
-                damage: dmg,
-                fleet,
-                source_pos_x: pos.x,
-                source_pos_y: pos.y,
-                target_pos_x: target_pos.x,
-                target_pos_y: target_pos.y,
-            });
+        if w.ammo.is_some_and(|a| a == 0) {
+            return;
         }
+        let WeaponKind::Hitscan { miss_chance_far, miss_chance_near, accurate_range } = w.kind
+        else {
+            unreachable!()
+        };
+        let r = I32F32::from_num(w.range);
+        (
+            ship.fleet,
+            ship.pos,
+            ship.target_priority,
+            w.range,
+            r * r,
+            w.damage,
+            miss_chance_far,
+            miss_chance_near,
+            accurate_range,
+            w.crit_chance,
+            w.crit_damage,
+            w.cooldown_ticks,
+        )
+    };
 
-        let w = state.ships.get_mut(&id).and_then(|s| s.weapon.as_mut());
-        if let Some(w) = w {
+    let target_id = match target_priority {
+        TargetPriority::Spread => nearest_enemy_in_range(&state.ships, &ship_pos, fleet, range_sq),
+        _ => {
+            // For all shared-target strategies, pick via the max range of this hardpoint.
+            super::primary_target(&state.ships, &state.ships[&ship_id], range_sq)
+        }
+    };
+
+    let Some(target_id) = target_id else { return };
+
+    let target_pos = state.ships[&target_id].pos;
+
+    // Distance-dependent miss chance.
+    let miss_chance =
+        compute_miss_chance(&ship_pos, &target_pos, range, accurate_range_val, miss_near, miss_far);
+
+    let miss_roll = rng_frac(&mut state.rng);
+    if miss_roll < miss_chance {
+        state.events.push(Event::HitscanMissed {
+            source_id: ship_id,
+            target_id,
+            fleet,
+            source_pos_x: ship_pos.x,
+            source_pos_y: ship_pos.y,
+            target_pos_x: target_pos.x,
+            target_pos_y: target_pos.y,
+        });
+    } else {
+        let crit_roll = rng_frac(&mut state.rng);
+        let dmg = if crit_roll < crit_chance { damage * crit_damage } else { damage };
+        apply_damage(state, target_id, dmg, fleet);
+        state.events.push(Event::HitscanFired {
+            source_id: ship_id,
+            target_id,
+            damage: dmg,
+            fleet,
+            source_pos_x: ship_pos.x,
+            source_pos_y: ship_pos.y,
+            target_pos_x: target_pos.x,
+            target_pos_y: target_pos.y,
+        });
+    }
+
+    if let Some(ship) = state.ships.get_mut(&ship_id) {
+        if let Some(w) = ship.weapons.get_mut(hp_idx) {
             w.cooldown_remaining = cooldown_ticks;
             if let Some(ref mut ammo) = w.ammo {
                 *ammo -= 1;
             }
         }
     }
+}
+
+/// Linearly interpolates miss chance from `miss_near` at `accurate_range` to `miss_far` at `range`.
+fn compute_miss_chance(
+    source: &crate::state::Pos2,
+    target: &crate::state::Pos2,
+    range: I16F16,
+    accurate_range: I16F16,
+    miss_near: I16F16,
+    miss_far: I16F16,
+) -> I16F16 {
+    if miss_near == miss_far {
+        return miss_near;
+    }
+    let effective_range = range - accurate_range;
+    if effective_range <= I16F16::ZERO {
+        return miss_near;
+    }
+    let d = I16F16::from_num(cordic::sqrt(dist_sq(source, target)));
+    let t = ((d - accurate_range) / effective_range).clamp(I16F16::ZERO, I16F16::ONE);
+    miss_near + (miss_far - miss_near) * t
 }

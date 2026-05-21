@@ -119,7 +119,14 @@ public static class FleetInspector
     {
         var tag = ship.IsMothership ? "[MS] " : "";
         var hpText = $"HP: {ship.Hp:0}/{ship.MaxHp:0}";
-        var weaponText = ship.Weapon is { } w ? $"  {w.Type} {w.Damage:0}dmg {w.Range:0}rng" : "";
+        var weaponText =
+            ship.Hardpoints.Count > 0
+                ? "  "
+                    + string.Join(
+                        ", ",
+                        ship.Hardpoints.Select(h => $"{h.Type} {h.Damage:0}dmg {h.Range:0}rng")
+                    )
+                : "";
         parent.AddChild(
             new Label { Text = $"  {tag}{ship.Role} {ship.HullClass}  {hpText}{weaponText}" }
         );

@@ -1,5 +1,5 @@
 use fixed::types::{I16F16, I32F32};
-use types::{BeamId, HullClass, ShipId};
+use types::{BeamId, HullClass, ShipId, TargetPriority};
 
 use crate::{
     config::SimConfig,
@@ -12,82 +12,99 @@ use super::{apply_damage, hull_hit_radius, nearest_enemy_in_range, rng_frac};
 pub(super) fn start_beams(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
 
-    for id in ship_ids {
-        // Early out: ship already has a live beam.
-        if state.active_beams.contains_key(&id) {
-            continue;
-        }
+    for ship_id in ship_ids {
+        let Some(ship) = state.ships.get(&ship_id) else { continue };
+        let weapon_count = ship.weapons.len();
 
-        let Some(ship) = state.ships.get(&id) else { continue };
-        let w = match &ship.weapon {
-            Some(w) if matches!(w.kind, WeaponKind::Beam { .. }) && w.cooldown_remaining == 0 => w,
-            _ => continue,
-        };
-        if w.ammo.is_some_and(|a| a == 0) {
-            continue;
-        }
+        for hp_idx in 0..weapon_count {
+            // Skip if this hardpoint already has a live beam.
+            if state.active_beams.contains_key(&(ship_id, hp_idx)) {
+                continue;
+            }
 
-        let WeaponKind::Beam {
-            charge_ticks,
-            duration_ticks,
-            beam_width,
-            slew_rate,
-            track_rate,
-            ramp_ticks,
-            ramp_max,
-        } = w.kind
-        else {
-            unreachable!()
-        };
+            let Some(ship) = state.ships.get(&ship_id) else { break };
+            let w = match ship.weapons.get(hp_idx) {
+                Some(w)
+                    if matches!(w.kind, WeaponKind::Beam { .. }) && w.cooldown_remaining == 0 =>
+                {
+                    w
+                }
+                _ => continue,
+            };
+            if w.ammo.is_some_and(|a| a == 0) {
+                continue;
+            }
 
-        let fleet = ship.fleet;
-        let pos = ship.pos;
-        let range = w.range;
-        let damage = w.damage;
-        let crit_chance = w.crit_chance;
-        let crit_damage = w.crit_damage;
-        let cooldown_ticks = w.cooldown_ticks;
-
-        let range_sq = I32F32::from_num(range) * I32F32::from_num(range);
-        let Some(nearest_id) = nearest_enemy_in_range(&state.ships, &pos, fleet, range_sq) else {
-            continue;
-        };
-
-        let initial_angle = {
-            let t = &state.ships[&nearest_id];
-            angle_to(pos, t.pos)
-        };
-
-        let beam_id = state.alloc_beam_id();
-        state.beams.insert(
-            beam_id,
-            BeamEntity {
-                id: beam_id,
-                source_id: id,
-                owner_fleet: fleet,
-                source_pos: pos,
-                current_angle: initial_angle,
-                phase: BeamPhase::Charging,
-                charge_ticks_remaining: charge_ticks.max(1),
-                damage_ticks_remaining: duration_ticks.max(1),
-                on_target_ticks: 0,
-                damage,
-                range,
+            let WeaponKind::Beam {
+                charge_ticks,
+                duration_ticks,
                 beam_width,
                 slew_rate,
                 track_rate,
                 ramp_ticks,
                 ramp_max,
-                crit_chance,
-                crit_damage,
-            },
-        );
+            } = w.kind
+            else {
+                unreachable!()
+            };
 
-        state.active_beams.insert(id, beam_id);
+            let fleet = ship.fleet;
+            let pos = ship.pos;
+            let range = w.range;
+            let damage = w.damage;
+            let crit_chance = w.crit_chance;
+            let crit_damage = w.crit_damage;
+            let cooldown_ticks = w.cooldown_ticks;
+            let target_priority = ship.target_priority;
 
-        if let Some(ship) = state.ships.get_mut(&id) {
-            if let Some(w) = ship.weapon.as_mut() {
-                w.cooldown_remaining = cooldown_ticks;
+            let range_sq = I32F32::from_num(range) * I32F32::from_num(range);
+
+            let target_id = match target_priority {
+                TargetPriority::Spread => {
+                    nearest_enemy_in_range(&state.ships, &pos, fleet, range_sq)
+                }
+                _ => super::primary_target(&state.ships, &state.ships[&ship_id], range_sq),
+            };
+
+            let Some(nearest_id) = target_id else { continue };
+
+            let initial_angle = {
+                let t = &state.ships[&nearest_id];
+                angle_to(pos, t.pos)
+            };
+
+            let beam_id = state.alloc_beam_id();
+            state.beams.insert(
+                beam_id,
+                BeamEntity {
+                    id: beam_id,
+                    source_id: ship_id,
+                    hardpoint_index: hp_idx,
+                    owner_fleet: fleet,
+                    source_pos: pos,
+                    current_angle: initial_angle,
+                    phase: BeamPhase::Charging,
+                    charge_ticks_remaining: charge_ticks.max(1),
+                    damage_ticks_remaining: duration_ticks.max(1),
+                    on_target_ticks: 0,
+                    damage,
+                    range,
+                    beam_width,
+                    slew_rate,
+                    track_rate,
+                    ramp_ticks,
+                    ramp_max,
+                    crit_chance,
+                    crit_damage,
+                },
+            );
+
+            state.active_beams.insert((ship_id, hp_idx), beam_id);
+
+            if let Some(ship) = state.ships.get_mut(&ship_id) {
+                if let Some(w) = ship.weapons.get_mut(hp_idx) {
+                    w.cooldown_remaining = cooldown_ticks;
+                }
             }
         }
     }
@@ -101,8 +118,8 @@ pub(super) fn resolve_beams(state: &mut SimState, config: &SimConfig) {
         state.ships.iter().map(|(id, s)| (*id, s.fleet, s.pos, s.hull_class)).collect();
 
     for bid in beam_ids {
-        let source_id = match state.beams.get(&bid) {
-            Some(b) => b.source_id,
+        let (source_id, _hardpoint_index) = match state.beams.get(&bid) {
+            Some(b) => (b.source_id, b.hardpoint_index),
             None => continue,
         };
 
@@ -232,7 +249,7 @@ pub(super) fn resolve_beams(state: &mut SimState, config: &SimConfig) {
 
     for bid in &beams_to_remove {
         if let Some(beam) = state.beams.remove(bid) {
-            state.active_beams.remove(&beam.source_id);
+            state.active_beams.remove(&(beam.source_id, beam.hardpoint_index));
         }
     }
 }

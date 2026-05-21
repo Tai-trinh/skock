@@ -26,7 +26,7 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
             ship.shield_hp = (ship.shield_hp + ship.shield_recharge_rate).min(ship.shield_max_hp);
         }
         // Tick down weapon cooldowns
-        if let Some(ref mut w) = ship.weapon {
+        for w in &mut ship.weapons {
             if w.cooldown_remaining > 0 {
                 w.cooldown_remaining -= 1;
             }

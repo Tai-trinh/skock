@@ -46,23 +46,24 @@ class ShipDefData <<sealed>> {
     + ShieldHp : double <<get>> <<set>>
     + ShieldMaxHp : double <<get>> <<set>>
     + ShieldRechargeRate : double <<get>> <<set>>
-    + Weapon : WeaponDefData? <<get>> <<set>>
+    + Hardpoints : List<HardpointDefData> <<get>> <<set>>
+    + CombatStance : string? <<get>> <<set>>
+    + TargetPriority : string? <<get>> <<set>>
     + Equipment : List<object> <<get>> <<set>>
     + Clone() : ShipDefData
 }
-class BoidWeightsData <<sealed>> {
-    + Separation : double <<get>> <<set>> = 1.0
-    + Cohesion : double <<get>> <<set>> = 1.0
-    + Alignment : double <<get>> <<set>> = 1.0
-    + SeekEnemy : double <<get>> <<set>> = 1.0
-    + MaintainRange : double <<get>> <<set>> = 1.0
-}
-class WeaponDefData <<sealed>> {
+class HardpointDefData <<sealed>> {
+    + Forward : double <<get>> <<set>>
+    + Lateral : double <<get>> <<set>>
+    + SalvoCount : int <<get>> <<set>> = 1
+    + SalvoSpreadAngle : double <<get>> <<set>>
     + Type : string <<get>> <<set>> = "hitscan"
     + Damage : double <<get>> <<set>>
     + Range : double <<get>> <<set>>
     + CooldownTicks : int <<get>> <<set>>
-    + MissChance : double <<get>> <<set>>
+    + MissChanceFar : double <<get>> <<set>>
+    + MissChanceNear : double <<get>> <<set>>
+    + AccurateRange : double <<get>> <<set>>
     + CritChance : double <<get>> <<set>>
     + CritDamage : double <<get>> <<set>>
     + Subtype : string? <<get>> <<set>>
@@ -78,6 +79,16 @@ class WeaponDefData <<sealed>> {
     + TrackRate : double <<get>> <<set>>
     + RampTicks : int <<get>> <<set>>
     + RampMax : double <<get>> <<set>>
+    + Clone() : HardpointDefData
+}
+class BoidWeightsData <<sealed>> {
+    + Separation : double <<get>> <<set>> = 1.0
+    + Cohesion : double <<get>> <<set>> = 1.0
+    + Alignment : double <<get>> <<set>> = 1.0
+    + SeekNearest : double <<get>> <<set>> = 1.0
+    + SeekMass : double <<get>> <<set>>
+    + SeekMothership : double <<get>> <<set>>
+    + MaintainRange : double <<get>> <<set>> = 1.0
 }
 class ShipDisplay <<static>> {
     + {static} NameFor(ship:ShipDefData) : string

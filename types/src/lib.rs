@@ -2,7 +2,7 @@ pub mod fleet;
 pub mod ids;
 
 pub use fleet::{
-    BoidWeightsDef, EffectScope, FleetEffect, FleetJson, HullClass, ModifierType,
-    ProjectileSubtype, Role, ShipDef, WeaponDef, WeaponType, Weight,
+    BoidWeightsDef, CombatStance, EffectScope, FleetEffect, FleetJson, HardpointDef, HullClass,
+    ModifierType, ProjectileSubtype, Role, ShipDef, TargetPriority, WeaponDef, WeaponType, Weight,
 };
 pub use ids::{BeamId, ProjectileId, ShipId};

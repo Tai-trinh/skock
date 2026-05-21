@@ -1,7 +1,9 @@
 use fixed::types::{I16F16, I32F32};
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
-use types::{BeamId, HullClass, ProjectileId, ProjectileSubtype, Role, ShipId};
+use types::{
+    BeamId, CombatStance, HullClass, ProjectileId, ProjectileSubtype, Role, ShipId, TargetPriority,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pos2 {
@@ -70,7 +72,12 @@ impl Fleet {
 #[derive(Debug, Clone, Copy)]
 pub enum WeaponKind {
     Hitscan {
-        miss_chance: I16F16,
+        /// Miss probability at max range.
+        miss_chance_far: I16F16,
+        /// Floor miss probability at or below `accurate_range`.
+        miss_chance_near: I16F16,
+        /// Distance at or below which miss chance equals `miss_chance_near`.
+        accurate_range: I16F16,
     },
     Projectile {
         subtype: ProjectileSubtype,
@@ -104,6 +111,12 @@ pub struct WeaponState {
     pub crit_chance: I16F16,
     pub crit_damage: I16F16,
     pub ammo: Option<u32>,
+    /// Offset from ship center along ship's forward axis (local frame).
+    pub fire_forward: I16F16,
+    /// Offset from ship center along ship's lateral axis (local frame). Positive = starboard.
+    pub fire_lateral: I16F16,
+    pub salvo_count: u32,
+    pub salvo_spread_angle: I16F16,
     pub kind: WeaponKind,
 }
 
@@ -112,7 +125,9 @@ pub struct BoidWeights {
     pub separation: I16F16,
     pub cohesion: I16F16,
     pub alignment: I16F16,
-    pub seek_enemy: I16F16,
+    pub seek_nearest: I16F16,
+    pub seek_mass: I16F16,
+    pub seek_mothership: I16F16,
     pub maintain_range: I16F16,
 }
 
@@ -137,7 +152,9 @@ pub struct Ship {
     pub acceleration: I16F16,
     pub turn_rate: I16F16,
     pub boid_weights: BoidWeights,
-    pub weapon: Option<WeaponState>,
+    pub weapons: Vec<WeaponState>,
+    pub target_priority: TargetPriority,
+    pub combat_stance: CombatStance,
     pub preferred_range: I16F16,
 }
 
@@ -178,6 +195,7 @@ pub enum BeamPhase {
 pub struct BeamEntity {
     pub id: BeamId,
     pub source_id: ShipId,
+    pub hardpoint_index: usize,
     pub owner_fleet: Fleet,
     /// Cached position of the source ship, updated each tick. Avoids a ships-map lookup in log.rs.
     pub source_pos: Pos2,
@@ -249,9 +267,9 @@ pub struct SimState {
     pub next_projectile_id: u32,
     pub beams: BTreeMap<BeamId, BeamEntity>,
     pub next_beam_id: u32,
-    /// Maps each ship that currently has a live beam entity to that beam's ID.
+    /// Maps `(ShipId, hardpoint_index)` → BeamId for live beams.
     /// Written exclusively by combat::beam — insert on spawn, remove on expiry.
-    pub active_beams: BTreeMap<ShipId, BeamId>,
+    pub active_beams: BTreeMap<(ShipId, usize), BeamId>,
     pub rng: Xoshiro256Plus,
     pub events: Vec<Event>,
     pub low_hp_flagged: BTreeMap<ShipId, bool>,

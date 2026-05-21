@@ -126,9 +126,16 @@ public sealed class ShipDefData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double ShieldRechargeRate { get; set; }
 
-    [JsonPropertyName("weapon")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public WeaponDefData? Weapon { get; set; }
+    [JsonPropertyName("hardpoints")]
+    public List<HardpointDefData> Hardpoints { get; set; } = [];
+
+    [JsonPropertyName("combat_stance")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? CombatStance { get; set; }
+
+    [JsonPropertyName("target_priority")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? TargetPriority { get; set; }
 
     [JsonPropertyName("equipment")]
     public List<object> Equipment { get; set; } = [];
@@ -151,62 +158,42 @@ public sealed class ShipDefData
                 Separation = BoidWeights.Separation,
                 Cohesion = BoidWeights.Cohesion,
                 Alignment = BoidWeights.Alignment,
-                SeekEnemy = BoidWeights.SeekEnemy,
+                SeekNearest = BoidWeights.SeekNearest,
+                SeekMass = BoidWeights.SeekMass,
+                SeekMothership = BoidWeights.SeekMothership,
                 MaintainRange = BoidWeights.MaintainRange,
             },
             Armor = Armor,
             ShieldHp = ShieldHp,
             ShieldMaxHp = ShieldMaxHp,
             ShieldRechargeRate = ShieldRechargeRate,
-            Weapon = Weapon is null
-                ? null
-                : new WeaponDefData
-                {
-                    Type = Weapon.Type,
-                    Damage = Weapon.Damage,
-                    Range = Weapon.Range,
-                    CooldownTicks = Weapon.CooldownTicks,
-                    MissChance = Weapon.MissChance,
-                    CritChance = Weapon.CritChance,
-                    CritDamage = Weapon.CritDamage,
-                    Subtype = Weapon.Subtype,
-                    ProjectileSpeed = Weapon.ProjectileSpeed,
-                    ProjectileTurnRate = Weapon.ProjectileTurnRate,
-                    FuseTicks = Weapon.FuseTicks,
-                    ExplosionRadius = Weapon.ExplosionRadius,
-                    ExplosionDamage = Weapon.ExplosionDamage,
-                    ChargeTicks = Weapon.ChargeTicks,
-                    DurationTicks = Weapon.DurationTicks,
-                    BeamWidth = Weapon.BeamWidth,
-                    SlewRate = Weapon.SlewRate,
-                    TrackRate = Weapon.TrackRate,
-                    RampTicks = Weapon.RampTicks,
-                    RampMax = Weapon.RampMax,
-                },
+            Hardpoints = Hardpoints.ConvertAll(h => h.Clone()),
+            CombatStance = CombatStance,
+            TargetPriority = TargetPriority,
         };
 }
 
-public sealed class BoidWeightsData
+public sealed class HardpointDefData
 {
-    [JsonPropertyName("separation")]
-    public double Separation { get; set; } = 1.0;
+    [JsonPropertyName("forward")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double Forward { get; set; }
 
-    [JsonPropertyName("cohesion")]
-    public double Cohesion { get; set; } = 1.0;
+    [JsonPropertyName("lateral")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double Lateral { get; set; }
 
-    [JsonPropertyName("alignment")]
-    public double Alignment { get; set; } = 1.0;
+    [JsonPropertyName("salvo_count")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int SalvoCount { get; set; } = 1;
 
-    [JsonPropertyName("seek_enemy")]
-    public double SeekEnemy { get; set; } = 1.0;
+    [JsonPropertyName("salvo_spread_angle")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double SalvoSpreadAngle { get; set; }
 
-    [JsonPropertyName("maintain_range")]
-    public double MaintainRange { get; set; } = 1.0;
-}
+    // ── Weapon fields (flattened into hardpoint) ──────────────────────────────
 
-public sealed class WeaponDefData
-{
-    // WeaponType uses serde rename_all = "snake_case" in Rust.
+    // WeaponType: "hitscan", "projectile", "beam"
     [JsonPropertyName("type")]
     public string Type { get; set; } = "hitscan";
 
@@ -219,9 +206,17 @@ public sealed class WeaponDefData
     [JsonPropertyName("cooldown_ticks")]
     public int CooldownTicks { get; set; }
 
-    [JsonPropertyName("miss_chance")]
+    [JsonPropertyName("miss_chance_far")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public double MissChance { get; set; }
+    public double MissChanceFar { get; set; }
+
+    [JsonPropertyName("miss_chance_near")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double MissChanceNear { get; set; }
+
+    [JsonPropertyName("accurate_range")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double AccurateRange { get; set; }
 
     [JsonPropertyName("crit_chance")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -231,9 +226,8 @@ public sealed class WeaponDefData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double CritDamage { get; set; }
 
-    // ── Projectile fields (type = "projectile") ───────────────────────────────
+    // ── Projectile fields ─────────────────────────────────────────────────────
 
-    // ProjectileSubtype serialises as snake_case: "seeking_missile", "torpedo", "mine".
     [JsonPropertyName("subtype")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Subtype { get; set; }
@@ -258,7 +252,7 @@ public sealed class WeaponDefData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double ExplosionDamage { get; set; }
 
-    // ── Beam fields (type = "beam") ───────────────────────────────────────────
+    // ── Beam fields ───────────────────────────────────────────────────────────
 
     [JsonPropertyName("charge_ticks")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -287,6 +281,61 @@ public sealed class WeaponDefData
     [JsonPropertyName("ramp_max")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double RampMax { get; set; }
+
+    public HardpointDefData Clone() =>
+        new()
+        {
+            Forward = Forward,
+            Lateral = Lateral,
+            SalvoCount = SalvoCount,
+            SalvoSpreadAngle = SalvoSpreadAngle,
+            Type = Type,
+            Damage = Damage,
+            Range = Range,
+            CooldownTicks = CooldownTicks,
+            MissChanceFar = MissChanceFar,
+            MissChanceNear = MissChanceNear,
+            AccurateRange = AccurateRange,
+            CritChance = CritChance,
+            CritDamage = CritDamage,
+            Subtype = Subtype,
+            ProjectileSpeed = ProjectileSpeed,
+            ProjectileTurnRate = ProjectileTurnRate,
+            FuseTicks = FuseTicks,
+            ExplosionRadius = ExplosionRadius,
+            ExplosionDamage = ExplosionDamage,
+            ChargeTicks = ChargeTicks,
+            DurationTicks = DurationTicks,
+            BeamWidth = BeamWidth,
+            SlewRate = SlewRate,
+            TrackRate = TrackRate,
+            RampTicks = RampTicks,
+            RampMax = RampMax,
+        };
+}
+
+public sealed class BoidWeightsData
+{
+    [JsonPropertyName("separation")]
+    public double Separation { get; set; } = 1.0;
+
+    [JsonPropertyName("cohesion")]
+    public double Cohesion { get; set; } = 1.0;
+
+    [JsonPropertyName("alignment")]
+    public double Alignment { get; set; } = 1.0;
+
+    [JsonPropertyName("seek_nearest")]
+    public double SeekNearest { get; set; } = 1.0;
+
+    [JsonPropertyName("seek_mass")]
+    public double SeekMass { get; set; }
+
+    [JsonPropertyName("seek_mothership")]
+    public double SeekMothership { get; set; }
+
+    [JsonPropertyName("maintain_range")]
+    public double MaintainRange { get; set; } = 1.0;
 }
 
 public static class ShipDisplay

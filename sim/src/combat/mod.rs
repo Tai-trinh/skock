@@ -8,7 +8,7 @@ pub use damage::apply_damage;
 use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use std::collections::BTreeMap;
-use types::{HullClass, ShipId};
+use types::{HullClass, ShipId, TargetPriority};
 
 use crate::{
     config::SimConfig,
@@ -56,4 +56,61 @@ fn nearest_enemy_in_range(
         })
         .min_by(|(a, _), (b, _)| a.cmp(b))
         .map(|(_, id)| id)
+}
+
+/// Selects the primary target for a ship given its TargetPriority.
+/// Returns None if no enemy is in range of any hardpoint.
+/// For Spread: returns None — each hardpoint selects independently via `spread_target_for_hardpoint`.
+pub(super) fn primary_target(
+    ships: &BTreeMap<ShipId, Ship>,
+    ship: &Ship,
+    hardpoint_range_sq: I32F32,
+) -> Option<ShipId> {
+    match ship.target_priority {
+        TargetPriority::Nearest | TargetPriority::Spread => {
+            nearest_enemy_in_range(ships, &ship.pos, ship.fleet, hardpoint_range_sq)
+        }
+        TargetPriority::Heaviest => ships
+            .iter()
+            .filter(|(_, s)| s.fleet != ship.fleet)
+            .filter_map(|(id, s)| {
+                let d = dist_sq(&ship.pos, &s.pos);
+                (d <= hardpoint_range_sq).then_some((s.hp, *id))
+            })
+            .max_by(|(a, _), (b, _)| a.cmp(b))
+            .map(|(_, id)| id),
+        TargetPriority::Weakest => ships
+            .iter()
+            .filter(|(_, s)| s.fleet != ship.fleet)
+            .filter_map(|(id, s)| {
+                let d = dist_sq(&ship.pos, &s.pos);
+                (d <= hardpoint_range_sq).then_some((s.hp, *id))
+            })
+            .min_by(|(a, _), (b, _)| a.cmp(b))
+            .map(|(_, id)| id),
+        TargetPriority::MostThreatening => ships
+            .iter()
+            .filter(|(_, s)| s.fleet != ship.fleet)
+            .filter_map(|(id, s)| {
+                let d = dist_sq(&ship.pos, &s.pos);
+                if d > hardpoint_range_sq {
+                    return None;
+                }
+                let threat = threat_score(s);
+                Some((threat, *id))
+            })
+            .max_by(|(a, _), (b, _)| a.cmp(b))
+            .map(|(_, id)| id),
+    }
+}
+
+/// Computed DPS estimate for a ship — sum of damage/cooldown_ticks across all hardpoints.
+fn threat_score(ship: &Ship) -> I16F16 {
+    ship.weapons.iter().fold(I16F16::ZERO, |acc, w| {
+        if w.cooldown_ticks > 0 {
+            acc + w.damage / I16F16::from_num(w.cooldown_ticks)
+        } else {
+            acc
+        }
+    })
 }

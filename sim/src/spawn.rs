@@ -2,7 +2,10 @@ use fixed::types::{I16F16, I32F32};
 use rand_core::RngCore;
 use rand_xoshiro::Xoshiro256Plus;
 use std::collections::BTreeMap;
-use types::{FleetJson, HullClass, ProjectileSubtype, ShipDef, ShipId, WeaponDef};
+use types::{
+    CombatStance, FleetEffect, FleetJson, HardpointDef, HullClass, ProjectileSubtype, ShipDef,
+    ShipId, WeaponDef,
+};
 
 use crate::{
     config::SimConfig,
@@ -20,19 +23,36 @@ pub fn spawn_fleet(
         Fleet::B => I32F32::from_num(config.fleet_b_spawn_x),
     };
 
+    // Collect all AddHardpoint effects from every effect array.
+    let all_effects: Vec<&FleetEffect> = fleet
+        .doctrines
+        .iter()
+        .chain(fleet.role_equipment.iter())
+        .chain(fleet.faction_effects.iter())
+        .chain(fleet.admiral_effects.iter())
+        .collect();
+
     let mut indexed: Vec<(usize, &ShipDef)> = fleet.ships.iter().enumerate().collect();
     indexed.sort_by_key(|(_, s)| hull_class_order(s.hull_class));
 
     let mut id_to_fleet_index: BTreeMap<ShipId, usize> = BTreeMap::new();
     for (i, (original_idx, def)) in indexed.iter().enumerate() {
         let pos = wedge_pos(spawn_x, i, side, config, &mut state.rng);
-        let ship = build_ship(state.alloc_ship_id(), def, side, pos, false, config);
+        let ship = build_ship(state.alloc_ship_id(), def, side, pos, false, config, &all_effects);
         id_to_fleet_index.insert(ship.id, *original_idx);
         state.ships.insert(ship.id, ship);
     }
 
     let ms_pos = Pos2 { x: spawn_x, y: I32F32::ZERO };
-    let ms = build_ship(state.alloc_ship_id(), &fleet.mothership, side, ms_pos, true, config);
+    let ms = build_ship(
+        state.alloc_ship_id(),
+        &fleet.mothership,
+        side,
+        ms_pos,
+        true,
+        config,
+        &all_effects,
+    );
     state.ships.insert(ms.id, ms);
 
     id_to_fleet_index
@@ -84,6 +104,26 @@ fn noise_offset(rng: &mut Xoshiro256Plus, amplitude: I32F32) -> I32F32 {
     (raw - I32F32::from_num(0.5)) * amplitude
 }
 
+fn scope_matches(scope: &Option<types::EffectScope>, def: &ShipDef) -> bool {
+    let Some(s) = scope else { return true };
+    if let Some(role) = s.role {
+        if role != def.role {
+            return false;
+        }
+    }
+    if let Some(hull_class) = s.hull_class {
+        if hull_class != def.hull_class {
+            return false;
+        }
+    }
+    if let Some(weight) = s.weight {
+        if def.weight != Some(weight) {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn build_ship(
     id: ShipId,
     def: &ShipDef,
@@ -91,11 +131,31 @@ pub fn build_ship(
     pos: Pos2,
     is_mothership: bool,
     config: &SimConfig,
+    fleet_effects: &[&FleetEffect],
 ) -> Ship {
-    let weapon = def.weapon.as_ref().map(|w| build_weapon_state(w, config));
+    // Collect effective hardpoints: base + AddHardpoint effects that match this ship.
+    let mut effective_hardpoints: Vec<&HardpointDef> = def.hardpoints.iter().collect();
+    for effect in fleet_effects {
+        if let FleetEffect::AddHardpoint { scope, hardpoint } = effect {
+            if scope_matches(scope, def) {
+                effective_hardpoints.push(hardpoint);
+            }
+        }
+    }
 
-    let preferred_range =
-        def.weapon.as_ref().map(|w| I16F16::from_num(w.range())).unwrap_or(I16F16::ZERO);
+    let weapons: Vec<WeaponState> =
+        effective_hardpoints.iter().map(|hp| build_weapon_state(hp, config)).collect();
+
+    // Compute preferred_range from CombatStance.
+    let preferred_range = match def.combat_stance {
+        CombatStance::Standoff => {
+            weapons.iter().map(|w| w.range).max_by(|a, b| a.cmp(b)).unwrap_or(I16F16::ZERO)
+        }
+        CombatStance::Brawl => I16F16::ZERO,
+        CombatStance::Broadside => {
+            weapons.iter().map(|w| w.range).min_by(|a, b| a.cmp(b)).unwrap_or(I16F16::ZERO)
+        }
+    };
 
     let heading = match fleet {
         Fleet::A => I16F16::ZERO,
@@ -125,21 +185,32 @@ pub fn build_ship(
             separation: I16F16::from_num(def.boid_weights.separation),
             cohesion: I16F16::from_num(def.boid_weights.cohesion),
             alignment: I16F16::from_num(def.boid_weights.alignment),
-            seek_enemy: I16F16::from_num(def.boid_weights.seek_enemy),
+            seek_nearest: I16F16::from_num(def.boid_weights.seek_nearest),
+            seek_mass: I16F16::from_num(def.boid_weights.seek_mass),
+            seek_mothership: I16F16::from_num(def.boid_weights.seek_mothership),
             maintain_range: I16F16::from_num(def.boid_weights.maintain_range),
         },
-        weapon,
+        weapons,
+        target_priority: def.target_priority,
+        combat_stance: def.combat_stance,
         preferred_range,
     }
 }
 
-fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
-    match w {
+fn build_weapon_state(hp: &HardpointDef, config: &SimConfig) -> WeaponState {
+    let fire_forward = I16F16::from_num(hp.forward);
+    let fire_lateral = I16F16::from_num(hp.lateral);
+    let salvo_count = hp.salvo_count.max(1);
+    let salvo_spread_angle = I16F16::from_num(hp.salvo_spread_angle);
+
+    match &hp.weapon {
         WeaponDef::Hitscan {
             damage,
             range,
             cooldown_ticks,
-            miss_chance,
+            miss_chance_far,
+            miss_chance_near,
+            accurate_range,
             crit_chance,
             crit_damage,
             ammo,
@@ -151,7 +222,15 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
             crit_chance: I16F16::from_num(*crit_chance),
             crit_damage: I16F16::from_num(*crit_damage),
             ammo: *ammo,
-            kind: WeaponKind::Hitscan { miss_chance: I16F16::from_num(*miss_chance) },
+            fire_forward,
+            fire_lateral,
+            salvo_count,
+            salvo_spread_angle,
+            kind: WeaponKind::Hitscan {
+                miss_chance_far: I16F16::from_num(*miss_chance_far),
+                miss_chance_near: I16F16::from_num(*miss_chance_near),
+                accurate_range: I16F16::from_num(*accurate_range),
+            },
         },
 
         WeaponDef::Projectile {
@@ -184,6 +263,10 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
                 crit_chance: I16F16::from_num(*crit_chance),
                 crit_damage: I16F16::from_num(*crit_damage),
                 ammo: *ammo,
+                fire_forward,
+                fire_lateral,
+                salvo_count,
+                salvo_spread_angle,
                 kind: WeaponKind::Projectile {
                     subtype: st,
                     speed: I16F16::from_num(*projectile_speed),
@@ -218,6 +301,10 @@ fn build_weapon_state(w: &WeaponDef, config: &SimConfig) -> WeaponState {
             crit_chance: I16F16::from_num(*crit_chance),
             crit_damage: I16F16::from_num(*crit_damage),
             ammo: *ammo,
+            fire_forward,
+            fire_lateral,
+            salvo_count,
+            salvo_spread_angle,
             kind: WeaponKind::Beam {
                 charge_ticks: *charge_ticks,
                 duration_ticks: *duration_ticks,

@@ -355,16 +355,23 @@ public partial class RunState : Node, IRunData
                     Separation = 2.0,
                     Cohesion = 0.0,
                     Alignment = 0.0,
-                    SeekEnemy = 0.2,
+                    SeekNearest = 0.2,
+                    SeekMass = 0.1,
+                    SeekMothership = 0.0,
                     MaintainRange = 1.0,
                 },
-                Weapon = new WeaponDefData
-                {
-                    Type = "hitscan",
-                    Damage = 25,
-                    Range = 200,
-                    CooldownTicks = 45,
-                },
+                Hardpoints =
+                [
+                    new HardpointDefData
+                    {
+                        Type = "hitscan",
+                        Damage = 25,
+                        Range = 200,
+                        CooldownTicks = 45,
+                    },
+                ],
+                CombatStance = "standoff",
+                TargetPriority = "most_threatening",
             },
             Ships = [DefaultCorvette(), DefaultCorvette(), DefaultCorvette()],
         };
@@ -385,15 +392,22 @@ public partial class RunState : Node, IRunData
                 Separation = 1.5,
                 Cohesion = 0.3,
                 Alignment = 0.3,
-                SeekEnemy = 1.5,
+                SeekNearest = 1.5,
+                SeekMass = 0.2,
+                SeekMothership = 0.3,
                 MaintainRange = 1.0,
             },
-            Weapon = new WeaponDefData
-            {
-                Type = "hitscan",
-                Damage = 15,
-                Range = 120,
-                CooldownTicks = 30,
-            },
+            Hardpoints =
+            [
+                new HardpointDefData
+                {
+                    Type = "hitscan",
+                    Damage = 15,
+                    Range = 120,
+                    CooldownTicks = 30,
+                },
+            ],
+            CombatStance = "brawl",
+            TargetPriority = "nearest",
         };
 }

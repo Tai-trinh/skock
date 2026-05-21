@@ -1,12 +1,12 @@
 use fixed::types::{I16F16, I32F32};
-use types::{HullClass, ProjectileId, ProjectileSubtype, ShipId};
+use types::{HullClass, ProjectileId, ProjectileSubtype, ShipId, TargetPriority};
 
 use crate::{
     geometry::{dist_sq, min_dist_sq_to_segment},
     state::{Event, Fleet, Pos2, Projectile, SimState, Vec2, WeaponKind},
 };
 
-use super::{apply_damage, hull_hit_radius, rng_frac};
+use super::{apply_damage, hull_hit_radius, nearest_enemy_in_range, rng_frac};
 
 pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::SimConfig) {
     let ship_snapshot: Vec<(ShipId, Fleet, Pos2)> =
@@ -15,116 +15,152 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
     let mut to_spawn: Vec<Projectile> = Vec::new();
 
-    for id in ship_ids {
-        let Some(ship) = state.ships.get(&id) else { continue };
-        let w = match &ship.weapon {
-            Some(w)
-                if matches!(w.kind, WeaponKind::Projectile { .. }) && w.cooldown_remaining == 0 =>
-            {
-                w
-            }
-            _ => continue,
-        };
-        if w.ammo.is_some_and(|a| a == 0) {
-            continue;
-        }
-
-        let WeaponKind::Projectile {
-            subtype,
-            speed,
-            turn_rate,
-            fuse_ticks,
-            explosion_radius: expl_radius,
-            explosion_damage: expl_damage,
-            hit_radius,
-        } = w.kind
-        else {
-            unreachable!()
-        };
-
+    for ship_id in ship_ids {
+        let Some(ship) = state.ships.get(&ship_id) else { continue };
+        let weapon_count = ship.weapons.len();
         let fleet = ship.fleet;
-        let pos = ship.pos;
-        let heading = ship.heading;
-        let damage = w.damage;
-        let crit_chance = w.crit_chance;
-        let crit_damage = w.crit_damage;
-        let cooldown_ticks = w.cooldown_ticks;
+        let ship_pos = ship.pos;
+        let ship_heading = ship.heading;
+        let target_priority = ship.target_priority;
 
-        let (vel, init_heading) = match subtype {
-            ProjectileSubtype::Mine => {
-                let vx = cordic::cos(heading) * I16F16::from_num(0.3f32);
-                let vy = cordic::sin(heading) * I16F16::from_num(0.3f32);
-                (Vec2 { x: vx, y: vy }, heading)
+        for hp_idx in 0..weapon_count {
+            let Some(ship) = state.ships.get(&ship_id) else { break };
+            let w = match ship.weapons.get(hp_idx) {
+                Some(w)
+                    if matches!(w.kind, WeaponKind::Projectile { .. })
+                        && w.cooldown_remaining == 0 =>
+                {
+                    w
+                }
+                _ => continue,
+            };
+            if w.ammo.is_some_and(|a| a == 0) {
+                continue;
             }
-            ProjectileSubtype::Torpedo => {
-                let vx = cordic::cos(heading) * speed;
-                let vy = cordic::sin(heading) * speed;
-                (Vec2 { x: vx, y: vy }, heading)
-            }
-            ProjectileSubtype::SeekingMissile => {
-                let ext_r = I32F32::from_num(4) * I32F32::from_num(w.range);
-                let target = ship_snapshot
-                    .iter()
-                    .filter(|(_, f, _)| *f != fleet)
-                    .filter_map(|(_tid, _, tpos)| {
-                        let d = dist_sq(&pos, tpos);
-                        (d <= ext_r * ext_r).then_some((d, tpos))
-                    })
-                    .min_by(|(a, _), (b, _)| a.cmp(b))
-                    .map(|(_, tpos)| *tpos);
 
-                match target {
-                    Some(tpos) => {
-                        let dx = I32F32::from_num(tpos.x - pos.x);
-                        let dy = I32F32::from_num(tpos.y - pos.y);
-                        let dist = cordic::sqrt(dx * dx + dy * dy);
-                        if dist > I32F32::ZERO {
-                            let vx = I16F16::from_num(dx / dist) * speed;
-                            let vy = I16F16::from_num(dy / dist) * speed;
-                            let h = cordic::atan2(vy, vx);
-                            (Vec2 { x: vx, y: vy }, h)
-                        } else {
-                            let vx = cordic::cos(heading) * speed;
-                            let vy = cordic::sin(heading) * speed;
-                            (Vec2 { x: vx, y: vy }, heading)
-                        }
-                    }
-                    None => {
-                        let vx = cordic::cos(heading) * speed;
-                        let vy = cordic::sin(heading) * speed;
-                        (Vec2 { x: vx, y: vy }, heading)
+            let WeaponKind::Projectile {
+                subtype,
+                speed,
+                turn_rate,
+                fuse_ticks,
+                explosion_radius: expl_radius,
+                explosion_damage: expl_damage,
+                hit_radius,
+            } = w.kind
+            else {
+                unreachable!()
+            };
+
+            let damage = w.damage;
+            let crit_chance = w.crit_chance;
+            let crit_damage = w.crit_damage;
+            let cooldown_ticks = w.cooldown_ticks;
+            let salvo_count = w.salvo_count;
+            let salvo_spread_angle = w.salvo_spread_angle;
+            let fire_forward = w.fire_forward;
+            let fire_lateral = w.fire_lateral;
+            let range = w.range;
+
+            // Compute fire point in world space from local-frame offsets.
+            let fire_pos = local_to_world(ship_pos, ship_heading, fire_forward, fire_lateral);
+
+            // Determine target direction for initial velocity.
+            let target_pos_opt = match target_priority {
+                TargetPriority::Spread => {
+                    let r_sq = I32F32::from_num(range) * I32F32::from_num(range);
+                    nearest_enemy_in_range(&state.ships, &ship_pos, fleet, r_sq)
+                        .map(|tid| state.ships[&tid].pos)
+                }
+                _ => {
+                    let r_sq = I32F32::from_num(range) * I32F32::from_num(range);
+                    super::primary_target(&state.ships, &state.ships[&ship_id], r_sq)
+                        .map(|tid| state.ships[&tid].pos)
+                }
+            };
+
+            let base_angle = match target_pos_opt {
+                Some(tpos) => {
+                    let dx = I16F16::from_num(tpos.x - fire_pos.x);
+                    let dy = I16F16::from_num(tpos.y - fire_pos.y);
+                    let d_sq = I32F32::from_num(dx * dx + dy * dy);
+                    if d_sq > I32F32::ZERO {
+                        cordic::atan2(dy, dx)
+                    } else {
+                        ship_heading
                     }
                 }
+                None => ship_heading,
+            };
+
+            // Check if there's a target within range for non-mine subtypes.
+            if subtype != ProjectileSubtype::Mine && target_pos_opt.is_none() {
+                // Check extended range for missiles.
+                if subtype == ProjectileSubtype::SeekingMissile {
+                    let ext_r = I32F32::from_num(4) * I32F32::from_num(range);
+                    let has_target = ship_snapshot.iter().any(|(_, f, tpos)| {
+                        *f != fleet && dist_sq(&ship_pos, tpos) <= ext_r * ext_r
+                    });
+                    if !has_target {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
             }
-        };
 
-        let fuse = if fuse_ticks > 0 { fuse_ticks } else { 180 };
-        let proj_id = state.alloc_projectile_id();
+            // Spawn salvo projectiles spread across salvo_spread_angle.
+            let fuse = if fuse_ticks > 0 { fuse_ticks } else { 180 };
 
-        to_spawn.push(Projectile {
-            id: proj_id,
-            owner_id: id,
-            owner_fleet: fleet,
-            prev_pos: pos,
-            pos,
-            vel,
-            heading: init_heading,
-            subtype,
-            damage,
-            hit_radius,
-            explosion_radius: expl_radius,
-            explosion_damage: expl_damage,
-            fuse_ticks_remaining: fuse,
-            turn_rate,
-            crit_chance,
-            crit_damage,
-        });
+            for s in 0..salvo_count {
+                let angle = if salvo_count > 1 {
+                    let step = salvo_spread_angle / I16F16::from_num(salvo_count - 1);
+                    let offset =
+                        step * I16F16::from_num(s) - salvo_spread_angle / I16F16::from_num(2);
+                    base_angle + offset
+                } else {
+                    base_angle
+                };
 
-        if let Some(ship) = state.ships.get_mut(&id) {
-            if let Some(w) = ship.weapon.as_mut() {
-                w.cooldown_remaining = cooldown_ticks;
-                if let Some(ref mut ammo) = w.ammo {
-                    *ammo -= 1;
+                let (vel, init_heading) = match subtype {
+                    ProjectileSubtype::Mine => {
+                        let vx = cordic::cos(ship_heading) * I16F16::from_num(0.3f32);
+                        let vy = cordic::sin(ship_heading) * I16F16::from_num(0.3f32);
+                        (Vec2 { x: vx, y: vy }, ship_heading)
+                    }
+                    ProjectileSubtype::Torpedo | ProjectileSubtype::SeekingMissile => {
+                        let vx = cordic::cos(angle) * speed;
+                        let vy = cordic::sin(angle) * speed;
+                        (Vec2 { x: vx, y: vy }, angle)
+                    }
+                };
+
+                let proj_id = state.alloc_projectile_id();
+                to_spawn.push(Projectile {
+                    id: proj_id,
+                    owner_id: ship_id,
+                    owner_fleet: fleet,
+                    prev_pos: fire_pos,
+                    pos: fire_pos,
+                    vel,
+                    heading: init_heading,
+                    subtype,
+                    damage,
+                    hit_radius,
+                    explosion_radius: expl_radius,
+                    explosion_damage: expl_damage,
+                    fuse_ticks_remaining: fuse,
+                    turn_rate,
+                    crit_chance,
+                    crit_damage,
+                });
+            }
+
+            if let Some(ship) = state.ships.get_mut(&ship_id) {
+                if let Some(w) = ship.weapons.get_mut(hp_idx) {
+                    w.cooldown_remaining = cooldown_ticks;
+                    if let Some(ref mut ammo) = w.ammo {
+                        *ammo -= 1;
+                    }
                 }
             }
         }
@@ -133,6 +169,15 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
     for proj in to_spawn {
         state.projectiles.insert(proj.id, proj);
     }
+}
+
+/// Converts local-frame offsets to world position.
+fn local_to_world(ship_pos: Pos2, heading: I16F16, forward: I16F16, lateral: I16F16) -> Pos2 {
+    let cos_h = cordic::cos(heading);
+    let sin_h = cordic::sin(heading);
+    let wx = cos_h * forward - sin_h * lateral;
+    let wy = sin_h * forward + cos_h * lateral;
+    Pos2 { x: ship_pos.x + I32F32::from_num(wx), y: ship_pos.y + I32F32::from_num(wy) }
 }
 
 enum ProjOutcome {

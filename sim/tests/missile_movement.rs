@@ -32,19 +32,19 @@ const MISSILE_FLEET: &str = r#"{
     "mothership":{
         "blueprint_drawing_id":"ms_a","hull_class":"Dreadnought","role":"Artillery",
         "hp":500,"max_hp":500,"speed":1,"acceleration":0.3,"turn_rate":0.1,
-        "boid_weights":{"separation":2,"cohesion":0,"alignment":0,"seek_enemy":0.2,"maintain_range":1},
-        "weapon":{"type":"hitscan","damage":5,"range":150,"cooldown_ticks":60}
+        "boid_weights":{"separation":2,"cohesion":0,"alignment":0,"seek_nearest":0.2,"maintain_range":1},
+        "hardpoints":[{"type":"hitscan","damage":5,"range":150,"cooldown_ticks":60}]
     },
     "ships":[{
         "blueprint_drawing_id":"corvette_m","hull_class":"Corvette","role":"Fighter",
         "hp":60,"max_hp":60,"speed":8,"acceleration":2,"turn_rate":1.2,
-        "boid_weights":{"separation":1.5,"cohesion":0.4,"alignment":0.3,"seek_enemy":2,"maintain_range":1},
-        "weapon":{
+        "boid_weights":{"separation":1.5,"cohesion":0.4,"alignment":0.3,"seek_nearest":2,"maintain_range":1},
+        "hardpoints":[{
             "type":"projectile","subtype":"seeking_missile",
             "damage":35,"range":200,"cooldown_ticks":50,
             "projectile_speed":9,"turn_rate":0.08,
             "fuse_ticks":63,"explosion_radius":0,"explosion_damage":0
-        }
+        }]
     }],
     "doctrines":[],"role_equipment":[],"faction_effects":[],"admiral_effects":[]
 }"#;

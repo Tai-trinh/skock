@@ -3,7 +3,7 @@ use rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256Plus;
 use sim::combat::apply_damage;
 use sim::state::{BoidWeights, Fleet, Pos2, Ship, SimState, Vec2};
-use types::{HullClass, Role, ShipId};
+use types::{CombatStance, HullClass, Role, ShipId, TargetPriority};
 
 fn make_state() -> SimState {
     SimState::new(Xoshiro256Plus::seed_from_u64(0))
@@ -36,10 +36,14 @@ fn insert_ship(state: &mut SimState, fleet: Fleet, hp: f64, shield_hp: f64, armo
                 separation: I16F16::ZERO,
                 cohesion: I16F16::ZERO,
                 alignment: I16F16::ZERO,
-                seek_enemy: I16F16::ZERO,
+                seek_nearest: I16F16::ZERO,
+                seek_mass: I16F16::ZERO,
+                seek_mothership: I16F16::ZERO,
                 maintain_range: I16F16::ZERO,
             },
-            weapon: None,
+            weapons: vec![],
+            target_priority: TargetPriority::Nearest,
+            combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::ZERO,
         },
     );
