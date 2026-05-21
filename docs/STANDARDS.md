@@ -134,6 +134,38 @@ foreach (var p in tickA.Projectiles)
 
 Use a `foreach` when the body has side effects, mutates external state, or when an early `break`/`continue` makes intent clearer than the LINQ equivalent.
 
+When a check at the top of a method or loop body gates all subsequent work, invert it to an early `return` or `continue` rather than wrapping the body in the `if` block. Drop the `else` — after a `return` or `continue` it is redundant and adds a level of indentation for no reason.
+
+```csharp
+// Good — guards at the top, work at the bottom
+public override void _UnhandledInput(InputEvent @event)
+{
+    if (@event is not InputEventKey { Pressed: true, Echo: false } key)
+        return;
+    if (key.Keycode != Key.Escape)
+        return;
+    if (_playback is null || _playback.IsFinished)
+        return;
+
+    _abandonConfirm.PopupCentered();
+}
+
+// Avoid — nesting buries the actual work
+public override void _UnhandledInput(InputEvent @event)
+{
+    if (@event is InputEventKey { Pressed: true, Echo: false } key)
+    {
+        if (key.Keycode == Key.Escape)
+        {
+            if (_playback is not null && !_playback.IsFinished)
+                _abandonConfirm.PopupCentered();
+        }
+    }
+}
+```
+
+This does not apply to genuine `if/else` branches where both arms do meaningful work — use a ternary for assignments, or leave the branch as-is when both paths are non-trivial.
+
 Use `const` for compile-time constants, `static readonly` for values computed once at class load time, `readonly` for instance fields set only in the constructor. Never use a mutable field when the value never changes after assignment.
 
 ```csharp
