@@ -11,6 +11,7 @@ public sealed class BattleOutcomeResolverTests
 {
     private static readonly BattleResult Win = new() { Winner = "fleet_a" };
     private static readonly BattleResult Loss = new() { Winner = "fleet_b" };
+    private static readonly BattleResult Draw = new() { Winner = "draw" };
     private static readonly BattleInputs NoInputs = new();
     private static readonly FleetJsonData EmptyFleet = new();
 
@@ -180,6 +181,24 @@ public sealed class BattleOutcomeResolverTests
         var run = MakeRun();
         await Resolve(run, Loss);
         Assert.All(run.TierRerolls, v => Assert.Equal(0, v));
+    }
+
+    // ── Draw treated as loss ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Draw_AwardsBaseSalvageOnly()
+    {
+        var run = MakeRun(jumpNumber: 3);
+        await Resolve(run, Draw);
+        Assert.Equal(3 * 10, run.Salvage); // base only — no win bonus
+    }
+
+    [Fact]
+    public async Task Draw_IncrementsLossCount()
+    {
+        var run = MakeRun(lossCount: 1);
+        await Resolve(run, Draw);
+        Assert.Equal(2, run.LossCount);
     }
 
     // ── HP restoration ────────────────────────────────────────────────────────

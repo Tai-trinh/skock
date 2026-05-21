@@ -557,6 +557,59 @@ mod tests {
     }
 
     #[test]
+    fn commission_rejected_when_cannot_afford() {
+        let mut msg = test_msg();
+        msg.salvage = 0;
+        let mut s = Session::new(msg);
+        let blueprint_id = s.ship_tiers[0].slots[0].blueprint_id;
+        let resp = s.commission(blueprint_id);
+        assert!(!resp.ok);
+        assert_eq!(resp.error, Some("cannot_afford"));
+    }
+
+    #[test]
+    fn commission_rejected_when_hangar_full() {
+        let mut msg = test_msg();
+        msg.salvage = 9999;
+        msg.hangar_cap = 0;
+        let mut s = Session::new(msg);
+        let blueprint_id = s.ship_tiers[0].slots[0].blueprint_id;
+        let resp = s.commission(blueprint_id);
+        assert!(!resp.ok);
+        assert_eq!(resp.error, Some("hangar_full"));
+    }
+
+    #[test]
+    fn salvage_fleet_ship_rejects_out_of_bounds_index() {
+        let mut s = Session::new(test_msg()); // fleet is empty
+        let resp = s.salvage_fleet_ship(0);
+        assert!(!resp.ok);
+        assert_eq!(resp.error, Some("invalid_index"));
+    }
+
+    #[test]
+    fn buy_research_rejected_when_maxed() {
+        let mut msg = test_msg();
+        msg.tech = 999;
+        let mut s = Session::new(msg);
+        for _ in 0..5 {
+            assert!(s.buy_research("hangar_expansion").ok, "should succeed before max");
+        }
+        let resp = s.buy_research("hangar_expansion");
+        assert!(!resp.ok);
+        assert_eq!(resp.error, Some("maxed"));
+    }
+
+    #[test]
+    fn reroll_tier_deducts_salvage() {
+        let mut s = Session::new(test_msg());
+        let salvage_before = s.salvage;
+        let resp = s.reroll_tier(0);
+        assert!(resp.ok);
+        assert_eq!(s.salvage, salvage_before - TIERS[0].reroll_cost);
+    }
+
+    #[test]
     fn offers_are_deterministic() {
         let msg1 = test_msg();
         let msg2 = test_msg();
