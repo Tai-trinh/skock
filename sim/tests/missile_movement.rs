@@ -62,11 +62,11 @@ fn missiles_move_each_tick() {
     // Decode log: first record is header, rest are ticks
     let mut bytes = output.log_bytes.as_slice();
     let header: Header = rmp_serde::from_slice(bytes).unwrap();
-    assert_eq!(header.schema_version, 2, "unexpected schema version");
+    assert_eq!(header.schema_version, 3, "unexpected schema version");
 
     // Skip past header bytes
     let header_len =
-        rmp_serde::to_vec_named(&serde_json::json!({"schema_version": 2})).unwrap().len();
+        rmp_serde::to_vec_named(&serde_json::json!({"schema_version": 3})).unwrap().len();
     bytes = &output.log_bytes[header_len..];
 
     // Collect ticks that have projectiles

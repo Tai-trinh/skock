@@ -72,6 +72,7 @@ fn turn_rate_cap_limits_heading_change() {
     ship.heading = I16F16::ZERO;
     ship.boid_weights.seek_nearest = I16F16::from_num(3.0);
     ship.acceleration = I16F16::from_num(5.0);
+    ship.turn_rate = I16F16::from_num(0.06);
 
     // Enemy directly behind — seek force pulls hard in -x direction.
     let enemy_id = insert_ship(&mut state, Fleet::B, Pos2::from_f64(-100.0, 0.0), 5.0);
@@ -98,7 +99,7 @@ fn enemy_separation_pushes_ship_away() {
     let id = insert_ship(&mut state, Fleet::A, Pos2::from_f64(0.0, 0.0), 5.0);
     state.ships.get_mut(&id).unwrap().boid_weights.separation = I16F16::from_num(2.0);
 
-    // Enemy B at x=30 — within the 55-unit boid_enemy_separation_radius.
+    // Enemy B at x=30 — within boid_neighbor_radius (150), so unified separation applies.
     let enemy_id = insert_ship(&mut state, Fleet::B, Pos2::from_f64(30.0, 0.0), 5.0);
     state.ships.get_mut(&enemy_id).unwrap().boid_weights = zero_boids();
 

@@ -80,11 +80,10 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
 
             let base_angle = match target_pos_opt {
                 Some(tpos) => {
-                    let dx = I16F16::from_num(tpos.x - fire_pos.x);
-                    let dy = I16F16::from_num(tpos.y - fire_pos.y);
-                    let d_sq = I32F32::from_num(dx * dx + dy * dy);
-                    if d_sq > I32F32::ZERO {
-                        cordic::atan2(dy, dx)
+                    let dx = tpos.x - fire_pos.x;
+                    let dy = tpos.y - fire_pos.y;
+                    if dx != I32F32::ZERO || dy != I32F32::ZERO {
+                        I16F16::from_num(cordic::atan2(dy, dx))
                     } else {
                         ship_heading
                     }
@@ -123,13 +122,14 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
 
                 let (vel, init_heading) = match subtype {
                     ProjectileSubtype::Mine => {
-                        let vx = cordic::cos(ship_heading) * I16F16::from_num(0.3f32);
-                        let vy = cordic::sin(ship_heading) * I16F16::from_num(0.3f32);
+                        let mine_speed = I16F16::from_num(0.3f32);
+                        let vx = I32F32::from_num(cordic::cos(ship_heading) * mine_speed);
+                        let vy = I32F32::from_num(cordic::sin(ship_heading) * mine_speed);
                         (Vec2 { x: vx, y: vy }, ship_heading)
                     }
                     ProjectileSubtype::Torpedo | ProjectileSubtype::SeekingMissile => {
-                        let vx = cordic::cos(angle) * speed;
-                        let vy = cordic::sin(angle) * speed;
+                        let vx = I32F32::from_num(cordic::cos(angle) * speed);
+                        let vy = I32F32::from_num(cordic::sin(angle) * speed);
                         (Vec2 { x: vx, y: vy }, angle)
                     }
                 };
@@ -227,10 +227,10 @@ pub(super) fn advance_projectiles(state: &mut SimState, config: &crate::config::
             steer_missile(proj, &ship_snapshot);
         }
 
-        proj.pos.x += I32F32::from_num(proj.vel.x);
-        proj.pos.y += I32F32::from_num(proj.vel.y);
-        if proj.vel.x != I16F16::ZERO || proj.vel.y != I16F16::ZERO {
-            proj.heading = cordic::atan2(proj.vel.y, proj.vel.x);
+        proj.pos.x += proj.vel.x;
+        proj.pos.y += proj.vel.y;
+        if proj.vel.x != I32F32::ZERO || proj.vel.y != I32F32::ZERO {
+            proj.heading = I16F16::from_num(cordic::atan2(proj.vel.y, proj.vel.x));
         }
 
         if proj.fuse_ticks_remaining > 0 {
@@ -412,21 +412,17 @@ fn steer_missile(proj: &mut Projectile, ships: &[(ShipId, Fleet, Pos2, HullClass
 
     let Some((_, _, tpos, _)) = best else { return };
 
-    let dx = I16F16::from_num(tpos.x - pos.x);
-    let dy = I16F16::from_num(tpos.y - pos.y);
-    let desired = cordic::atan2(dy, dx);
+    let desired = I16F16::from_num(cordic::atan2(tpos.y - pos.y, tpos.x - pos.x));
 
     let diff = normalize_angle(desired - proj.heading);
     let turn = diff.clamp(-proj.turn_rate, proj.turn_rate);
     let new_heading = proj.heading + turn;
 
-    let vx = I32F32::from_num(proj.vel.x);
-    let vy = I32F32::from_num(proj.vel.y);
-    let speed_sq = vx * vx + vy * vy;
+    let speed_sq = proj.vel.x * proj.vel.x + proj.vel.y * proj.vel.y;
     if speed_sq > I32F32::ZERO {
-        let speed = I16F16::from_num(cordic::sqrt(speed_sq));
-        proj.vel.x = cordic::cos(new_heading) * speed;
-        proj.vel.y = cordic::sin(new_heading) * speed;
+        let speed = cordic::sqrt(speed_sq);
+        proj.vel.x = I32F32::from_num(cordic::cos(new_heading)) * speed;
+        proj.vel.y = I32F32::from_num(cordic::sin(new_heading)) * speed;
     }
     proj.heading = new_heading;
 }

@@ -36,11 +36,9 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
     // Phase 3: build spatial grid for boid neighbor queries
     let neighbor_radius = I32F32::from_num(config.boid_neighbor_radius);
     let neighbor_radius_sq = neighbor_radius * neighbor_radius;
-    let enemy_sep_radius = I32F32::from_num(config.boid_enemy_separation_radius);
-    let enemy_sep_radius_sq = enemy_sep_radius * enemy_sep_radius;
-    let separation_margin = I16F16::from_num(config.boid_separation_margin);
-    let max_turn = I16F16::from_num(config.boid_max_turn_rad);
-    let cos_max_turn = cordic::cos(max_turn);
+    let separation_margin = I32F32::from_num(config.boid_separation_margin);
+    let damping = I32F32::from_num(config.boid_velocity_damping);
+    let min_speed_fraction = I32F32::from_num(config.boid_min_speed_fraction);
     let grid = SpatialGrid::build(&state.ships, neighbor_radius);
 
     // Phase 4 & 5: compute boid forces and integrate
@@ -54,7 +52,6 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
                 &grid,
                 neighbor_radius_sq,
                 config.boid_max_neighbors as usize,
-                enemy_sep_radius_sq,
                 separation_margin,
             );
             (id, force)
@@ -66,65 +63,80 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
         let force = forces[&id];
 
         // Save current velocity for turn-rate clamping below.
-        let old_vx = I32F32::from_num(ship.vel.x);
-        let old_vy = I32F32::from_num(ship.vel.y);
+        let old_vx = ship.vel.x;
+        let old_vy = ship.vel.y;
 
         // Apply force scaled by acceleration
-        let ax = force.x * ship.acceleration;
-        let ay = force.y * ship.acceleration;
-        ship.vel.x += ax;
-        ship.vel.y += ay;
+        let accel = I32F32::from_num(ship.acceleration);
+        ship.vel.x += force.x * accel;
+        ship.vel.y += force.y * accel;
+
+        // Clamp to max speed.
+        {
+            let speed_sq = ship.vel.x * ship.vel.x + ship.vel.y * ship.vel.y;
+            let max = I32F32::from_num(ship.max_speed);
+            let max_sq = max * max;
+            if speed_sq > max_sq && speed_sq > I32F32::ZERO {
+                let speed = cordic::sqrt(speed_sq);
+                ship.vel.x = ship.vel.x / speed * max;
+                ship.vel.y = ship.vel.y / speed * max;
+            }
+        }
 
         // Turn rate cap: limit angular change per tick so ships curve gracefully.
         // Only active when the ship already has a heading (non-zero velocity).
         let old_speed_sq = old_vx * old_vx + old_vy * old_vy;
         if old_speed_sq > I32F32::ZERO {
-            let new_vx = I32F32::from_num(ship.vel.x);
-            let new_vy = I32F32::from_num(ship.vel.y);
-            let new_speed_sq = new_vx * new_vx + new_vy * new_vy;
+            let new_speed_sq = ship.vel.x * ship.vel.x + ship.vel.y * ship.vel.y;
             if new_speed_sq > I32F32::ZERO {
                 let old_speed = cordic::sqrt(old_speed_sq);
                 let new_speed = cordic::sqrt(new_speed_sq);
                 let hx = I16F16::from_num(old_vx / old_speed);
                 let hy = I16F16::from_num(old_vy / old_speed);
-                let dx = I16F16::from_num(new_vx / new_speed);
-                let dy = I16F16::from_num(new_vy / new_speed);
+                let dx = I16F16::from_num(ship.vel.x / new_speed);
+                let dy = I16F16::from_num(ship.vel.y / new_speed);
                 let dot = hx * dx + hy * dy;
+                let max_turn = ship.turn_rate;
+                let cos_max_turn = cordic::cos(max_turn);
                 if dot < cos_max_turn {
-                    // Angle exceeds limit — rotate current heading toward desired by max_turn.
-                    let cross = hx * dy - hy * dx; // positive = desired is CCW from current
+                    let cross = hx * dy - hy * dx;
                     let turn = if cross >= I16F16::ZERO { max_turn } else { -max_turn };
                     let (sin_t, cos_t) = cordic::sin_cos(turn);
                     let new_hx = hx * cos_t - hy * sin_t;
                     let new_hy = hx * sin_t + hy * cos_t;
-                    let new_speed16 = I16F16::from_num(new_speed);
-                    ship.vel.x = new_hx * new_speed16;
-                    ship.vel.y = new_hy * new_speed16;
+                    ship.vel.x = I32F32::from_num(new_hx) * new_speed;
+                    ship.vel.y = I32F32::from_num(new_hy) * new_speed;
                 }
             }
         }
 
-        // Clamp to max speed using wider type to avoid overflow
-        let vx = I32F32::from_num(ship.vel.x);
-        let vy = I32F32::from_num(ship.vel.y);
-        let speed_sq = vx * vx + vy * vy;
-        let max_sq = I32F32::from_num(ship.max_speed) * I32F32::from_num(ship.max_speed);
-        if speed_sq > max_sq && speed_sq > I32F32::ZERO {
-            let speed = cordic::sqrt(speed_sq);
-            let max = I32F32::from_num(ship.max_speed);
-            ship.vel.x = I16F16::from_num(vx / speed * max);
-            ship.vel.y = I16F16::from_num(vy / speed * max);
+        // Velocity damping.
+        ship.vel.x *= damping;
+        ship.vel.y *= damping;
+
+        // Minimum speed: ships with non-zero velocity never fall below
+        // min_speed_fraction of max_speed so balanced forces cause a swerve
+        // rather than a full stall.
+        {
+            let speed_sq = ship.vel.x * ship.vel.x + ship.vel.y * ship.vel.y;
+            let min_speed = I32F32::from_num(ship.max_speed) * min_speed_fraction;
+            let min_sq = min_speed * min_speed;
+            if speed_sq > I32F32::ZERO && speed_sq < min_sq {
+                let speed = cordic::sqrt(speed_sq);
+                if speed > I32F32::ZERO {
+                    ship.vel.x = ship.vel.x / speed * min_speed;
+                    ship.vel.y = ship.vel.y / speed * min_speed;
+                }
+            }
         }
 
         // Update position
-        ship.pos.x += I32F32::from_num(ship.vel.x);
-        ship.pos.y += I32F32::from_num(ship.vel.y);
+        ship.pos.x += ship.vel.x;
+        ship.pos.y += ship.vel.y;
 
         // Update heading from velocity direction
-        let vx = ship.vel.x;
-        let vy = ship.vel.y;
-        if vx != I16F16::ZERO || vy != I16F16::ZERO {
-            ship.heading = cordic::atan2(vy, vx);
+        if ship.vel.x != I32F32::ZERO || ship.vel.y != I32F32::ZERO {
+            ship.heading = I16F16::from_num(cordic::atan2(ship.vel.y, ship.vel.x));
         }
     }
 

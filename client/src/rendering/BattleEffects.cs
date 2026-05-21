@@ -111,7 +111,17 @@ public partial class BattleEffects : Node
 
         var i = _cursors[name];
         pool[i].Stop();
-        pool[i].VolumeDb = Mathf.LinearToDb(RunState.Instance.Settings.SfxVolume);
+
+        // TODO (tai): remove this when better sounds are found
+        if (
+            name == "sfx_beam"
+            | name == "sfx_hitscan"
+            | name == "sfx_torpedo_launch"
+            | name == "sfx_missile_launch"
+        )
+            pool[i].VolumeDb = Mathf.LinearToDb(0.05f * RunState.Instance.Settings.SfxVolume);
+        else
+            pool[i].VolumeDb = Mathf.LinearToDb(2.0f * RunState.Instance.Settings.SfxVolume);
         pool[i].Play();
         _cursors[name] = (i + 1) % pool.Length;
     }

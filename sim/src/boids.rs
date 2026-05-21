@@ -5,7 +5,7 @@ use types::ShipId;
 use crate::geometry::dist_sq;
 use crate::state::{Pos2, Ship, Vec2};
 
-// Returns a unit vector from `from` toward `to` in I16F16, or ZERO if coincident.
+// Returns a unit vector from `from` toward `to`, or ZERO if coincident.
 fn dir(from: &Pos2, to: &Pos2) -> Vec2 {
     let dx = to.x - from.x;
     let dy = to.y - from.y;
@@ -14,7 +14,7 @@ fn dir(from: &Pos2, to: &Pos2) -> Vec2 {
         return Vec2::ZERO;
     }
     let dist = cordic::sqrt(d_sq);
-    Vec2 { x: I16F16::from_num(dx / dist), y: I16F16::from_num(dy / dist) }
+    Vec2 { x: dx / dist, y: dy / dist }
 }
 
 fn cell_of(pos: &Pos2, cell_size: I32F32) -> (i32, i32) {
@@ -61,15 +61,34 @@ pub fn compute_forces(
     grid: &SpatialGrid,
     neighbor_radius_sq: I32F32,
     max_neighbors: usize,
-    enemy_sep_radius_sq: I32F32,
-    separation_margin: I16F16,
+    separation_margin: I32F32,
 ) -> Vec2 {
-    // ── Friendly neighbors: grid candidates → filter → N nearest ─────────────
-
     let neighbor_radius = cordic::sqrt(neighbor_radius_sq);
-    let enemy_sep_radius = cordic::sqrt(enemy_sep_radius_sq);
-    let sep_margin = I32F32::from_num(separation_margin);
+    let sep_margin = separation_margin;
 
+    // ── Separation: all ships (friend + foe) within neighbor_radius ───────────
+    // No neighbor cap — every hull within range contributes repulsion.
+    let mut sep = Vec2::ZERO;
+    for (&other_id, other) in ships {
+        if other_id == ship.id {
+            continue;
+        }
+        let d_sq = dist_sq(&ship.pos, &other.pos);
+        if d_sq >= neighbor_radius_sq || d_sq == I32F32::ZERO {
+            continue;
+        }
+        let dist = cordic::sqrt(d_sq);
+        let min_dist = I32F32::from_num(ship.hit_radius + other.hit_radius) + sep_margin;
+        let away = dir(&other.pos, &ship.pos);
+        let strength = if dist <= min_dist {
+            I32F32::ONE
+        } else {
+            (neighbor_radius - dist) / (neighbor_radius - min_dist)
+        };
+        sep += away * strength;
+    }
+
+    // ── Friendly neighbors: cohesion + alignment (capped at max_neighbors) ────
     let mut friendly_candidates: Vec<(I32F32, ShipId)> = grid
         .candidates(&ship.pos)
         .into_iter()
@@ -92,70 +111,38 @@ pub fn compute_forces(
     friendly_candidates.sort_by(|(a, aid), (b, bid)| a.cmp(b).then_with(|| aid.cmp(bid)));
     friendly_candidates.truncate(max_neighbors);
 
-    let mut sep = Vec2::ZERO;
     let mut coh_sum = Pos2::ZERO;
     let mut coh_count: i32 = 0;
     let mut ali = Vec2::ZERO;
     let mut ali_count: i32 = 0;
 
-    for &(d_sq, other_id) in &friendly_candidates {
+    for &(_, other_id) in &friendly_candidates {
         let other = &ships[&other_id];
-        let dist = cordic::sqrt(d_sq);
 
-        // Hull-radius-aware separation: full force inside combined hull radii + margin,
-        // linear taper to zero at neighbor_radius.
-        let min_dist = I32F32::from_num(ship.hit_radius + other.hit_radius) + sep_margin;
-        let away = dir(&other.pos, &ship.pos);
-        let strength = if dist <= min_dist {
-            I32F32::ONE
-        } else {
-            (neighbor_radius - dist) / (neighbor_radius - min_dist)
-        };
-        sep += away * I16F16::from_num(strength);
-
-        // Cohesion: accumulate center of mass
         coh_sum.x += other.pos.x;
         coh_sum.y += other.pos.y;
         coh_count += 1;
 
         // Alignment: normalize neighbor velocity to get heading only (not speed).
-        let vx = I32F32::from_num(other.vel.x);
-        let vy = I32F32::from_num(other.vel.y);
-        let vel_sq = vx * vx + vy * vy;
+        let vel_sq = other.vel.x * other.vel.x + other.vel.y * other.vel.y;
         if vel_sq > I32F32::ZERO {
             let speed = cordic::sqrt(vel_sq);
-            ali += Vec2 { x: I16F16::from_num(vx / speed), y: I16F16::from_num(vy / speed) };
+            ali += Vec2 { x: other.vel.x / speed, y: other.vel.y / speed };
             ali_count += 1;
         }
     }
 
-    // ── Enemy scan: nearest, mass centroid, mothership, separation ────────────
-
+    // ── Enemy scan: nearest, mass centroid, mothership ────────────────────────
     let mut nearest_enemy: Option<(I32F32, &Ship)> = None;
     let mut enemy_mass_sum = Pos2::ZERO;
     let mut enemy_mass_count: i32 = 0;
     let mut enemy_mothership: Option<&Ship> = None;
-    let mut enemy_sep = Vec2::ZERO;
 
     for other in ships.values() {
         if other.fleet == ship.fleet {
             continue;
         }
         let d_sq = dist_sq(&ship.pos, &other.pos);
-
-        // Enemy separation: push away from any enemy within the tighter radius.
-        if d_sq < enemy_sep_radius_sq && d_sq > I32F32::ZERO {
-            let dist = cordic::sqrt(d_sq);
-            let min_dist = I32F32::from_num(ship.hit_radius + other.hit_radius) + sep_margin;
-            let away = dir(&other.pos, &ship.pos);
-            let strength = if dist <= min_dist {
-                I32F32::ONE
-            } else {
-                (enemy_sep_radius - dist) / (enemy_sep_radius - min_dist)
-            };
-            enemy_sep += away * I16F16::from_num(strength);
-        }
-
         if nearest_enemy.is_none_or(|(d, _)| d_sq < d) {
             nearest_enemy = Some((d_sq, other));
         }
@@ -168,54 +155,57 @@ pub fn compute_forces(
     }
 
     // ── Accumulate total force ─────────────────────────────────────────────────
-
+    let w = &ship.boid_weights;
     let mut total = Vec2::ZERO;
 
-    total += sep * ship.boid_weights.separation;
-    total += enemy_sep * ship.boid_weights.separation;
+    total += sep * I32F32::from_num(w.separation);
 
     if coh_count > 0 {
         let avg = Pos2 {
             x: coh_sum.x / I32F32::from_num(coh_count),
             y: coh_sum.y / I32F32::from_num(coh_count),
         };
-        total += dir(&ship.pos, &avg) * ship.boid_weights.cohesion;
+        total += dir(&ship.pos, &avg) * I32F32::from_num(w.cohesion);
     }
 
     if ali_count > 0 {
-        let avg =
-            Vec2 { x: ali.x / I16F16::from_num(ali_count), y: ali.y / I16F16::from_num(ali_count) };
-        total += avg * ship.boid_weights.alignment;
+        let n = I32F32::from_num(ali_count);
+        let avg = Vec2 { x: ali.x / n, y: ali.y / n };
+        total += avg * I32F32::from_num(w.alignment);
     }
 
     if let Some((d_sq, nearest)) = nearest_enemy {
-        let to_nearest = dir(&ship.pos, &nearest.pos);
-        total += to_nearest * ship.boid_weights.seek_nearest;
-
         let dist = cordic::sqrt(d_sq);
         let preferred = I32F32::from_num(ship.preferred_range);
-        if preferred > I32F32::ZERO {
-            let diff = dist - preferred;
-            let range_force = if diff > I32F32::ZERO {
-                to_nearest
-            } else {
-                Vec2 { x: -to_nearest.x, y: -to_nearest.y }
-            };
-            total += range_force * ship.boid_weights.maintain_range;
+        let within_preferred = preferred > I32F32::ZERO && dist < preferred;
+        let to_nearest = dir(&ship.pos, &nearest.pos);
+
+        // Suppress all seek forces while already inside preferred range —
+        // the ship orbits on inertia rather than hunting an enemy it's already on top of.
+        if !within_preferred {
+            total += to_nearest * I32F32::from_num(w.seek_nearest);
+
+            if enemy_mass_count > 0 && w.seek_mass > I16F16::ZERO {
+                let centroid = Pos2 {
+                    x: enemy_mass_sum.x / I32F32::from_num(enemy_mass_count),
+                    y: enemy_mass_sum.y / I32F32::from_num(enemy_mass_count),
+                };
+                total += dir(&ship.pos, &centroid) * I32F32::from_num(w.seek_mass);
+            }
+
+            if let Some(ms) = enemy_mothership {
+                if w.seek_mothership > I16F16::ZERO {
+                    total += dir(&ship.pos, &ms.pos) * I32F32::from_num(w.seek_mothership);
+                }
+            }
         }
-    }
 
-    if enemy_mass_count > 0 && ship.boid_weights.seek_mass > I16F16::ZERO {
-        let centroid = Pos2 {
-            x: enemy_mass_sum.x / I32F32::from_num(enemy_mass_count),
-            y: enemy_mass_sum.y / I32F32::from_num(enemy_mass_count),
-        };
-        total += dir(&ship.pos, &centroid) * ship.boid_weights.seek_mass;
-    }
-
-    if let Some(ms) = enemy_mothership {
-        if ship.boid_weights.seek_mothership > I16F16::ZERO {
-            total += dir(&ship.pos, &ms.pos) * ship.boid_weights.seek_mothership;
+        // Proportional maintain_range: zero force at preferred_range, ±1 at 2× error.
+        // Positive (toward) when too far, negative (away) when too close.
+        // Zero crossing lets the ship carry through on inertia and orbit naturally.
+        if preferred > I32F32::ZERO {
+            let strength = ((dist - preferred) / preferred).clamp(-I32F32::ONE, I32F32::ONE);
+            total += to_nearest * I32F32::from_num(w.maintain_range) * strength;
         }
     }
 

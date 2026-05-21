@@ -7,7 +7,7 @@ namespace Skock.Sim;
 
 public static class BattleLogParser
 {
-    private const uint ExpectedSchemaVersion = 2;
+    private const uint ExpectedSchemaVersion = 3;
 
     public static BattleLog Parse(byte[] bytes)
     {

@@ -20,6 +20,7 @@ class BattleRenderer <<partial>> {
     - _abandonConfirm : ConfirmationDialog
     - _recordTask : Task?
     - _effects : BattleEffects
+    - _resultShowAtSec : double
     - <<readonly>> _mineRotation : Dictionary<uint, float>
     - {static} <<readonly>> JsonOptions : JsonSerializerOptions
     + <<override>> _Ready() : void

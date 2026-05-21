@@ -21,15 +21,15 @@ impl Pos2 {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec2 {
-    pub x: I16F16,
-    pub y: I16F16,
+    pub x: I32F32,
+    pub y: I32F32,
 }
 
 impl Vec2 {
-    pub const ZERO: Self = Self { x: I16F16::ZERO, y: I16F16::ZERO };
+    pub const ZERO: Self = Self { x: I32F32::ZERO, y: I32F32::ZERO };
 
     pub fn from_f64(x: f64, y: f64) -> Self {
-        Self { x: I16F16::from_num(x), y: I16F16::from_num(y) }
+        Self { x: I32F32::from_num(x), y: I32F32::from_num(y) }
     }
 }
 
@@ -47,9 +47,9 @@ impl std::ops::AddAssign for Vec2 {
     }
 }
 
-impl std::ops::Mul<I16F16> for Vec2 {
+impl std::ops::Mul<I32F32> for Vec2 {
     type Output = Self;
-    fn mul(self, rhs: I16F16) -> Self {
+    fn mul(self, rhs: I32F32) -> Self {
         Self { x: self.x * rhs, y: self.y * rhs }
     }
 }

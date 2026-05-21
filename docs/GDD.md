@@ -137,17 +137,29 @@ Rival fleets are hand-authored fleet JSON files organized by difficulty tier, ma
 
 ### Ship Movement (Boids)
 
-Ships use boids-based movement with inertia and acceleration. Five weighted forces per ship:
+Ships use boids-based movement with inertia and acceleration. Seven weighted forces per ship:
 
 | Force | Effect |
 |---|---|
-| `separation` | Avoid crowding neighbors (doubles as flee-from-enemy) |
-| `cohesion` | Move toward center of neighbors |
-| `alignment` | Match heading of neighbors |
-| `seek_enemy` | Move toward nearest enemy (doubles as follow-leader) |
-| `maintain_range` | Hold preferred engagement distance |
+| `separation` | Push away from crowding friendly neighbors (hull-radius-aware) |
+| `cohesion` | Move toward center of friendly neighbors |
+| `alignment` | Match heading direction of friendly neighbors (normalized — speed-independent) |
+| `seek_nearest` | Move toward nearest enemy |
+| `seek_mass` | Move toward center of mass of all enemies |
+| `seek_mothership` | Move toward enemy Mothership specifically |
+| `maintain_range` | Hold preferred engagement distance from nearest enemy |
 
-Behavior changes by tuning weights per role, not per ship. Neighbor search uses a uniform spatial hash grid; only the `boid_max_neighbors` nearest friendly neighbors are considered.
+Enemy separation is a separate force (same `separation` weight) that pushes ships away from enemies within a tighter radius — ships swerve around enemy hulls rather than stalling against them. Separation distance is hull-radius-aware: the repulsion zone is `own_hit_radius + other_hit_radius + margin`, so large ships have proportionally larger keep-out zones.
+
+**Movement physics** (applied each tick in order):
+
+1. **Acceleration** — force × ship acceleration added to velocity.
+2. **Speed clamp** — velocity capped at `max_speed` before angular math.
+3. **Turn rate cap** — angular change per tick limited to `boid_max_turn_rad` (~0.06 rad). Ships curve gracefully; 180-degree reversals are impossible.
+4. **Velocity damping** — velocity multiplied by `boid_velocity_damping` (0.90) each tick. Ships decelerate smoothly when forces drop.
+5. **Minimum speed floor** — ships with non-zero velocity are never slowed below `boid_min_speed_fraction × max_speed` (25%). Prevents stop-start stalling at force-balance points; ships swerve instead.
+
+Behavior changes by tuning weights per role, not per ship. Neighbor search uses a uniform spatial hash grid; only the `boid_max_neighbors` nearest friendly neighbors are considered for separation/cohesion/alignment. Enemy separation scans all enemies within the tighter `boid_enemy_separation_radius`.
 
 ### Weapon Archetypes
 

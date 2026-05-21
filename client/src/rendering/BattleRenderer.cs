@@ -47,6 +47,7 @@ public partial class BattleRenderer : Node2D
     private ConfirmationDialog _abandonConfirm = null!;
     private Task? _recordTask;
     private BattleEffects _effects = null!;
+    private double _resultShowAtSec = -1;
 
     // Mine rotation accumulator (per projectile id → accumulated rotation)
     private readonly Dictionary<uint, float> _mineRotation = [];
@@ -157,7 +158,13 @@ public partial class BattleRenderer : Node2D
         MineRotationTick(delta);
 
         if (_playback.IsFinished)
-            ShowResult();
+        {
+            var now = Time.GetTicksMsec() / 1000.0;
+            if (_resultShowAtSec < 0)
+                _resultShowAtSec = now + 2.0;
+            else if (now >= _resultShowAtSec)
+                ShowResult();
+        }
     }
 
     public override void _UnhandledInput(InputEvent @event)

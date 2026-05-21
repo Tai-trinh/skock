@@ -78,3 +78,4 @@ Online run state: server owns a run ID assigned at run start. All run choices (f
 - `ServerDockyardAdapter`: implement online dockyard seam (currently `LocalDockyardAdapter` only).
 - PlayerID metaprogression: local metaprogression store, offline-capable Rust + C# interface. Dockyard binary uses PlayerID to gate metaprogression-unlocked content — offline lookup not yet built.
 - Conditional trigger effects: e.g. `on_mothership_below_50pct_hp: boost morale to nearby friendlies for 10s`. Evaluated per tick against sim state, not pre-resolved (distinct from proc-based on_hit/on_kill effects).
+

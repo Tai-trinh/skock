@@ -306,7 +306,5 @@ fn normalize_angle(a: I16F16) -> I16F16 {
 }
 
 fn angle_to(from: Pos2, to: Pos2) -> I16F16 {
-    let dx = I16F16::from_num(to.x - from.x);
-    let dy = I16F16::from_num(to.y - from.y);
-    cordic::atan2(dy, dx)
+    I16F16::from_num(cordic::atan2(to.y - from.y, to.x - from.x))
 }

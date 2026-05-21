@@ -1,6 +1,6 @@
 @startuml
 class BattleLogParser <<static>> {
-    - <<const>> ExpectedSchemaVersion : uint = 2
+    - <<const>> ExpectedSchemaVersion : uint = 3
     + {static} Parse(bytes:byte[]) : BattleLog
 }
 @enduml

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.rs) cargo.exe check -p sim 2>&1 ;; esac"
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.rs) cargo.exe check -p sim ;; esac"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.rs) cargo.exe clippy --all-targets 2>&1 ;; esac"
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.rs) cargo.exe clippy --all-targets ;; esac"
           }
         ]
       },
@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.rs) cargo.exe test 2>&1 ;; esac"
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.rs) cargo.exe test ;; esac"
           }
         ]
       },
@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) dotnet.exe build client/skock.csproj 2>&1 ;; esac"
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) dotnet.exe build client/skock.csproj ;; esac"
           }
         ]
       },
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) dotnet.exe test client.tests/skock.tests.csproj 2>&1 ;; esac"
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) dotnet.exe test client.tests/skock.tests.csproj ;; esac"
           }
         ]
       },
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) roslynator.exe analyze client/skock.csproj 2>&1 ;; esac"
+            "command": "FILE=\"$(cat | jq -r '.tool_input.file_path')\"; case \"$FILE\" in *.cs) roslynator.exe analyze client/skock.csproj ;; esac"
           }
         ]
       }

@@ -114,10 +114,16 @@ Ships are identified by two fields plus an optional weight designation. Display 
 
 **Hitscan accuracy scaling:** hitscan hardpoints support distance-dependent miss chance. `miss_chance_far` is the miss probability at `range`; `miss_chance_near` is the floor miss probability at or below `accurate_range`. Miss chance interpolates linearly between the two. If `miss_chance_far == miss_chance_near`, miss chance is fixed regardless of distance.
 
-**Boid seek forces:** `seek_enemy` weight is replaced by three configurable per-ship weights:
-- `seek_nearest` — force toward nearest enemy ship.
-- `seek_mass` — force toward the center of mass of all enemy ships.
+**Boid forces:** seven configurable per-ship weights drive movement each tick:
+- `separation` — push away from crowding friendly neighbors; hull-radius-aware (`own_hit_radius + other_hit_radius + margin`). Same weight also drives enemy separation within the tighter `boid_enemy_separation_radius` — ships swerve around enemy hulls rather than stalling.
+- `cohesion` — move toward center of friendly neighbors.
+- `alignment` — match the heading direction of friendly neighbors (normalized — speed-independent).
+- `seek_nearest` — force toward the nearest enemy.
+- `seek_mass` — force toward the center of mass of all enemies.
 - `seek_mothership` — force toward the enemy Mothership specifically.
+- `maintain_range` — hold preferred engagement distance (derived from `CombatStance`).
+
+**Movement physics** (applied in order each tick): acceleration → speed clamp → turn rate cap (max ~0.06 rad/tick, prevents 180° reversals) → velocity damping (×0.90, smooth deceleration) → minimum speed floor (25% of max_speed for ships already moving, prevents stop-start stalling).
 
 **Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance (derived from `CombatStance` + hardpoints at spawn; not a fleet JSON field). Both work together: boids handle positioning, range check handles firing permission.
 

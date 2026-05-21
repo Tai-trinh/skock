@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::io::{self, Write};
 use types::ProjectileSubtype;
 
-const SCHEMA_VERSION: u32 = 2;
+const SCHEMA_VERSION: u32 = 3;
 
 #[derive(Serialize)]
 struct LogHeader {
@@ -18,8 +18,8 @@ struct ShipSnapshot {
     is_mothership: bool,
     pos_x: i64,
     pos_y: i64,
-    vel_x: i32,
-    vel_y: i32,
+    vel_x: i64,
+    vel_y: i64,
     heading: i32,
     hp: i32,
     max_hp: i32,
