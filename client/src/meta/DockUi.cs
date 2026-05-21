@@ -210,11 +210,8 @@ public partial class DockUi : Control
             return;
         }
         _state = result.State!;
-        var newShip = result.Ship!.ShipDef;
         // Track locally for fleet display (tonnage from slot offer).
         _sessionFleet.Add(new SessionShip(_sessionFleet.Count, slot.DisplayName, slot.Tonnage));
-        // Add to RunState fleet so it's ready for the save after ShoppingDone.
-        RunState.Instance.Fleet.Ships.Add(newShip);
         _statusLabel.Text = $"Commissioned {slot.DisplayName}.";
         Refresh();
     }
@@ -326,30 +323,7 @@ public partial class DockUi : Control
         }
 
         var run = RunState.Instance;
-        var delta = sessionResult.Delta;
-
-        // Commission: ships already added to RunState.Fleet.Ships in OnCommissionShip.
-        // Salvage: remove by original index (descending so indices stay valid).
-        foreach (var idx in delta.ShipsSalvaged.OrderByDescending(i => i))
-        {
-            if (idx < run.Fleet.Ships.Count)
-                run.Fleet.Ships.RemoveAt(idx);
-        }
-
-        // Apply research upgrades and update purchase counts.
-        foreach (var upgradeId in delta.UpgradesPurchased)
-        {
-            ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId)?.Apply(run);
-            run.UpgradePurchases[upgradeId] = run.UpgradePurchases.GetValueOrDefault(upgradeId) + 1;
-        }
-
-        run.Salvage = delta.SalvageFinal;
-        run.Tech = delta.TechFinal;
-        if (delta.HangarCapFinal > 0)
-            run.HangarCapacity = delta.HangarCapFinal;
-        run.TierRerolls = delta.TierRerollsFinal;
-        run.ResearchRerolls = delta.ResearchRerollsFinal;
-
+        run.ApplyDockSessionDelta(sessionResult.Delta, _offers!);
         await run.Save();
         GetTree().ChangeSceneToFile("res://scenes/Battle.tscn");
     }

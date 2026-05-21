@@ -1,6 +1,54 @@
 // Re-export shared ship catalog so session.rs can continue to use `crate::catalog::*`.
 pub use catalog::{blueprints, Blueprint};
 
+use serde::Serialize;
+
+// ── Research upgrade effects ──────────────────────────────────────────────────
+
+/// Structured effect carried by a ResearchItemOffer; interpreted by the client
+/// instead of hard-coded C# lambdas (single source of truth).
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum UpgradeEffect {
+    HangarCap {
+        delta: i32,
+    },
+    /// Adds delta to both current Hp and MaxHp.
+    MothershipHp {
+        delta: f64,
+    },
+    MothershipWeaponDamage {
+        delta: f64,
+    },
+    MothershipWeaponRange {
+        delta: f64,
+    },
+    /// Adds delta to both current Hp and MaxHp for every fleet ship.
+    FleetHp {
+        delta: f64,
+    },
+    FleetSpeed {
+        delta: f64,
+    },
+    FleetWeaponDamage {
+        delta: f64,
+    },
+    FleetWeaponRange {
+        delta: f64,
+    },
+    FleetWeaponCooldown {
+        delta: i32,
+        min: i32,
+    },
+    FleetArmor {
+        delta: f64,
+        max: f64,
+    },
+    Salvage {
+        delta: i32,
+    },
+}
+
 // ── Research catalog ──────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -18,8 +66,7 @@ pub struct ResearchItem {
     pub tech_cost: i32,
     pub max_purchases: i32,
     pub track: ResearchTrack,
-    /// Applied to session hangar_cap immediately on purchase (0 = no effect).
-    pub hangar_cap_delta: i32,
+    pub effects: &'static [UpgradeEffect],
 }
 
 pub const RESEARCH_ITEMS: &[ResearchItem] = &[
@@ -31,7 +78,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 1,
         max_purchases: 5,
         track: ResearchTrack::MothershipUpgrades,
-        hangar_cap_delta: 4,
+        effects: &[UpgradeEffect::HangarCap { delta: 4 }],
     },
     ResearchItem {
         id: "expanded_hangar",
@@ -40,7 +87,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 3,
         track: ResearchTrack::MothershipUpgrades,
-        hangar_cap_delta: 8,
+        effects: &[UpgradeEffect::HangarCap { delta: 8 }],
     },
     ResearchItem {
         id: "reinforced_hull",
@@ -49,7 +96,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 3,
         track: ResearchTrack::MothershipUpgrades,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::MothershipHp { delta: 100.0 }],
     },
     ResearchItem {
         id: "weapons_overcharge",
@@ -58,7 +105,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 3,
         track: ResearchTrack::MothershipUpgrades,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::MothershipWeaponDamage { delta: 5.0 }],
     },
     ResearchItem {
         id: "mothership_range_boost",
@@ -67,7 +114,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 2,
         track: ResearchTrack::MothershipUpgrades,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::MothershipWeaponRange { delta: 40.0 }],
     },
     // ── Doctrines ─────────────────────────────────────────────────────────────
     ResearchItem {
@@ -77,7 +124,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 3,
         track: ResearchTrack::Doctrines,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::FleetHp { delta: 20.0 }],
     },
     ResearchItem {
         id: "advanced_propulsion",
@@ -86,7 +133,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 2,
         track: ResearchTrack::Doctrines,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::FleetSpeed { delta: 1.0 }],
     },
     ResearchItem {
         id: "targeting_array",
@@ -95,7 +142,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 2,
         max_purchases: 3,
         track: ResearchTrack::Doctrines,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::FleetWeaponRange { delta: 20.0 }],
     },
     ResearchItem {
         id: "rapid_fire_capacitors",
@@ -104,7 +151,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 3,
         max_purchases: 2,
         track: ResearchTrack::Doctrines,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::FleetWeaponCooldown { delta: -4, min: 5 }],
     },
     // ── Role Equipment ────────────────────────────────────────────────────────
     ResearchItem {
@@ -114,7 +161,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 1,
         max_purchases: 3,
         track: ResearchTrack::RoleEquipment,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::Salvage { delta: 30 }],
     },
     ResearchItem {
         id: "fleet_damage_boost",
@@ -123,7 +170,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 3,
         max_purchases: 2,
         track: ResearchTrack::RoleEquipment,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::FleetWeaponDamage { delta: 5.0 }],
     },
     ResearchItem {
         id: "fleet_armor",
@@ -132,7 +179,7 @@ pub const RESEARCH_ITEMS: &[ResearchItem] = &[
         tech_cost: 3,
         max_purchases: 1,
         track: ResearchTrack::RoleEquipment,
-        hangar_cap_delta: 0,
+        effects: &[UpgradeEffect::FleetArmor { delta: 0.10, max: 0.9 }],
     },
 ];
 

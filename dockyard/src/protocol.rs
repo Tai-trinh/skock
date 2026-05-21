@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use types::ShipDef;
 
+use crate::catalog::UpgradeEffect;
+
 // ── Inbound ───────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -122,6 +124,7 @@ pub struct ResearchItemOffer {
     pub tech_cost: i32,
     pub max_purchases: i32,
     pub purchased: i32,
+    pub effects: &'static [UpgradeEffect],
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -142,5 +145,5 @@ pub struct SessionDelta {
     pub research_rerolls_final: [u32; 4],
     pub ships_commissioned: Vec<&'static str>,
     pub ships_salvaged: Vec<usize>,
-    pub upgrades_purchased: Vec<String>,
+    pub upgrades_purchased: Vec<ResearchItemOffer>,
 }

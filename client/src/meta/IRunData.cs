@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Skock.Meta;
 
-// The mutable run state consumed by BattleOutcomeResolver and ResearchUpgrade.Apply.
+// The mutable run state consumed by BattleOutcomeResolver and ResearchCatalog.ApplyEffect.
 // RunState implements this; test code uses hand-rolled fakes.
 public interface IRunData
 {

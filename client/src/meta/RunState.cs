@@ -199,29 +199,38 @@ public partial class RunState : Node, IRunData
 
     // Applies a completed dockyard session delta to run state.
     // Called by DockUi after ShoppingDoneAsync succeeds.
-    public void ApplyDockSessionDelta(DockDelta delta)
+    public void ApplyDockSessionDelta(DockDelta delta, DockOffersResult offers)
     {
-        // Add commissioned ships (binary returns full ShipDef via DockUi's cached offers).
-        // Commissioned ships are handled by DockUi which has the ShipDef from the offer cache.
+        // Add commissioned ships: blueprint IDs from delta, full ShipDef from offer cache.
+        foreach (var blueprintId in delta.ShipsCommissioned)
+        {
+            var ship = offers
+                .ShipTiers.SelectMany(t => t.Slots)
+                .FirstOrDefault(s => s.BlueprintId == blueprintId);
+            if (ship is not null)
+                Fleet.Ships.Add(ship.ShipDef);
+        }
 
-        // Remove salvaged ships: apply in descending index order so earlier removals
+        // Remove salvaged ships in descending index order so earlier removals
         // do not shift the indices of later ones.
-        foreach (var idx in delta.ShipsSalvaged)
+        foreach (var idx in delta.ShipsSalvaged.OrderByDescending(i => i))
         {
             if (idx < Fleet.Ships.Count)
                 Fleet.Ships.RemoveAt(idx);
         }
 
         // Apply purchased upgrades.
-        foreach (var upgradeId in delta.UpgradesPurchased)
+        foreach (var offer in delta.UpgradesPurchased)
         {
-            ResearchCatalog.All.FirstOrDefault(u => u.Id == upgradeId)?.Apply(this);
-            var prev = UpgradePurchases.GetValueOrDefault(upgradeId);
-            UpgradePurchases[upgradeId] = prev + 1;
+            foreach (var effect in offer.Effects)
+                ResearchCatalog.ApplyEffect(this, effect);
+            var prev = UpgradePurchases.GetValueOrDefault(offer.UpgradeId);
+            UpgradePurchases[offer.UpgradeId] = prev + 1;
         }
 
         Salvage = delta.SalvageFinal;
         Tech = delta.TechFinal;
+        HangarCapacity = delta.HangarCapFinal;
         TierRerolls = delta.TierRerollsFinal;
         ResearchRerolls = delta.ResearchRerollsFinal;
     }

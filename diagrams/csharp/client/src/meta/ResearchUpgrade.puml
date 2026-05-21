@@ -1,10 +1,6 @@
 @startuml
-class ResearchUpgrade <<sealed>> {
-    + <<required>> Id : string <<get>> <<init>>
-    + <<required>> Apply : Action<IRunData> <<get>> <<init>>
-}
 class ResearchCatalog <<static>> {
-    + {static} <<readonly>> All : IReadOnlyList<ResearchUpgrade>
     + {static} LabelFor(id:string) : string
+    + {static} ApplyEffect(run:IRunData, effect:UpgradeEffect) : void
 }
 @enduml

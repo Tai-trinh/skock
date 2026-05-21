@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -135,6 +136,9 @@ public sealed class ResearchItemOffer
 
     [JsonPropertyName("purchased")]
     public int Purchased { get; init; }
+
+    [JsonPropertyName("effects")]
+    public List<UpgradeEffect> Effects { get; init; } = [];
 }
 
 // ── Resource state ────────────────────────────────────────────────────────────
@@ -269,5 +273,93 @@ public sealed class DockDelta
     public List<int> ShipsSalvaged { get; init; } = [];
 
     [JsonPropertyName("upgrades_purchased")]
-    public List<string> UpgradesPurchased { get; init; } = [];
+    public List<ResearchItemOffer> UpgradesPurchased { get; init; } = [];
+}
+
+// ── Upgrade effects ───────────────────────────────────────────────────────────
+
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(HangarCapEffect), "hangar_cap")]
+[JsonDerivedType(typeof(MothershipHpEffect), "mothership_hp")]
+[JsonDerivedType(typeof(MothershipWeaponDamageEffect), "mothership_weapon_damage")]
+[JsonDerivedType(typeof(MothershipWeaponRangeEffect), "mothership_weapon_range")]
+[JsonDerivedType(typeof(FleetHpEffect), "fleet_hp")]
+[JsonDerivedType(typeof(FleetSpeedEffect), "fleet_speed")]
+[JsonDerivedType(typeof(FleetWeaponDamageEffect), "fleet_weapon_damage")]
+[JsonDerivedType(typeof(FleetWeaponRangeEffect), "fleet_weapon_range")]
+[JsonDerivedType(typeof(FleetWeaponCooldownEffect), "fleet_weapon_cooldown")]
+[JsonDerivedType(typeof(FleetArmorEffect), "fleet_armor")]
+[JsonDerivedType(typeof(SalvageEffect), "salvage")]
+public abstract class UpgradeEffect { }
+
+public sealed class HangarCapEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public int Delta { get; init; }
+}
+
+public sealed class MothershipHpEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class MothershipWeaponDamageEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class MothershipWeaponRangeEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class FleetHpEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class FleetSpeedEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class FleetWeaponDamageEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class FleetWeaponRangeEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+}
+
+public sealed class FleetWeaponCooldownEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public int Delta { get; init; }
+
+    [JsonPropertyName("min")]
+    public int Min { get; init; }
+}
+
+public sealed class FleetArmorEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public double Delta { get; init; }
+
+    [JsonPropertyName("max")]
+    public double Max { get; init; }
+}
+
+public sealed class SalvageEffect : UpgradeEffect
+{
+    [JsonPropertyName("delta")]
+    public int Delta { get; init; }
 }

@@ -4,8 +4,8 @@ use rand_core::{RngCore, SeedableRng};
 use rand_xoshiro::Xoshiro256Plus;
 
 use crate::catalog::{
-    self, Blueprint, ResearchItem, ResearchTrack, ResearchTrackDef, TierDef, RESEARCH_ITEMS,
-    RESEARCH_TRACKS, TIERS,
+    self, Blueprint, ResearchItem, ResearchTrack, ResearchTrackDef, TierDef, UpgradeEffect,
+    RESEARCH_ITEMS, RESEARCH_TRACKS, TIERS,
 };
 use crate::protocol::{
     GetOffersMsg, OutMessage, ResearchItemOffer, ResearchTrackOffer, ResourceState, SessionDelta,
@@ -39,7 +39,7 @@ pub struct Session {
     // delta accumulators
     ships_commissioned: Vec<CommissionRecord>,
     ships_salvaged_original: Vec<usize>,
-    upgrades_purchased: Vec<String>,
+    upgrades_purchased: Vec<ResearchItemOffer>,
 }
 
 struct CommissionRecord {
@@ -217,9 +217,17 @@ impl Session {
         }
 
         self.tech -= item.tech_cost;
-        self.hangar_cap += item.hangar_cap_delta;
-        *self.upgrade_purchases.entry(upgrade_id.to_owned()).or_insert(0) += 1;
-        self.upgrades_purchased.push(upgrade_id.to_owned());
+        for effect in item.effects {
+            if let UpgradeEffect::HangarCap { delta } = effect {
+                self.hangar_cap += delta;
+            }
+        }
+        let new_count = {
+            let e = self.upgrade_purchases.entry(upgrade_id.to_owned()).or_insert(0);
+            *e += 1;
+            *e
+        };
+        self.upgrades_purchased.push(research_item_offer(item, new_count));
 
         // Refresh the research track so purchased count is up to date.
         self.refresh_research_track_for(item.track);
@@ -402,6 +410,7 @@ fn research_item_offer(item: &'static ResearchItem, purchased: i32) -> ResearchI
         tech_cost: item.tech_cost,
         max_purchases: item.max_purchases,
         purchased,
+        effects: item.effects,
     }
 }
 
@@ -511,8 +520,8 @@ mod tests {
                     blueprint_id: Some(bp_id.to_string()),
                 });
             }
-            for upgrade_id in &delta.upgrades_purchased {
-                *self.upgrade_purchases.entry(upgrade_id.clone()).or_insert(0) += 1;
+            for offer in &delta.upgrades_purchased {
+                *self.upgrade_purchases.entry(offer.upgrade_id.to_string()).or_insert(0) += 1;
             }
             self.salvage = delta.salvage_final;
             self.tech = delta.tech_final;
@@ -724,6 +733,9 @@ mod tests {
 
         let delta = s.shopping_done().delta.unwrap();
         assert_eq!(delta.hangar_cap_final, cap_before + 8);
-        assert_eq!(delta.upgrades_purchased.iter().filter(|u| *u == "hangar_expansion").count(), 2);
+        assert_eq!(
+            delta.upgrades_purchased.iter().filter(|u| u.upgrade_id == "hangar_expansion").count(),
+            2
+        );
     }
 }

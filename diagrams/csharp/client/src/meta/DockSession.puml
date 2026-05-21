@@ -48,6 +48,7 @@ class ResearchItemOffer <<sealed>> {
     + TechCost : int <<get>> <<init>>
     + MaxPurchases : int <<get>> <<init>>
     + Purchased : int <<get>> <<init>>
+    + Effects : List<UpgradeEffect> <<get>> <<init>>
 }
 class DockResourceState <<sealed>> {
     + Salvage : int <<get>> <<init>>
@@ -98,6 +99,54 @@ class DockDelta <<sealed>> {
     + ResearchRerollsFinal : int[] <<get>> <<init>>
     + ShipsCommissioned : List<string> <<get>> <<init>>
     + ShipsSalvaged : List<int> <<get>> <<init>>
-    + UpgradesPurchased : List<string> <<get>> <<init>>
+    + UpgradesPurchased : List<ResearchItemOffer> <<get>> <<init>>
 }
+abstract class UpgradeEffect {
+}
+class HangarCapEffect <<sealed>> {
+    + Delta : int <<get>> <<init>>
+}
+class MothershipHpEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class MothershipWeaponDamageEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class MothershipWeaponRangeEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class FleetHpEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class FleetSpeedEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class FleetWeaponDamageEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class FleetWeaponRangeEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+}
+class FleetWeaponCooldownEffect <<sealed>> {
+    + Delta : int <<get>> <<init>>
+    + Min : int <<get>> <<init>>
+}
+class FleetArmorEffect <<sealed>> {
+    + Delta : double <<get>> <<init>>
+    + Max : double <<get>> <<init>>
+}
+class SalvageEffect <<sealed>> {
+    + Delta : int <<get>> <<init>>
+}
+UpgradeEffect <|-- HangarCapEffect
+UpgradeEffect <|-- MothershipHpEffect
+UpgradeEffect <|-- MothershipWeaponDamageEffect
+UpgradeEffect <|-- MothershipWeaponRangeEffect
+UpgradeEffect <|-- FleetHpEffect
+UpgradeEffect <|-- FleetSpeedEffect
+UpgradeEffect <|-- FleetWeaponDamageEffect
+UpgradeEffect <|-- FleetWeaponRangeEffect
+UpgradeEffect <|-- FleetWeaponCooldownEffect
+UpgradeEffect <|-- FleetArmorEffect
+UpgradeEffect <|-- SalvageEffect
 @enduml

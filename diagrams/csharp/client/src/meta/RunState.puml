@@ -49,7 +49,7 @@ class RunState <<partial>> {
     + <<async>> SaveAndQuitToMenu() : Task
     + OpenDockyardSession() : IDockyard
     + BuildDockSessionInput() : DockSessionInput
-    + ApplyDockSessionDelta(delta:DockDelta) : void
+    + ApplyDockSessionDelta(delta:DockDelta, offers:DockOffersResult) : void
     + GetBattleSeed() : Task<ulong>
     + BeginBattle(inputs:BattleInputs, opponentFleet:FleetJsonData?) : void
     + <<async>> RecordBattleResult(result:BattleResult) : Task
