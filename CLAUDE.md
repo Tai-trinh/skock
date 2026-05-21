@@ -24,3 +24,4 @@ See [Workflows](docs/WORKFLOWS.md) for full command reference and before-commit 
 - [Conventions](docs/CONVENTIONS.md) — sim determinism rules, writing and working conventions
 - [Standards](docs/STANDARDS.md) — code style, naming, functions, comments, testing patterns
 - [Workflows](docs/WORKFLOWS.md) — full build/test commands, CI/CD, before-commit checklist
+- [GDD](docs/GDD.md) — game design reference (lore, art direction, mechanics intent); read on demand, not by default
