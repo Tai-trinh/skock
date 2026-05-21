@@ -21,7 +21,8 @@ Read the target file, plan a split, grill through every placement with the user,
 | `docs/WORKFLOWS.md` | Build, test, deploy, common commands |
 | `docs/API-CONTRACTS.md` | Endpoint shapes, wire formats, external interfaces |
 | `docs/DATA-MODEL.md` | Schema, types, entity relationships |
-| `docs/CURRENT-TASK.md` | What's in flight, recent decisions, open questions (volatile — never mix with stable content) |
+| `docs/CURRENT-TASK.md` | What's actively in flight, recent decisions (volatile — never mix with stable content) |
+| `scratch/TODO.md` | Deferred work, open questions, "revisit after X" items from context docs (created lazily) |
 
 `docs/adr/` is managed by `/grill-with-docs`. Do not touch it. If a block genuinely doesn't fit any category above, ask before inventing a new filename.
 
