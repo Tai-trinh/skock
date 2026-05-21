@@ -45,17 +45,8 @@ public static class BattleOutcomeResolver
         if (!playerWon)
             run.LossCount++;
 
-        // Salvage: pity base every battle scaling with JumpNumber, win bonus on top.
-        // Losses stay at the same jump so JumpNumber reflects difficulty of the retry.
-        // TODO (playtesting): tune multipliers.
-        run.Salvage += run.JumpNumber * 10;
-        if (playerWon)
-            run.Salvage += run.JumpNumber * 15;
-
-        // Tech on victory scales with JumpNumber: 1 (jumps 1–3), 2 (4–6), 3 (7–8).
-        // TODO (playtesting): tune Tech scaling.
-        if (playerWon)
-            run.Tech += (run.JumpNumber + 2) / 3;
+        run.Salvage += SalvagePayout(run.JumpNumber, playerWon);
+        run.Tech += TechPayout(run.JumpNumber, playerWon);
 
         ApplySurvivorHp(run, result.FleetASurvivors);
         HealAllShips(run);
@@ -90,6 +81,15 @@ public static class BattleOutcomeResolver
 
         return PostBattleTransition.NextJump;
     }
+
+    // TODO (playtesting): tune salvage multipliers.
+    public static int SalvagePayout(int jumpNumber, bool playerWon) =>
+        jumpNumber * 10 + (playerWon ? jumpNumber * 15 : 0);
+
+    // TODO (playtesting): tune Tech scaling.
+    // Tier breakpoints: jumps 1–3 → 1, 4–6 → 2, 7–8 → 3.
+    public static int TechPayout(int jumpNumber, bool playerWon) =>
+        playerWon ? (jumpNumber + 2) / 3 : 0;
 
     private static void ApplySurvivorHp(IRunData run, IReadOnlyList<ShipSurvivor> survivors)
     {

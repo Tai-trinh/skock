@@ -244,6 +244,31 @@ public sealed class BattleOutcomeResolverTests
         Assert.Equal(500.0, run.Fleet.Mothership.Hp);
     }
 
+    // ── Pure payout formulas ──────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(1, true, 25)]  // 1*10 + 1*15
+    [InlineData(3, true, 75)]  // 3*10 + 3*15
+    [InlineData(8, true, 200)] // 8*10 + 8*15
+    [InlineData(1, false, 10)] // base only
+    [InlineData(3, false, 30)]
+    [InlineData(8, false, 80)]
+    public void SalvagePayout_MatchesFormula(int jump, bool won, int expected) =>
+        Assert.Equal(expected, BattleOutcomeResolver.SalvagePayout(jump, won));
+
+    [Theory]
+    [InlineData(1, true, 1)] // jumps 1–3 → 1 Tech
+    [InlineData(2, true, 1)]
+    [InlineData(3, true, 1)]
+    [InlineData(4, true, 2)] // jumps 4–6 → 2 Tech
+    [InlineData(5, true, 2)]
+    [InlineData(6, true, 2)]
+    [InlineData(7, true, 3)] // jumps 7–8 → 3 Tech
+    [InlineData(8, true, 3)]
+    [InlineData(4, false, 0)] // no Tech on loss
+    public void TechPayout_MatchesFormula(int jump, bool won, int expected) =>
+        Assert.Equal(expected, BattleOutcomeResolver.TechPayout(jump, won));
+
     // ── Kill counting ─────────────────────────────────────────────────────────
 
     [Fact]
