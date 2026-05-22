@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Godot;
 using Skock.Sim;
@@ -73,6 +74,10 @@ public partial class RunState : Node, IRunData
 
     public IAdmiralSelection AdmiralSelection { get; private set; } = null!;
 
+    // ── Encounter source ──────────────────────────────────────────────────────
+
+    private IEncounterSource _encounterSource = null!;
+
     // ── Statistics ────────────────────────────────────────────────────────────
 
     public IStatsStore Stats { get; private set; } = null!;
@@ -95,6 +100,7 @@ public partial class RunState : Node, IRunData
         SimBinaryPath = Path.Combine(binDir, "skock-sim.exe");
         DockBinaryPath = Path.Combine(binDir, "skock-dockyard.exe");
         AdmiralBinaryPath = Path.Combine(binDir, "skock-admiral.exe");
+        var encounterBinaryPath = Path.Combine(binDir, "skock-encounter.exe");
         PlayerFleetPath = Path.GetFullPath(Path.Combine(ProjectDir, "..", "player_fleet.json"));
         FallbackFleetPath = Path.GetFullPath(
             Path.Combine(ProjectDir, "..", "sim", "test_data", "fleet_a.json")
@@ -102,6 +108,8 @@ public partial class RunState : Node, IRunData
 
         // Swap LocalAdmiralAdapter for ServerAdmiralAdapter here when online mode is implemented.
         AdmiralSelection = new LocalAdmiralAdapter(AdmiralBinaryPath);
+        // Swap LocalEncounterAdapter for ServerEncounterAdapter here when online mode is implemented.
+        _encounterSource = new LocalEncounterAdapter(encounterBinaryPath);
         // Swap LocalStatsStore for ServerStatsStore here when online mode is implemented.
         Stats = new LocalStatsStore();
         // Swap LocalRunStore for ServerRunStore here when online mode is implemented.
@@ -155,9 +163,6 @@ public partial class RunState : Node, IRunData
         UpgradePurchases = new();
         Stats.Reset();
     }
-
-    public string GetOpponentFleetPath() =>
-        Path.GetFullPath(Path.Combine(ProjectDir, "data", "opponents", $"jump_{JumpNumber}.json"));
 
     public async Task SaveAndQuitToMenu()
     {
@@ -239,11 +244,39 @@ public partial class RunState : Node, IRunData
 
     public Task<ulong> GetBattleSeed() => _store.GetBattleSeed();
 
-    public void BeginBattle(BattleInputs inputs, FleetJsonData? opponentFleet)
+    // Fetches the encounter fleet for the current jump, sets CurrentOpponentFleet,
+    // and returns the raw fleet JSON string for passing to the sim binary.
+    // Returns empty string on failure (CurrentOpponentFleet will be null).
+    public async Task<string> FetchEncounterJsonAsync()
+    {
+        // wins = jumps cleared so far (JumpNumber advances only on a win, starts at 1)
+        var wins = JumpNumber - 1;
+        try
+        {
+            var fleetJson = await _encounterSource.GetFleetJsonAsync(
+                PlayerId,
+                JumpNumber,
+                LossCount,
+                wins
+            );
+            var opponentFleet = JsonSerializer.Deserialize<FleetJsonData>(fleetJson);
+            if (opponentFleet is not null)
+                opponentFleet.Mothership.IsMothership = true;
+            CurrentOpponentFleet = opponentFleet;
+            return fleetJson;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"[encounter] Failed to fetch fleet: {e.Message}");
+            CurrentOpponentFleet = null;
+            return "";
+        }
+    }
+
+    public void BeginBattle(BattleInputs inputs)
     {
         IsBattleActive = true;
         _currentBattleInputs = inputs;
-        CurrentOpponentFleet = opponentFleet;
     }
 
     // ── Battle result + scene transitions ─────────────────────────────────────

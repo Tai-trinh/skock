@@ -26,8 +26,8 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Build sim (release)
-        run: cargo build --release -p sim
+      - name: Build Rust binaries (release)
+        run: cargo build --release
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -50,8 +50,10 @@ jobs:
         run: |
           mkdir -p dist/bin
           cp -r client/build/. dist/
-          cp target/release/skock-sim.exe dist/bin/
-          cp -r client/data dist/data
+          cp target/release/skock-sim.exe      dist/bin/
+          cp target/release/skock-dockyard.exe dist/bin/
+          cp target/release/skock-admiral.exe  dist/bin/
+          cp target/release/skock-encounter.exe dist/bin/
         shell: bash
 
       - name: Zip

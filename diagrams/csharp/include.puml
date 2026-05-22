@@ -11,6 +11,7 @@
 !include .\\client\src\meta\FleetData.puml
 !include .\\client\src\meta\IAdmiralSelection.puml
 !include .\\client\src\meta\IDockyard.puml
+!include .\\client\src\meta\IEncounterSource.puml
 !include .\\client\src\meta\IRunData.puml
 !include .\\client\src\meta\IRunStore.puml
 !include .\\client\src\meta\IStatsStore.puml
@@ -18,6 +19,7 @@
 !include .\\client\src\meta\LifetimeStats.puml
 !include .\\client\src\meta\LocalAdmiralAdapter.puml
 !include .\\client\src\meta\LocalDockyardAdapter.puml
+!include .\\client\src\meta\LocalEncounterAdapter.puml
 !include .\\client\src\meta\LocalRunStore.puml
 !include .\\client\src\meta\LocalStatsStore.puml
 !include .\\client\src\meta\MainMenuUi.puml

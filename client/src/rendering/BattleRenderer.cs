@@ -96,43 +96,49 @@ public partial class BattleRenderer : Node2D
     private async Task InitBattleAsync()
     {
         var run = RunState.Instance;
-        var fleetA = File.Exists(run.PlayerFleetPath) ? run.PlayerFleetPath : run.FallbackFleetPath;
-        var opponentPath = run.GetOpponentFleetPath();
-        var fleetBPath = File.Exists(opponentPath)
-            ? opponentPath
-            : Path.GetFullPath(
-                Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json")
-            );
-
-        FleetJsonData? opponentFleet = null;
-        try
-        {
-            var fleetBJson = File.ReadAllText(fleetBPath);
-            opponentFleet = JsonSerializer.Deserialize<FleetJsonData>(fleetBJson, JsonOptions);
-            if (opponentFleet is not null)
-                opponentFleet.Mothership.IsMothership = true;
-        }
-        catch
-        { /* fleet inspector shows empty if file unreadable */
-        }
+        var fleetAPath = File.Exists(run.PlayerFleetPath)
+            ? run.PlayerFleetPath
+            : run.FallbackFleetPath;
+        var fallbackFleetBPath = Path.GetFullPath(
+            Path.Combine(run.ProjectDir, "..", "sim", "test_data", "fleet_b.json")
+        );
 
         var seed = await run.GetBattleSeed();
+        var fleetAJson = File.ReadAllText(fleetAPath);
+
+        // Fetch the encounter fleet; sets CurrentOpponentFleet on RunState.
+        var fleetBJson = await run.FetchEncounterJsonAsync();
+
         run.BeginBattle(
             new BattleInputs
             {
                 Seed = seed,
-                FleetAJson = File.ReadAllText(fleetA),
-                FleetBJson = File.Exists(fleetBPath) ? File.ReadAllText(fleetBPath) : "",
-            },
-            opponentFleet
+                FleetAJson = fleetAJson,
+                FleetBJson = fleetBJson,
+            }
         );
+
+        // The sim binary takes file paths. Write fleet B JSON to a temp file so the
+        // binary can read it; fall back to the test fleet if the encounter fetch failed.
+        string fleetBPath;
+        bool tempFile = false;
+        if (!string.IsNullOrEmpty(fleetBJson))
+        {
+            fleetBPath = Path.GetTempFileName();
+            tempFile = true;
+            File.WriteAllText(fleetBPath, fleetBJson);
+        }
+        else
+        {
+            fleetBPath = fallbackFleetBPath;
+        }
 
         var simRunner = SimRunner ?? new LocalSimRunner(run.SimBinaryPath);
         _ = Task.Run(() =>
         {
             try
             {
-                var (log, result) = simRunner.Run(seed, fleetA, fleetBPath);
+                var (log, result) = simRunner.Run(seed, fleetAPath, fleetBPath);
                 Callable.From(() => Initialize(log, result)).CallDeferred();
             }
             catch (Exception e)
@@ -141,6 +147,15 @@ public partial class BattleRenderer : Node2D
                 Callable
                     .From(() => _debugLabel.Text = $"Error: {e.GetType().Name} (see Output panel)")
                     .CallDeferred();
+            }
+            finally
+            {
+                if (tempFile)
+                    try
+                    {
+                        File.Delete(fleetBPath);
+                    }
+                    catch { }
             }
         });
     }

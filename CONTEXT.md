@@ -43,7 +43,7 @@ The retry opponent is drawn fresh from the same jump's pool.
 
 ### Battle phase
 
-3. Encounter a rival colony fleet contesting the same system. Rival fleets are hand-authored fleet JSON files shipped with the game, organized by difficulty tier and matched to the current jump number and win/loss ratio. When the server exists, real player fleets replace the hand-authored ones — the fleet JSON format is the bridge.
+3. **Encounter** a rival colony fleet contesting the same system. An Encounter is the opponent fleet assigned to the current jump. Locally, the `skock-encounter` binary serves it from embedded catalog data keyed on `JumpNumber`. When the server exists, real player fleets matched by win/loss ratio replace the hand-authored ones — the fleet JSON format is the bridge.
 4. Your fleet warps in from the left; the opponent warps in from the right.
 5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
 6. Earn resources based on outcome:
@@ -115,7 +115,7 @@ Ships are identified by two fields plus an optional weight designation. Display 
 **Hitscan accuracy scaling:** hitscan hardpoints support distance-dependent miss chance. `miss_chance_far` is the miss probability at `range`; `miss_chance_near` is the floor miss probability at or below `accurate_range`. Miss chance interpolates linearly between the two. If `miss_chance_far == miss_chance_near`, miss chance is fixed regardless of distance.
 
 **Boid forces:** seven configurable per-ship weights drive movement each tick:
-- `separation` — push away from crowding friendly neighbors; hull-radius-aware (`own_hit_radius + other_hit_radius + margin`). Same weight also drives enemy separation within the tighter `boid_enemy_separation_radius` — ships swerve around enemy hulls rather than stalling.
+- `separation` — push away from crowding neighbors (friend and foe); hull-radius-aware (`own_hit_radius + other_hit_radius + margin`). Applied to all ships within `boid_neighbor_radius`, no cap.
 - `cohesion` — move toward center of friendly neighbors.
 - `alignment` — match the heading direction of friendly neighbors (normalized — speed-independent).
 - `seek_nearest` — force toward the nearest enemy.
@@ -123,7 +123,7 @@ Ships are identified by two fields plus an optional weight designation. Display 
 - `seek_mothership` — force toward the enemy Mothership specifically.
 - `maintain_range` — hold preferred engagement distance (derived from `CombatStance`).
 
-**Movement physics** (applied in order each tick): acceleration → speed clamp → turn rate cap (max ~0.06 rad/tick, prevents 180° reversals) → velocity damping (×0.90, smooth deceleration) → minimum speed floor (25% of max_speed for ships already moving, prevents stop-start stalling).
+**Movement physics** (applied in order each tick): acceleration → speed clamp → turn rate cap (per-ship `turn_rate` in rad/tick; varies by hull class, e.g. corvettes ~0.10–0.14, motherships ~0.015–0.02) → velocity damping (×0.90, smooth deceleration) → minimum speed floor (25% of max_speed for ships already moving, prevents stop-start stalling).
 
 **Firing range:** weapon `range` field gates the fire condition — ship only fires when target distance ≤ `range`. The `maintain_range` boid force positions the ship at its preferred engagement distance (derived from `CombatStance` + hardpoints at spawn; not a fleet JSON field). Both work together: boids handle positioning, range check handles firing permission.
 

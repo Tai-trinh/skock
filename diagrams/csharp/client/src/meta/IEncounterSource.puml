@@ -1,0 +1,5 @@
+@startuml
+interface IEncounterSource {
+    GetFleetJsonAsync(playerId:string, runNumber:int, losses:int, wins:int) : Task<string>
+}
+@enduml

@@ -14,7 +14,7 @@ public sealed class BattleLogParserTests
     // one LogHeader record followed by zero or more TickRecord records.
     private static byte[] BuildLog(params TickRecord[] ticks)
     {
-        var header = new LogHeader { SchemaVersion = 2 };
+        var header = new LogHeader { SchemaVersion = 3 };
         using var ms = new System.IO.MemoryStream();
         ms.Write(MessagePackSerializer.Serialize(header, Options));
         foreach (var tick in ticks)
@@ -27,7 +27,7 @@ public sealed class BattleLogParserTests
     {
         var log = BattleLogParser.Parse(BuildLog());
         Assert.Empty(log.Ticks);
-        Assert.Equal(2u, log.Header.SchemaVersion);
+        Assert.Equal(3u, log.Header.SchemaVersion);
     }
 
     [Fact]

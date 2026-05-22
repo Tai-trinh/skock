@@ -36,6 +36,7 @@ class RunState <<partial>> {
     - _currentBattleInputs : BattleInputs?
     + CurrentOpponentFleet : FleetJsonData? <<get>>
     + AdmiralSelection : IAdmiralSelection <<get>>
+    - _encounterSource : IEncounterSource
     + Stats : IStatsStore <<get>>
     - _store : IRunStore
     + <<override>> _Ready() : void
@@ -45,13 +46,13 @@ class RunState <<partial>> {
     - SettingsPath() : string
     + <<async>> StartRun(admiral:Admiral, runSeed:ulong?) : Task
     + <<async>> AbandonCurrentRun() : Task
-    + GetOpponentFleetPath() : string
     + <<async>> SaveAndQuitToMenu() : Task
     + OpenDockyardSession() : IDockyard
     + BuildDockSessionInput() : DockSessionInput
     + ApplyDockSessionDelta(delta:DockDelta, offers:DockOffersResult) : void
     + GetBattleSeed() : Task<ulong>
-    + BeginBattle(inputs:BattleInputs, opponentFleet:FleetJsonData?) : void
+    + <<async>> FetchEncounterJsonAsync() : Task<string>
+    + BeginBattle(inputs:BattleInputs) : void
     + <<async>> RecordBattleResult(result:BattleResult) : Task
     - ToSnapshot() : RunSnapshot
     - ApplySnapshot(snapshot:RunSnapshot) : void

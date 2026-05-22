@@ -1,0 +1,9 @@
+@startuml
+class LocalEncounterAdapter <<sealed>> {
+    - {static} <<readonly>> JsonOpts : JsonSerializerOptions
+    - <<readonly>> _binaryPath : string
+    + LocalEncounterAdapter(binaryPath:string)
+    + <<async>> GetFleetJsonAsync(playerId:string, runNumber:int, losses:int, wins:int) : Task<string>
+}
+IEncounterSource <|-- LocalEncounterAdapter
+@enduml
