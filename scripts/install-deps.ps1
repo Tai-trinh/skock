@@ -16,9 +16,8 @@ winget install Microsoft.DotNet.SDK.8
 # Godot 4 with .NET/C# support
 winget install GodotEngine.GodotEngine.Mono
 
-# For plantUml
-winget install Oracle.JavaRuntimeEnvironment
-winget install Graphviz.Graphviz
+# vector graphics design
+winget install Inkscape.Inkscape
 
 # Restore NuGet packages for the Godot C# project (MessagePack-CSharp etc.)
 Push-Location "$PSScriptRoot/client"

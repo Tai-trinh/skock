@@ -12,17 +12,8 @@ STAGED_CARGO_TOML=$(git diff --cached --name-only --diff-filter=ACM | grep 'Carg
 
 if [ -n "$STAGED_RS" ]; then
     $CARGO fmt
-    # shellcheck disable=SC2086
-    git add $STAGED_RS
-fi
-
-if [ -n "$STAGED_RS" ] || [ -n "$STAGED_CARGO_TOML" ]; then
-    bash "$(git rev-parse --show-toplevel)/scripts/gen-rust-diagram.sh"
 fi
 
 if [ -n "$STAGED_CS" ]; then
     $CSHARPIER format client/
-    # shellcheck disable=SC2086
-    git add $STAGED_CS
-    bash "$(git rev-parse --show-toplevel)/scripts/gen-csharp-diagram.sh"
 fi
