@@ -16,14 +16,16 @@ public sealed class LocalEncounterAdapterTests
         for (var i = 0; i < 4; i++)
             dir = Path.GetDirectoryName(dir)!;
 
-        var release = Path.Combine(dir, "target", "release", "skock-encounter.exe");
-        if (File.Exists(release))
-            return release;
-
-        var debug = Path.Combine(dir, "target", "debug", "skock-encounter.exe");
-        if (File.Exists(debug))
-            return debug;
-
+        // Check both .exe (Windows) and no-extension (Linux/macOS).
+        string[] names = ["skock-encounter.exe", "skock-encounter"];
+        string[] profiles = ["release", "debug"];
+        foreach (var profile in profiles)
+            foreach (var name in names)
+            {
+                var path = Path.Combine(dir, "target", profile, name);
+                if (File.Exists(path))
+                    return path;
+            }
         return null;
     }
 
