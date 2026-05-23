@@ -64,6 +64,11 @@ public partial class BattleRenderer : Node2D
 		_resultLabel = GetNode<Label>("DebugUI/ResultLabel");
 		_debugOverlay = GetNode<DebugOverlay>("DebugOverlay");
 
+		var bg = GetNode<ColorRect>("BackgroundLayer/Background");
+		var bgMat = new ShaderMaterial();
+		bgMat.Shader = GD.Load<Shader>("res://assets/shaders/space_background.gdshader");
+		bg.Material = bgMat;
+
 		// Create containers for projectiles, beams, effects (rendered below ships)
 		_beamsContainer = new Node2D();
 		_projectilesContainer = new Node2D();

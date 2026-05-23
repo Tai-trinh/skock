@@ -2,11 +2,13 @@
 
 [ext_resource type="Script" uid="uid://rqf1vj1m2p72" path="res://src/rendering/BattleRenderer.cs" id="1_battle"]
 [ext_resource type="Script" uid="uid://i7usw6djn544" path="res://src/ui/DebugOverlay.cs" id="2_debug"]
-
 [node name="Battle" type="Node2D" unique_id=1072672297]
 script = ExtResource("1_battle")
 
-[node name="Background" type="ColorRect" parent="." unique_id=2103948571]
+[node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=3001000001]
+layer = -10
+
+[node name="Background" type="ColorRect" parent="BackgroundLayer" unique_id=2103948571]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

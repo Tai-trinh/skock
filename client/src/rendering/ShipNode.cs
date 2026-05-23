@@ -22,7 +22,7 @@ public partial class ShipNode : Node2D
 	// ── Colors ────────────────────────────────────────────────────────────────
 
 	private static readonly Color FleetATrail = new(0.35f, 0.55f, 1f);
-	private static readonly Color FleetBTint  = new(1f, 0.2f, 0.2f);
+	private static readonly Color FleetBTint = new(1f, 0.2f, 0.2f);
 
 	// ── State ─────────────────────────────────────────────────────────────────
 
