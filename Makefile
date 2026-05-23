@@ -8,7 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-rust win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs install-comfyui install-comfyui-extras comfyui-models
+.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-rust win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs install-comfyui install-comfyui-extras comfyui-models it
 
 install-docker:
 	sudo apt-get install -y x11-xserver-utils
@@ -89,7 +89,7 @@ win-fmt:
 win-start-godot:
 	powershell.exe -ExecutionPolicy Bypass -File scripts/start-godot.ps1 -ProjectPath "$$(wslpath -w $$(pwd)/client/project.godot)"
 
-win-all: win-fmt win-build-rust win-build-godot win-test-rust win-test-cs
+it: win-fmt win-build-rust win-build-godot win-test-rust win-test-cs
 
 install-comfyui:
 	cmd.exe /c start "" powershell.exe -NoExit -ExecutionPolicy Bypass -File "$$(wslpath -w $$(pwd)/scripts/install-comfyui.ps1)"
