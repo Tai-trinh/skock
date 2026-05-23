@@ -19,9 +19,12 @@ public sealed class UserSettings
         SetBusVolume("Master", MasterVolume);
         SetBusVolume("Music", MusicVolume);
         SetBusVolume("SFX", SfxVolume);
-        DisplayServer.WindowSetMode(
-            Fullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed
-        );
+        if (!OS.HasFeature("editor"))
+            DisplayServer.WindowSetMode(
+                Fullscreen
+                    ? DisplayServer.WindowMode.Fullscreen
+                    : DisplayServer.WindowMode.Windowed
+            );
     }
 
     public void Save(string path)
