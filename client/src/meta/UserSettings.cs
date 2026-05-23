@@ -21,9 +21,7 @@ public sealed class UserSettings
         SetBusVolume("SFX", SfxVolume);
         if (!OS.HasFeature("editor"))
             DisplayServer.WindowSetMode(
-                Fullscreen
-                    ? DisplayServer.WindowMode.Fullscreen
-                    : DisplayServer.WindowMode.Windowed
+                Fullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed
             );
     }
 
