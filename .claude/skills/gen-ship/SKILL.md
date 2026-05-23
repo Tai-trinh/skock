@@ -52,5 +52,5 @@ Always add to `-Negative`: `"side view, angled view, perspective view, 3/4 view,
 
 1. Build the full prompt string from the table above + faction aesthetic + extra text.
 2. Set output to `client/assets/sprites/{hull}_{faction}.png`.
-3. Map args: `inspo` → `-StyleImage`, `shape` → `-ShapeImage` (both from `inspo/` folder).
-4. Delegate to `/gen-image`.
+3. Map args: `inspo` → `-StyleImage`, `shape` → `-ShapeImage` (both from `inspo/ships/` folder).
+4. **Invoke the `/gen-image` skill** — pass the prompt, negative, output path, and any image refs. Follow all steps in `/gen-image` including model listing and selection (Step 2), then the summary block (Step 3), then run.

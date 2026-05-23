@@ -11,7 +11,7 @@ description: >
 
 Thin wrapper around `scripts/gen_image.ps1`. Builds the PowerShell call, runs it, reports output.
 
-## Pre-flight check
+## Step 1 — Pre-flight check
 
 ComfyUI runs on Windows; Claude runs in WSL — check via powershell.exe:
 
@@ -21,13 +21,65 @@ powershell.exe -Command "try { Invoke-RestMethod http://localhost:8188/system_st
 
 If not running, tell the user to run `make comfyui` first.
 
-## Before running — print generation summary
+## Step 2 — Model selection (one question at a time)
 
-**Always print this block before invoking `gen_image.ps1`**, so the user can review what will run:
+**Unless the caller already specified all models, always do this step. Ask each question separately and wait for the answer before showing the next.**
+
+Run `make comfyui-models` first to get the live model lists.
+
+### Q1 — Base model type
+
+List checkpoints first, then diffusion models, in a single continuously-numbered table with a Type column:
+
+Ask:
+> **Step 1/N — Base model.** Checkpoints bundle model + CLIP + VAE (easiest). Diffusion models are UNET-only (needs separate VAE + text encoders).
+>
+> | # | Type | Name |
+> |---|---|---|
+> | 1 | Checkpoint | 90sAnime77_7790sAnimeII.safetensors |
+> | 2 | Checkpoint | sdXL_v10VAEFix.safetensors |
+> | 3 | Diffusion | flux1-dev-F16.gguf |
+> | 4 | Diffusion | NewBie-Image-Exp0.1-bf16.safetensors |
+
+Wait for answer. Record the picked entry's Type — this controls which follow-up questions appear.
+
+### Q2 — LoRA (always ask)
+
+Ask:
+> **Step 2/N — LoRA** (optional, type `0` to skip) — fine-tunes style on top of the base model:
+> | # | Name |
+> |---|---|
+> | 0 | none |
+> | 1 | ... |
+
+Wait for answer.
+
+### Q3 — VAE
+
+- If **checkpoint**: ask with only SDXL-relevant options + default
+- If **diffusion model**: ask with Flux-relevant options, note that ae.safetensors is required for Flux
+
+Ask:
+> **Step 3/N — VAE** — decodes latent image to pixels (wrong VAE = washed-out colours):
+> | # | Name |
+> |---|---|
+> | 0 | default (baked into checkpoint) |   ← omit this row if diffusion model
+> | 1 | sdxl_vae.safetensors — for SDXL checkpoints |   ← omit if diffusion model
+> | 2 | ae.safetensors — required for Flux |
+
+Wait for answer.
+
+If the caller already passed explicit model choices, skip this step and proceed directly to the summary.
+
+Text encoders always default to clip_l + t5xxl — do not ask.
+
+## Step 3 — Print generation summary
+
+**Print this block before invoking `gen_image.ps1`**:
 
 ```
 === gen-image ===
-Checkpoint : <model name, e.g. 90sAnime77_7790sAnimeII.safetensors or "auto-detect">
+Checkpoint : <model name, or "auto-detect">
 LoRA       : <lora name + strength, or "none">
 VAE        : <vae name, or "default (baked-in)">
 
@@ -60,7 +112,7 @@ powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w $(pwd)/scripts/gen_im
   [-ShapeImage "inspo/filename.ext"] \
   [-Negative "NEGATIVE_PROMPT"] \
   [-Size 512] \
-  [-Steps 100] \
+  [-Steps 35] \
   [-Cfg 7.0] \
   [-IpAdapterStrength 0.6] \
   [-ControlNetStrength 0.7] \
@@ -83,7 +135,7 @@ All paths are relative to repo root. `gen_image.ps1` converts them to Windows pa
 | `-Negative` | generic | What to avoid — bad quality, wrong angles, unwanted elements |
 | `-Output` | **required** | Save path, e.g. `client/assets/sprites/corvette_a.png` |
 | `-Size` | `512` | Output resolution in pixels (square) |
-| `-Steps` | `100` | Denoising iterations — more = sharper detail, slower generation |
+| `-Steps` | `35` | Denoising iterations — more = sharper detail, slower generation |
 | `-Cfg` | `7.0` | Classifier-free guidance — how strictly the prompt is followed (7 = balanced, 12 = very strict) |
 | `-Seed` | random | Random seed — fix to reproduce an exact result |
 | `-Model` | auto | Checkpoint filename from `models/checkpoints/` — auto-selects first available if omitted |

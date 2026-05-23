@@ -31,6 +31,7 @@ function Install-Node($repo, $dir) {
 
 Install-Node "https://github.com/cubiq/ComfyUI_IPAdapter_plus" "ComfyUI_IPAdapter_plus"
 Install-Node "https://github.com/Fannovel16/comfyui_controlnet_aux" "comfyui_controlnet_aux"
+Install-Node "https://github.com/city96/ComfyUI-GGUF" "ComfyUI-GGUF"
 
 # --- Models ---
 $ProgressPreference = 'Continue'
@@ -43,6 +44,47 @@ function Download-Model($url, $dest) {
     Write-Host "Downloading $(Split-Path $dest -Leaf)..."
     Import-Module BitsTransfer
     Start-BitsTransfer -Source $url -Destination $dest
+}
+
+function Download-Zip-Firefox($url, $destDir, $zipName) {
+    $destDir = [string]$destDir
+    $existing = Get-ChildItem $destDir -Filter "*.gguf" -ErrorAction SilentlyContinue
+    if ($existing) {
+        Write-Host "Already exists: $($existing[0].Name)"
+        return
+    }
+    $tempZip = Join-Path $env:TEMP $zipName
+    Download-Model-Firefox $url $tempZip
+    if (-not (Test-Path $tempZip)) { return }
+
+    # Check magic bytes — ZIP starts with PK (0x50 0x4B); read only 2 bytes to support >2GB files
+    $fs = [System.IO.File]::OpenRead($tempZip)
+    $magic = New-Object byte[] 2
+    $null = $fs.Read($magic, 0, 2)
+    $fs.Close()
+
+    if ($magic[0] -eq 0x50 -and $magic[1] -eq 0x4B) {
+        Write-Host "Extracting $zipName with 7-Zip..."
+        $7z = "C:\Program Files\7-Zip\7z.exe"
+        & $7z x $tempZip "-o$destDir" -y | Out-Null
+        Remove-Item $tempZip -Force
+    } else {
+        # Read first 64 bytes as text to detect HTML auth error pages
+        $fs2 = [System.IO.File]::OpenRead($tempZip)
+        $headBytes = New-Object byte[] 64
+        $null = $fs2.Read($headBytes, 0, 64)
+        $fs2.Close()
+        $head = [System.Text.Encoding]::UTF8.GetString($headBytes)
+        if ($head -match "<!DOCTYPE|<html") {
+            Write-Error "CivitAI returned an HTML page — auth failed. Make sure you are logged in to CivitAI in Firefox."
+            Remove-Item $tempZip -Force
+        } else {
+            $stem = [System.IO.Path]::GetFileNameWithoutExtension($zipName)
+            $dest = Join-Path $destDir "$stem.safetensors"
+            Write-Host "Not a ZIP — treating as safetensors, saving to $(Split-Path $dest -Leaf)"
+            Move-Item $tempZip $dest -Force
+        }
+    }
 }
 
 function Download-Model-Firefox($url, $dest) {
@@ -92,6 +134,16 @@ Download-Model `
     "https://huggingface.co/stabilityai/sdxl-vae/resolve/main/sdxl_vae.safetensors" `
     (Join-Path $models "vae\sdxl_vae.safetensors")
 
+# Anime Pastel Dream checkpoint (CivitAI — uses Firefox session for auth)
+Download-Model-Firefox `
+    "https://civitai.com/api/download/models/28100?fileId=89850" `
+    (Join-Path $models "checkpoints\animePastelDream_softBakedVae.safetensors")
+
+# Anime Model Amore v2 PDXL checkpoint (CivitAI — uses Firefox session for auth)
+Download-Model-Firefox `
+    "https://civitai.com/api/download/models/583459?fileId=498889" `
+    (Join-Path $models "checkpoints\animeModel_amorev2PDXL.safetensors")
+
 # 90s anime aesthetic checkpoint (CivitAI — uses Firefox session for auth)
 Download-Model-Firefox `
     "https://civitai.com/api/download/models/1922528?fileId=1820751" `
@@ -117,16 +169,11 @@ Download-Model-Firefox `
     "https://civitai.com/api/download/models/2117856?fileId=2012406" `
     (Join-Path $models "loras\Spaceships.safetensors")
 
-# --- Flux.1-dev (requires HuggingFace login in Firefox) ---
-# Checkpoint (~24 GB)
+# --- Flux.1-dev GGUF (CivitAI — uses Firefox session for auth) ---
+# Downloads ZIP to diffusion_models/ — extract manually, GGUF goes in diffusion_models/
 Download-Model-Firefox `
-    "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors" `
-    (Join-Path $models "checkpoints\flux1-dev.safetensors")
-
-# VAE
-Download-Model-Firefox `
-    "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors" `
-    (Join-Path $models "vae\ae.safetensors")
+    "https://civitai.com/api/download/models/741907?fileId=656737" `
+    (Join-Path $models "diffusion_models\flux1DevGGUFF16_f16.zip")
 
 # Text encoders (public — no auth needed)
 Download-Model `

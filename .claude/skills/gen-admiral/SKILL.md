@@ -43,9 +43,9 @@ Build prompt as:
 
 1. Build the full prompt from the template above + faction aesthetic + extra.
 2. Set output to `client/assets/portraits/admiral_{name}.png`.
-3. **Print the positive prompt, negative prompt, and all generation settings to the user before running. Wait for no response — just show and proceed.**
-4. Map `inspo` → `-StyleImage` (from `inspo/` folder).
-5. Delegate to `/gen-image` with:
+3. Map `inspo` → `-StyleImage` (from `inspo/portraits/` folder).
+4. **Invoke the `/gen-image` skill** — models are pre-selected (skip Step 2 of `/gen-image`), pass them directly:
    - `-Lora "GallForce_IllustriousV1.safetensors" -LoraStrength 0.8`
    - `-Vae "sdxl_vae.safetensors"` (ae.safetensors is Flux-only; SDXL models need sdxl_vae)
    - `-Background black` (default — override if user specifies a different color)
+5. Follow Step 3 of `/gen-image` (print the summary block), then run.

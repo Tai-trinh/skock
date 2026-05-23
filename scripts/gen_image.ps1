@@ -12,8 +12,12 @@ param(
     [float]$ControlNetStrength = 0.7,
     [int]$Seed = -1,
     [switch]$NoRembg,
+    [switch]$Symmetry,
     [string]$Background = "transparent",
     [string]$Model = "",
+    [string]$DiffusionModel = "",
+    [string]$ClipName1 = "clip_l.safetensors",
+    [string]$ClipName2 = "t5xxl_fp16.safetensors",
     [string]$Vae = "",
     [string]$Lora = "",
     [float]$LoraStrength = 0.8
@@ -41,9 +45,11 @@ if ($StyleImage)  { $argList += "--style-image",  (Join-Path $repoRoot $StyleIma
 if ($ShapeImage)  { $argList += "--shape-image",  (Join-Path $repoRoot $ShapeImage) }
 if ($Seed -ge 0)  { $argList += "--seed", $Seed }
 if ($NoRembg)     { $argList += "--no-rembg" }
+if ($Symmetry)    { $argList += "--symmetry" }
 if ($Background)  { $argList += "--background", $Background }
-if ($Model)       { $argList += "--model", $Model }
-if ($Vae)         { $argList += "--vae", $Vae }
-if ($Lora)        { $argList += "--lora", $Lora, "--lora-strength", $LoraStrength }
+if ($Model)           { $argList += "--model", $Model }
+if ($DiffusionModel)  { $argList += "--diffusion-model", $DiffusionModel, "--clip-l", $ClipName1, "--t5xxl", $ClipName2 }
+if ($Vae)             { $argList += "--vae", $Vae }
+if ($Lora)            { $argList += "--lora", $Lora, "--lora-strength", $LoraStrength }
 
 & $python @argList

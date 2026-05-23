@@ -51,7 +51,7 @@ def queue_prompt(workflow: dict) -> str:
         raise RuntimeError(f"ComfyUI rejected workflow ({e.code}): {body}") from None
 
 
-def wait_for_outputs(prompt_id: str, timeout: int = 300) -> dict:
+def wait_for_outputs(prompt_id: str, timeout: int = 600) -> dict:
     deadline = time.time() + timeout
     while time.time() < deadline:
         url = f"{COMFYUI_URL}/history/{urllib.parse.quote(prompt_id)}"
@@ -82,34 +82,55 @@ def get_available_checkpoints() -> list[str]:
 
 
 def inject_lora(workflow: dict, lora_name: str, strength: float) -> dict:
-    """Insert a LoraLoader after the checkpoint node and rewire model/clip outputs."""
+    """Insert a LoraLoader after the checkpoint/unet node and rewire model/clip outputs."""
     import copy
     wf = copy.deepcopy(workflow)
     ckpt_id = next(
-        (nid for nid, n in wf.items() if n.get("class_type") == "CheckpointLoaderSimple"),
+        (nid for nid, n in wf.items()
+         if n.get("class_type") in ("CheckpointLoaderSimple", "UnetLoaderGGUF")),
         None,
     )
     if ckpt_id is None:
         return wf
+    is_gguf = wf[ckpt_id].get("class_type") == "UnetLoaderGGUF"
     lora_id = "lora_0"
-    wf[lora_id] = {
-        "inputs": {
-            "lora_name": lora_name,
-            "strength_model": strength,
-            "strength_clip": strength,
-            "model": [ckpt_id, 0],
-            "clip": [ckpt_id, 1],
-        },
-        "class_type": "LoraLoader",
-    }
-    def rewire(node):
-        if isinstance(node, dict):
-            return {k: rewire(v) for k, v in node.items()}
-        if isinstance(node, list) and len(node) == 2 and node[0] == ckpt_id and node[1] in (0, 1):
-            return [lora_id, node[1]]
-        if isinstance(node, list):
-            return [rewire(v) for v in node]
-        return node
+    if is_gguf:
+        # GGUF has no bundled CLIP — use model-only LoRA loader
+        wf[lora_id] = {
+            "inputs": {
+                "lora_name": lora_name,
+                "strength_model": strength,
+                "model": [ckpt_id, 0],
+            },
+            "class_type": "LoraLoaderModelOnly",
+        }
+        def rewire(node):
+            if isinstance(node, dict):
+                return {k: rewire(v) for k, v in node.items()}
+            if isinstance(node, list) and len(node) == 2 and node[0] == ckpt_id and node[1] == 0:
+                return [lora_id, 0]
+            if isinstance(node, list):
+                return [rewire(v) for v in node]
+            return node
+    else:
+        wf[lora_id] = {
+            "inputs": {
+                "lora_name": lora_name,
+                "strength_model": strength,
+                "strength_clip": strength,
+                "model": [ckpt_id, 0],
+                "clip": [ckpt_id, 1],
+            },
+            "class_type": "LoraLoader",
+        }
+        def rewire(node):
+            if isinstance(node, dict):
+                return {k: rewire(v) for k, v in node.items()}
+            if isinstance(node, list) and len(node) == 2 and node[0] == ckpt_id and node[1] in (0, 1):
+                return [lora_id, node[1]]
+            if isinstance(node, list):
+                return [rewire(v) for v in node]
+            return node
     for nid in list(wf.keys()):
         if nid not in (ckpt_id, lora_id):
             wf[nid] = rewire(wf[nid])
@@ -126,6 +147,22 @@ def inject_vae(workflow: dict, vae_name: str) -> dict:
         if node.get("class_type") == "VAEDecode":
             node["inputs"]["vae"] = [vae_id, 0]
     return wf
+
+
+def apply_symmetry(image_bytes: bytes) -> bytes:
+    """Mirror the left half onto the right half for perfect bilateral symmetry."""
+    from PIL import Image
+    import io
+    img = Image.open(io.BytesIO(image_bytes))
+    w, h = img.size
+    left = img.crop((0, 0, w // 2, h))
+    right = left.transpose(Image.FLIP_LEFT_RIGHT)
+    result = img.copy()
+    result.paste(left, (0, 0))
+    result.paste(right, (w // 2, 0))
+    buf = io.BytesIO()
+    result.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def apply_background(image_bytes: bytes, color: str) -> bytes:
@@ -164,19 +201,36 @@ def main():
     ap.add_argument("--steps", type=int, default=100)
     ap.add_argument("--cfg", type=float, default=7.0)
     ap.add_argument("--no-rembg", action="store_true")
+    ap.add_argument("--symmetry", action="store_true", help="Mirror left half onto right for bilateral symmetry")
     ap.add_argument("--background", default="transparent", help="'transparent', a CSS color name, or '#rrggbb'")
     ap.add_argument("--workflow")
-    ap.add_argument("--model", help="Checkpoint name; defaults to first available in ComfyUI")
+    ap.add_argument("--model", help="Checkpoint name from models/checkpoints/; auto-selects first available if omitted")
+    ap.add_argument("--diffusion-model", help="Diffusion model (UNET/GGUF) from models/diffusion_models/; uses Flux workflow")
+    ap.add_argument("--clip-l", default="clip_l.safetensors", help="First text encoder (clip_name1) for diffusion model (models/text_encoders/)")
+    ap.add_argument("--t5xxl", default="t5xxl_fp16.safetensors", help="Second text encoder (clip_name2) for diffusion model (models/text_encoders/)")
     ap.add_argument("--vae", help="VAE filename from models/vae/")
     ap.add_argument("--lora", help="LoRA filename from models/loras/")
     ap.add_argument("--lora-strength", type=float, default=0.8)
+    ap.add_argument("--timeout", type=int, default=600)
     args = ap.parse_args()
 
     seed = args.seed if args.seed is not None else random.randint(0, 2**31 - 1)
-    model = args.model or get_available_checkpoints()[0]
-    print(f"Using model: {model}")
-    has_refs = bool(args.style_image or args.shape_image)
-    default_workflow = "sdxl_ipadapter.json" if has_refs else "sdxl_text_only.json"
+    is_flux = bool(args.diffusion_model)
+
+    if is_flux:
+        print(f"Using diffusion model: {args.diffusion_model}")
+        if not args.vae:
+            args.vae = "ae.safetensors"
+            print(f"Diffusion mode: defaulting VAE to {args.vae}")
+        is_gguf = args.diffusion_model.lower().endswith(".gguf")
+        default_workflow = "flux_text_only.json" if is_gguf else "unet_text_only.json"
+        print(f"Using workflow: {default_workflow}")
+    else:
+        model = args.model or get_available_checkpoints()[0]
+        print(f"Using model: {model}")
+        has_refs = bool(args.style_image or args.shape_image)
+        default_workflow = "sdxl_ipadapter.json" if has_refs else "sdxl_text_only.json"
+
     workflow_path = Path(args.workflow) if args.workflow else REPO_ROOT / "scripts" / "workflows" / default_workflow
 
     with open(workflow_path) as f:
@@ -209,12 +263,18 @@ def main():
         "__IPADAPTER_STRENGTH__": ipadapter_strength,
         "__CONTROLNET_STRENGTH__": controlnet_strength,
         "__OUTPUT_PREFIX__": Path(args.output).stem,
-        "__MODEL__": model,
         "__STEPS__": args.steps,
         "__CFG__": args.cfg,
     }
+    if is_flux:
+        subs["__DIFFUSION_MODEL__"] = args.diffusion_model
+        subs["__CLIP_L__"] = args.clip_l
+        subs["__T5XXL__"] = args.t5xxl
+        subs["__VAE__"] = args.vae
+    else:
+        subs["__MODEL__"] = model
     workflow = fill_workflow(workflow, subs)
-    if args.vae:
+    if args.vae and not is_flux:
         print(f"Injecting VAE: {args.vae}")
         workflow = inject_vae(workflow, args.vae)
     if args.lora:
@@ -225,7 +285,7 @@ def main():
     prompt_id = queue_prompt(workflow)
     print(f"Queued: {prompt_id}")
     print("Waiting", end="", flush=True)
-    outputs = wait_for_outputs(prompt_id)
+    outputs = wait_for_outputs(prompt_id, timeout=args.timeout)
     print()
 
     image_bytes = None
@@ -238,6 +298,10 @@ def main():
     if image_bytes is None:
         print("ERROR: no image in output", file=sys.stderr)
         sys.exit(1)
+
+    if args.symmetry:
+        print("Applying bilateral symmetry...")
+        image_bytes = apply_symmetry(image_bytes)
 
     if not args.no_rembg:
         print("Removing background...")

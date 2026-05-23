@@ -8,7 +8,7 @@ DISPLAY_MOUNTS = \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v /mnt/wslg:/mnt/wslg
 
-.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-rust win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs install-comfyui install-comfyui-extras
+.PHONY: install-win install-docker docker-image docker-run fmt fmt-check det win-fmt win-build-sim win-build-rust win-build-godot install-hooks win-start-godot docker-engine-start docker-build-sim docker-build-godot win-test-godot win-test-cs install-comfyui install-comfyui-extras comfyui-models
 
 install-docker:
 	sudo apt-get install -y x11-xserver-utils
@@ -99,3 +99,6 @@ install-comfyui-extras:
 
 comfyui:
 	cmd.exe /c start "" /d "$$(wslpath -w $$(pwd)/ComfyUI_windows_portable)" "$$(wslpath -w $$(pwd)/ComfyUI_windows_portable/run_nvidia_gpu.bat)"
+
+comfyui-models:
+	@bash scripts/list-comfyui-models.sh
