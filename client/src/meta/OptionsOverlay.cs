@@ -23,6 +23,17 @@ public partial class OptionsOverlay : CanvasLayer
     {
         if (@event is not InputEventKey { Pressed: true, Echo: false } key)
             return;
+
+        var altEnter =
+            key.Keycode == Key.Enter
+            && (key.AltPressed || key.GetModifiersMask() == KeyModifierMask.MaskAlt);
+        if (key.Keycode == Key.F11 || altEnter)
+        {
+            ToggleFullscreen();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (key.Keycode != Key.Escape)
             return;
         if (RunState.Instance.IsBattleActive)
@@ -34,6 +45,14 @@ public partial class OptionsOverlay : CanvasLayer
             Open();
 
         GetViewport().SetInputAsHandled();
+    }
+
+    private void ToggleFullscreen()
+    {
+        var s = RunState.Instance.Settings;
+        s.Fullscreen = !s.Fullscreen;
+        s.Apply();
+        RunState.Instance.SaveSettings();
     }
 
     public void Open()
