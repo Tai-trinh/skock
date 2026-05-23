@@ -10,13 +10,13 @@ public partial class ShipNode : Node2D
 	private static float ScaleFor(string hull) =>
 		hull switch
 		{
-			"frigate" => 37.5f / 600f,
-			"destroyer" => 52.5f / 800f,
-			"cruiser" => 67.5f / 696f,
-			"battlecruiser" => 82.5f / 1000f,
-			"dreadnought" => 97.5f / 696f,
-			"mothership" => 112.5f / 1024f,
-			_ => 22.5f / 256f, // corvette
+			"frigate" => 50f / 600f,
+			"destroyer" => 70f / 800f,
+			"cruiser" => 90f / 696f,
+			"battlecruiser" => 110f / 1000f,
+			"dreadnought" => 130f / 696f,
+			"mothership" => 150f / 1024f,
+			_ => 30f / 256f, // corvette
 		};
 
 	// ── Colors ────────────────────────────────────────────────────────────────
