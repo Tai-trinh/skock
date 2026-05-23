@@ -34,3 +34,6 @@ dotnet tool install --global PlantUmlClassDiagramGenerator
 
 # Activate the project git hooks (formatter runs on commit)
 git -C "$PSScriptRoot" config core.hooksPath .githooks
+
+# ComfyUI — portable Windows build with NVIDIA support
+& "$PSScriptRoot/install-comfyui.ps1"

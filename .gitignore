@@ -19,3 +19,7 @@ player_state.json
 # VS Code — track shared recommendations, ignore user-specific settings
 .vscode/**
 !.vscode/extensions.json
+
+# comfy ui
+ComfyUI_windows_portable_nvidia
+ComfyUI_windows_portable
