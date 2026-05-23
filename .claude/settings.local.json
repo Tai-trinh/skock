@@ -13,7 +13,9 @@
       "Bash(git commit -m ' *)",
       "Skill(tech-debt)",
       "Bash(./target/debug/skock-admiral.exe)",
-      "Bash(python3 -m json.tool)"
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s http://localhost:8188/system_stats)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ComfyUI OK'\\)\")"
     ]
   }
 }
