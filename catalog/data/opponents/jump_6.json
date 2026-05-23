@@ -130,7 +130,7 @@
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
-          "fuse_ticks": 71,
+          "fuse_ticks": 106,
           "explosion_radius": 15.0,
           "explosion_damage": 20.0
         }
@@ -165,7 +165,7 @@
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
-          "fuse_ticks": 71,
+          "fuse_ticks": 106,
           "explosion_radius": 15.0,
           "explosion_damage": 20.0
         }

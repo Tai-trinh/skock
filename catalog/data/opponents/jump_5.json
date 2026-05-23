@@ -62,7 +62,7 @@
           "range": 330,
           "cooldown_ticks": 90,
           "projectile_speed": 5.0,
-          "fuse_ticks": 96,
+          "fuse_ticks": 144,
           "explosion_radius": 30.0,
           "explosion_damage": 50.0
         },
@@ -76,7 +76,7 @@
           "range": 330,
           "cooldown_ticks": 90,
           "projectile_speed": 5.0,
-          "fuse_ticks": 96,
+          "fuse_ticks": 144,
           "explosion_radius": 30.0,
           "explosion_damage": 50.0
         }
@@ -111,7 +111,7 @@
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
-          "fuse_ticks": 71,
+          "fuse_ticks": 106,
           "explosion_radius": 15.0,
           "explosion_damage": 20.0
         }
@@ -146,7 +146,7 @@
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
-          "fuse_ticks": 71,
+          "fuse_ticks": 106,
           "explosion_radius": 15.0,
           "explosion_damage": 20.0
         }

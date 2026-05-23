@@ -108,7 +108,7 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
             }
 
             // Spawn salvo projectiles spread across salvo_spread_angle.
-            let fuse = if fuse_ticks > 0 { fuse_ticks } else { 180 };
+            let fuse = if fuse_ticks > 0 { fuse_ticks } else { 270 };
 
             for s in 0..salvo_count {
                 let angle = if salvo_count > 1 {
