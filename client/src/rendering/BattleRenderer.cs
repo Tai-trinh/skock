@@ -83,6 +83,7 @@ public partial class BattleRenderer : Node2D
 		AddChild(_effects);
 		_effects.Init(_camera);
 
+		GetViewport().SizeChanged += FitCamera;
 		FitCamera();
 		_resultLabel.Visible = false;
 		_debugLabel.Text = "Loading sim...";
