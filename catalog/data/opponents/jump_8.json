@@ -8,7 +8,7 @@
     "role": "Artillery",
     "hp": 750,
     "max_hp": 750,
-    "armor": 0.10,
+    "armor": 0.1,
     "speed": 0.8,
     "acceleration": 0.2,
     "turn_rate": 0.015,
@@ -26,14 +26,14 @@
         "lateral": -10.0,
         "type": "hitscan",
         "damage": 35,
-        "range": 230,
+        "range": 345,
         "cooldown_ticks": 35
       },
       {
         "lateral": 10.0,
         "type": "hitscan",
         "damage": 35,
-        "range": 230,
+        "range": 345,
         "cooldown_ticks": 35
       }
     ],
@@ -63,7 +63,7 @@
         {
           "type": "hitscan",
           "damage": 120,
-          "range": 250,
+          "range": 375,
           "cooldown_ticks": 75
         }
       ],
@@ -95,7 +95,7 @@
         {
           "type": "beam",
           "damage": 8,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 90,
           "charge_ticks": 30,
           "duration_ticks": 45,
@@ -132,7 +132,7 @@
           "type": "projectile",
           "subtype": "torpedo",
           "damage": 60,
-          "range": 250,
+          "range": 375,
           "cooldown_ticks": 100,
           "projectile_speed": 5.5,
           "fuse_ticks": 98,
@@ -166,7 +166,7 @@
           "type": "projectile",
           "subtype": "seeking_missile",
           "damage": 50,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
@@ -201,7 +201,7 @@
           "type": "projectile",
           "subtype": "seeking_missile",
           "damage": 50,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
@@ -235,7 +235,7 @@
         {
           "type": "hitscan",
           "damage": 6,
-          "range": 65,
+          "range": 98,
           "cooldown_ticks": 8
         }
       ],

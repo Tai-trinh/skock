@@ -21,7 +21,12 @@
       "maintain_range": 1.0
     },
     "hardpoints": [
-      {"type": "hitscan", "damage": 25, "range": 200, "cooldown_ticks": 45}
+      {
+        "type": "hitscan",
+        "damage": 25,
+        "range": 300,
+        "cooldown_ticks": 45
+      }
     ]
   },
   "ships": [
@@ -44,7 +49,12 @@
         "maintain_range": 1.0
       },
       "hardpoints": [
-        {"type": "hitscan", "damage": 10, "range": 80, "cooldown_ticks": 15}
+        {
+          "type": "hitscan",
+          "damage": 10,
+          "range": 120,
+          "cooldown_ticks": 15
+        }
       ]
     },
     {
@@ -66,7 +76,12 @@
         "maintain_range": 1.0
       },
       "hardpoints": [
-        {"type": "hitscan", "damage": 10, "range": 80, "cooldown_ticks": 15}
+        {
+          "type": "hitscan",
+          "damage": 10,
+          "range": 120,
+          "cooldown_ticks": 15
+        }
       ]
     },
     {
@@ -88,7 +103,12 @@
         "maintain_range": 1.0
       },
       "hardpoints": [
-        {"type": "hitscan", "damage": 10, "range": 80, "cooldown_ticks": 15}
+        {
+          "type": "hitscan",
+          "damage": 10,
+          "range": 120,
+          "cooldown_ticks": 15
+        }
       ]
     }
   ],

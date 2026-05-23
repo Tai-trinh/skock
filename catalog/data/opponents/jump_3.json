@@ -25,14 +25,14 @@
         "lateral": -8.0,
         "type": "hitscan",
         "damage": 20,
-        "range": 190,
+        "range": 285,
         "cooldown_ticks": 40
       },
       {
         "lateral": 8.0,
         "type": "hitscan",
         "damage": 20,
-        "range": 190,
+        "range": 285,
         "cooldown_ticks": 40
       }
     ],
@@ -63,7 +63,7 @@
           "type": "projectile",
           "subtype": "torpedo",
           "damage": 30,
-          "range": 180,
+          "range": 270,
           "cooldown_ticks": 75,
           "projectile_speed": 5.0,
           "fuse_ticks": 84,
@@ -97,7 +97,7 @@
           "type": "projectile",
           "subtype": "torpedo",
           "damage": 30,
-          "range": 180,
+          "range": 270,
           "cooldown_ticks": 75,
           "projectile_speed": 5.0,
           "fuse_ticks": 84,
@@ -130,7 +130,7 @@
         {
           "type": "hitscan",
           "damage": 20,
-          "range": 100,
+          "range": 150,
           "cooldown_ticks": 20
         }
       ],
@@ -159,7 +159,7 @@
         {
           "type": "hitscan",
           "damage": 20,
-          "range": 100,
+          "range": 150,
           "cooldown_ticks": 20
         }
       ],

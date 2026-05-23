@@ -24,7 +24,7 @@
       {
         "type": "hitscan",
         "damage": 25,
-        "range": 200,
+        "range": 300,
         "cooldown_ticks": 45
       }
     ],
@@ -54,7 +54,7 @@
         {
           "type": "hitscan",
           "damage": 10,
-          "range": 80,
+          "range": 120,
           "cooldown_ticks": 15
         }
       ],
@@ -83,7 +83,7 @@
         {
           "type": "hitscan",
           "damage": 10,
-          "range": 80,
+          "range": 120,
           "cooldown_ticks": 15
         }
       ],
@@ -112,7 +112,7 @@
         {
           "type": "hitscan",
           "damage": 10,
-          "range": 80,
+          "range": 120,
           "cooldown_ticks": 15
         }
       ],
@@ -142,7 +142,7 @@
           "type": "projectile",
           "subtype": "seeking_missile",
           "damage": 35,
-          "range": 200,
+          "range": 300,
           "cooldown_ticks": 50,
           "projectile_speed": 18.0,
           "turn_rate": 0.08,

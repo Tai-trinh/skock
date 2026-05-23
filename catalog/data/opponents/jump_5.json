@@ -25,7 +25,7 @@
       {
         "type": "hitscan",
         "damage": 32,
-        "range": 220,
+        "range": 330,
         "cooldown_ticks": 40
       }
     ],
@@ -59,7 +59,7 @@
           "type": "projectile",
           "subtype": "torpedo",
           "damage": 25,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 90,
           "projectile_speed": 5.0,
           "fuse_ticks": 96,
@@ -73,7 +73,7 @@
           "type": "projectile",
           "subtype": "torpedo",
           "damage": 25,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 90,
           "projectile_speed": 5.0,
           "fuse_ticks": 96,
@@ -107,7 +107,7 @@
           "type": "projectile",
           "subtype": "seeking_missile",
           "damage": 50,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
@@ -142,7 +142,7 @@
           "type": "projectile",
           "subtype": "seeking_missile",
           "damage": 50,
-          "range": 220,
+          "range": 330,
           "cooldown_ticks": 60,
           "projectile_speed": 8.0,
           "turn_rate": 0.06,
@@ -176,7 +176,7 @@
         {
           "type": "hitscan",
           "damage": 20,
-          "range": 100,
+          "range": 150,
           "cooldown_ticks": 20
         }
       ],
