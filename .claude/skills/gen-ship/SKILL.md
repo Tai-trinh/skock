@@ -21,7 +21,7 @@ description: >
 
 ## Hull class → prompt
 
-Build prompt as: `"{base} {faction_aesthetic}, {extra}, strict top-down view from directly above, overhead orthographic perspective, no perspective distortion, flat top-down game sprite, white background"`
+Build prompt as: `"{base} {faction_aesthetic}, {extra}, strict top-down view from directly above, overhead orthographic perspective, no perspective distortion, flat top-down game sprite, ship nose pointing up toward the top of the image, bow at top stern at bottom, uniform flood lighting straight down from above targeting the center of the image, white background"`
 
 | Hull | Base prompt |
 |---|---|
@@ -53,4 +53,8 @@ Always add to `-Negative`: `"side view, angled view, perspective view, 3/4 view,
 1. Build the full prompt string from the table above + faction aesthetic + extra text.
 2. Set output to `client/assets/sprites/{hull}_{faction}.png`.
 3. Map args: `inspo` → `-StyleImage`, `shape` → `-ShapeImage` (both from `inspo/ships/` folder).
-4. **Invoke the `/gen-image` skill** — pass the prompt, negative, output path, and any image refs. Follow all steps in `/gen-image` including model listing and selection (Step 2), then the summary block (Step 3), then run.
+4. **Invoke the `/gen-image` skill** — models are pre-selected (skip Step 2 of `/gen-image`), pass them directly:
+   - `-DiffusionModel "flux1-dev-F16.gguf" -Vae "ae.safetensors"` (Flux GGUF pipeline)
+   - `-Lora "StarsectorFluxV0.4FantasyFM-000148.safetensors" -LoraStrength 0.8`
+   - Always pass `-Width 512 -Height 1024` unless user specifies different dimensions (ships are portrait)
+5. Follow Step 3 of `/gen-image` (print the summary block), then run.

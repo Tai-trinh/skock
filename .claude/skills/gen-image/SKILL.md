@@ -134,7 +134,9 @@ All paths are relative to repo root. `gen_image.ps1` converts them to Windows pa
 | `-Prompt` | **required** | What to generate — describes content, style, composition |
 | `-Negative` | generic | What to avoid — bad quality, wrong angles, unwanted elements |
 | `-Output` | **required** | Save path, e.g. `client/assets/sprites/corvette_a.png` |
-| `-Size` | `512` | Output resolution in pixels (square) |
+| `-Size` | `512` | Output resolution in pixels (square — overridden by -Width/-Height) |
+| `-Width` | same as -Size | Output width in pixels |
+| `-Height` | same as -Size | Output height in pixels |
 | `-Steps` | `35` | Denoising iterations — more = sharper detail, slower generation |
 | `-Cfg` | `7.0` | Classifier-free guidance — how strictly the prompt is followed (7 = balanced, 12 = very strict) |
 | `-Seed` | random | Random seed — fix to reproduce an exact result |

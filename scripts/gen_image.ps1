@@ -6,6 +6,8 @@ param(
     [string]$ShapeImage = "",
     [Parameter(Mandatory)][string]$Output,
     [int]$Size = 512,
+    [int]$Width = 0,
+    [int]$Height = 0,
     [int]$Steps = 100,
     [float]$Cfg = 7.0,
     [float]$IpAdapterStrength = 0.6,
@@ -41,6 +43,8 @@ $argList = @($script,
     "--controlnet-strength", $ControlNetStrength
 )
 $argList += "--steps", $Steps, "--cfg", $Cfg
+if ($Width -gt 0)  { $argList += "--width",  $Width }
+if ($Height -gt 0) { $argList += "--height", $Height }
 if ($StyleImage)  { $argList += "--style-image",  (Join-Path $repoRoot $StyleImage) }
 if ($ShapeImage)  { $argList += "--shape-image",  (Join-Path $repoRoot $ShapeImage) }
 if ($Seed -ge 0)  { $argList += "--seed", $Seed }

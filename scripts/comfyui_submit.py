@@ -195,6 +195,8 @@ def main():
     ap.add_argument("--shape-image")
     ap.add_argument("--output", required=True)
     ap.add_argument("--size", type=int, default=512)
+    ap.add_argument("--width", type=int, default=None)
+    ap.add_argument("--height", type=int, default=None)
     ap.add_argument("--ipadapter-strength", type=float, default=0.6)
     ap.add_argument("--controlnet-strength", type=float, default=0.7)
     ap.add_argument("--seed", type=int, default=None)
@@ -215,6 +217,8 @@ def main():
     args = ap.parse_args()
 
     seed = args.seed if args.seed is not None else random.randint(0, 2**31 - 1)
+    width = args.width if args.width is not None else args.size
+    height = args.height if args.height is not None else args.size
     is_flux = bool(args.diffusion_model)
 
     if is_flux:
@@ -257,8 +261,8 @@ def main():
         "__NEGATIVE__": args.negative,
         "__STYLE_IMAGE__": style_name or fallback,
         "__SHAPE_IMAGE__": shape_name or fallback,
-        "__WIDTH__": args.size,
-        "__HEIGHT__": args.size,
+        "__WIDTH__": width,
+        "__HEIGHT__": height,
         "__SEED__": seed,
         "__IPADAPTER_STRENGTH__": ipadapter_strength,
         "__CONTROLNET_STRENGTH__": controlnet_strength,
