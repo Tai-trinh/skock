@@ -61,7 +61,7 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 ### Weapon archetypes
 
 - **Hitscan** — damage resolves instantly at the tick fired. No sim entity created. Optional `miss_chance` (0.0–1.0): rolled via battle RNG each shot; on miss, a `hitscan_missed` event fires and no damage is applied.
-- **Projectile** — a first-class sim entity with position, velocity, target, and `ticks_remaining`. On expiry without a hit it fizzles (`projectile_fizzled`).
+- **Projectile** — a first-class sim entity with position, velocity, and `fuse_ticks_remaining`. On expiry without a hit the projectile is silently removed from sim state; if the weapon carries an explosive payload the explosion still triggers on fuse expiry.
 - **Beam / ray** — two-phase weapon. **Charge phase** (`charge_ticks`): the turret slews toward the target; beam entity exists in state snapshots so the renderer shows the turret aiming. Charge cancels immediately if the firing ship is stunned. **Firing phase** (`duration_ticks`): continuous damage each tick to the first enemy in the current ray direction within `range`. Beam ends immediately if the intended target dies.
 
   Tracking uses two angular rates (see ADR-0016): `slew_rate` (fast) when the ray is not hitting any enemy; `track_rate` (slow) when firing on an enemy. Both are active during charge and firing.
@@ -76,7 +76,7 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 - **Torpedo** — straight-line, no homing (or very low turn rate). High damage, long lifetime. Interceptable by point defense. May carry an explosive payload (see below).
 - **Drifting bomb / mine** — launched with an initial velocity then drifts unpowered. Detonates on proximity (radius trigger). No target tracking. Can be shot down by point defense. Always explosive.
 
-**Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits both friendly and enemy ships. The explosion is a renderer event (`explosion_detonated`) with a position and radius for visual effect.
+**Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits enemy ships only (filtered by fleet; no friendly fire). The explosion is a renderer event (`explosion_detonated`) with a position and radius for visual effect.
 
 ### Ship roles
 
@@ -104,8 +104,8 @@ Ships are identified by two fields plus an optional weight designation. Display 
 - `Broadside` — orbit at the shortest hardpoint range on the ship (the distance where every hardpoint can fire).
 
 **TargetPriority:** ship-level field that controls which enemy each hardpoint selects as its target.
-- `Nearest` — all hardpoints target the same closest in-range enemy.
-- `Spread` — each hardpoint independently targets the closest in-range enemy (measured from ship center); duplicates allowed when enemies are fewer than hardpoints.
+- `Nearest` — each hardpoint independently targets the nearest in-range enemy (measured from ship center).
+- `Spread` — same behaviour as `Nearest` in the current implementation; intended to spread fire across different enemies, but not yet differentiated in `primary_target`.
 - `Heaviest` — all hardpoints target the highest-HP in-range enemy.
 - `Weakest` — all hardpoints target the most-damaged (lowest current HP) in-range enemy.
 - `MostThreatening` — all hardpoints target the highest-threat in-range enemy. Threat score = sum of `damage / cooldown_ticks` across all hardpoints on the enemy ship (estimated DPS). Computed on demand from fleet data; not stored in sim state.
