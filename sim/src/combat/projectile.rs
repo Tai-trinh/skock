@@ -112,9 +112,8 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
 
                 let (vel, init_heading) = match subtype {
                     ProjectileSubtype::Mine => {
-                        let mine_speed = I16F16::from_num(0.3f32);
-                        let vx = I32F32::from_num(cordic::cos(ship_heading) * mine_speed);
-                        let vy = I32F32::from_num(cordic::sin(ship_heading) * mine_speed);
+                        let vx = I32F32::from_num(cordic::cos(ship_heading) * speed);
+                        let vy = I32F32::from_num(cordic::sin(ship_heading) * speed);
                         (Vec2 { x: vx, y: vy }, ship_heading)
                     }
                     ProjectileSubtype::Torpedo | ProjectileSubtype::SeekingMissile => {

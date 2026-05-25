@@ -69,10 +69,11 @@ pub fn compute_forces(
     // ── Separation: all ships (friend + foe) within neighbor_radius ───────────
     // No neighbor cap — every hull within range contributes repulsion.
     let mut sep = Vec2::ZERO;
-    for (&other_id, other) in ships {
+    for other_id in grid.candidates(&ship.pos) {
         if other_id == ship.id {
             continue;
         }
+        let other = &ships[&other_id];
         let d_sq = dist_sq(&ship.pos, &other.pos);
         if d_sq >= neighbor_radius_sq || d_sq == I32F32::ZERO {
             continue;
