@@ -6,7 +6,7 @@ use crate::{
     state::{Event, Fleet, Pos2, Projectile, SimState, Vec2, WeaponKind},
 };
 
-use super::{apply_damage, consume_hardpoint, hull_hit_radius, roll_damage};
+use super::{apply_damage, consume_hardpoint, hull_hit_radius, normalize_angle, roll_damage};
 
 pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::SimConfig) {
     let ship_snapshot: Vec<(ShipId, Fleet, Pos2)> =
@@ -415,19 +415,6 @@ fn steer_missile(proj: &mut Projectile, ships: &[(ShipId, Fleet, Pos2, HullClass
         proj.vel.y = I32F32::from_num(cordic::sin(new_heading)) * speed;
     }
     proj.heading = new_heading;
-}
-
-fn normalize_angle(a: I16F16) -> I16F16 {
-    let pi = I16F16::from_num(std::f64::consts::PI);
-    let two_pi = pi + pi;
-    let mut r = a;
-    while r > pi {
-        r -= two_pi;
-    }
-    while r < -pi {
-        r += two_pi;
-    }
-    r
 }
 
 #[allow(clippy::too_many_arguments)]

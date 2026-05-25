@@ -7,7 +7,7 @@ use crate::{
     state::{BeamEntity, BeamPhase, Fleet, Pos2, SimState, WeaponKind},
 };
 
-use super::{apply_damage, consume_hardpoint, hull_hit_radius, roll_damage};
+use super::{apply_damage, consume_hardpoint, hull_hit_radius, normalize_angle, roll_damage};
 
 pub(super) fn start_beams(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
@@ -273,19 +273,6 @@ fn beam_ray_first_hit(
 
     hits.sort_by_key(|(a, _)| *a);
     hits.into_iter().next().map(|(_, id)| id)
-}
-
-fn normalize_angle(a: I16F16) -> I16F16 {
-    let pi = I16F16::from_num(std::f64::consts::PI);
-    let two_pi = pi + pi;
-    let mut r = a;
-    while r > pi {
-        r -= two_pi;
-    }
-    while r < -pi {
-        r += two_pi;
-    }
-    r
 }
 
 fn angle_to(from: Pos2, to: Pos2) -> I16F16 {

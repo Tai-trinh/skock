@@ -132,6 +132,19 @@ pub(super) fn consume_hardpoint(
     }
 }
 
+pub(super) fn normalize_angle(a: I16F16) -> I16F16 {
+    let pi = I16F16::from_num(std::f64::consts::PI);
+    let two_pi = pi + pi;
+    let mut r = a;
+    while r > pi {
+        r -= two_pi;
+    }
+    while r < -pi {
+        r += two_pi;
+    }
+    r
+}
+
 /// Rolls a crit and returns the final damage.
 pub(super) fn roll_damage(
     base: I16F16,
