@@ -58,9 +58,9 @@ fn nearest_enemy_in_range(
         .map(|(_, id)| id)
 }
 
-/// Selects the primary target for a ship given its TargetPriority.
-/// Returns None if no enemy is in range of any hardpoint.
-/// For Spread: returns None — each hardpoint selects independently via `spread_target_for_hardpoint`.
+/// Selects the target for a hardpoint given the ship's TargetPriority.
+/// Spread is treated as Nearest — each hardpoint calls this independently.
+/// Returns None if no enemy is within hardpoint_range_sq.
 pub(super) fn primary_target(
     ships: &BTreeMap<ShipId, Ship>,
     ship: &Ship,
@@ -113,4 +113,35 @@ fn threat_score(ship: &Ship) -> I16F16 {
             acc
         }
     })
+}
+
+/// Resets a hardpoint's cooldown and decrements its ammo (if finite).
+pub(super) fn consume_hardpoint(
+    state: &mut SimState,
+    ship_id: ShipId,
+    hp_idx: usize,
+    cooldown_ticks: u32,
+) {
+    if let Some(ship) = state.ships.get_mut(&ship_id) {
+        if let Some(w) = ship.weapons.get_mut(hp_idx) {
+            w.cooldown_remaining = cooldown_ticks;
+            if let Some(ref mut ammo) = w.ammo {
+                *ammo -= 1;
+            }
+        }
+    }
+}
+
+/// Rolls a crit and returns the final damage.
+pub(super) fn roll_damage(
+    base: I16F16,
+    crit_chance: I16F16,
+    crit_mul: I16F16,
+    rng: &mut impl RngCore,
+) -> I16F16 {
+    if rng_frac(rng) < crit_chance {
+        base * crit_mul
+    } else {
+        base
+    }
 }

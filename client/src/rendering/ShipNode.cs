@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using Skock.Sim;
 
@@ -5,19 +6,41 @@ namespace Skock.Rendering;
 
 public partial class ShipNode : Node2D
 {
-	// ── Sprite scales: target_world_height / sprite_pixel_height ─────────────
+	// ── Sprite scaling ────────────────────────────────────────────────────────
+	//
+	// Hull hit radii (sim-units) must match hull_hit_radii in sim_config.json.
+	// world_height = radius * 2; scale = world_height / sprite_px.
+	// When calibrating: update HullHitRadius + sim_config.json together, update
+	// SpriteHeightPx when a sprite is regenerated at a different pixel size.
 
-	private static float ScaleFor(string hull) =>
-		hull switch
-		{
-			"frigate" => 50f / 600f,
-			"destroyer" => 70f / 800f,
-			"cruiser" => 90f / 696f,
-			"battlecruiser" => 110f / 1000f,
-			"dreadnought" => 130f / 696f,
-			"mothership" => 150f / 1024f,
-			_ => 30f / 256f, // corvette
-		};
+	private static readonly Dictionary<string, float> HullHitRadius = new()
+	{
+		["corvette"] = 15f,
+		["frigate"] = 25f,
+		["destroyer"] = 35f,
+		["cruiser"] = 45f,
+		["battlecruiser"] = 55f,
+		["dreadnought"] = 65f,
+		["mothership"] = 75f,
+	};
+
+	private static readonly Dictionary<string, float> SpriteHeightPx = new()
+	{
+		["corvette"] = 256f,
+		["frigate"] = 600f,
+		["destroyer"] = 800f,
+		["cruiser"] = 696f,
+		["battlecruiser"] = 1000f,
+		["dreadnought"] = 696f,
+		["mothership"] = 1024f,
+	};
+
+	private static float ScaleFor(string hull)
+	{
+		var radius = HullHitRadius.GetValueOrDefault(hull, 15f);
+		var px = SpriteHeightPx.GetValueOrDefault(hull, 256f);
+		return radius * 2f / px;
+	}
 
 	// ── Colors ────────────────────────────────────────────────────────────────
 

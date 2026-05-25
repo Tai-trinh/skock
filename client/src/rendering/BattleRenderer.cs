@@ -271,46 +271,68 @@ public partial class BattleRenderer : Node2D
 	{
 		foreach (var ev in events)
 		{
-			switch (ev.Type)
-			{
-				case "hitscan_fired":
-					SpawnHitscanEffect(ev);
-					SpawnHitscanImpactEffect(ev);
-					_effects.Play(BattleEffects.SfxHitscan);
-					break;
-				case "hitscan_missed":
-					SpawnHitscanEffect(ev);
-					_effects.Play(BattleEffects.SfxHitscan);
-					break;
-				case "projectile_explosion":
-					SpawnExplosionEffect(ev);
-					_effects.Play(
-						ev.RadiusUnits >= 20f
-							? BattleEffects.SfxExplosionLarge
-							: BattleEffects.SfxExplosionSmall
-					);
-					break;
-				case "ship_destroyed":
-					OnShipDestroyed(ev);
-					break;
-			}
+			HandleVisualEvent(ev);
+			HandleAudioEvent(ev);
 		}
 	}
 
-	private void OnShipDestroyed(LogEvent ev)
+	private void HandleVisualEvent(LogEvent ev)
+	{
+		switch (ev.Type)
+		{
+			case "hitscan_fired":
+				SpawnHitscanEffect(ev);
+				SpawnHitscanImpactEffect(ev);
+				break;
+			case "hitscan_missed":
+				SpawnHitscanEffect(ev);
+				break;
+			case "projectile_explosion":
+				SpawnExplosionEffect(ev);
+				break;
+			case "ship_destroyed":
+				SpawnShipDestroyedVisual(ev);
+				break;
+		}
+	}
+
+	private void HandleAudioEvent(LogEvent ev)
+	{
+		switch (ev.Type)
+		{
+			case "hitscan_fired":
+			case "hitscan_missed":
+				_effects.Play(BattleEffects.SfxHitscan);
+				break;
+			case "projectile_explosion":
+				_effects.Play(
+					ev.RadiusUnits >= 20f
+						? BattleEffects.SfxExplosionLarge
+						: BattleEffects.SfxExplosionSmall
+				);
+				break;
+			case "ship_destroyed":
+				PlayShipDestroyedAudio(ev);
+				break;
+		}
+	}
+
+	private void SpawnShipDestroyedVisual(LogEvent ev)
 	{
 		if (!_shipNodes.TryGetValue(ev.Id, out var node))
 			return;
-
 		var pos = node.Position;
 		var magnitude = BattleEffects.ShakeMagnitudeFor(node.IsMothership, node.BlueprintDrawingId);
-
-		// Visual: expanding debris ring scaled to hull size.
 		var effect = new ShipDestroyedEffect();
 		_effectsContainer.AddChild(effect);
 		effect.Spawn(pos, magnitude * 8f, ev.Fleet);
+	}
 
-		// Audio + shake.
+	private void PlayShipDestroyedAudio(LogEvent ev)
+	{
+		if (!_shipNodes.TryGetValue(ev.Id, out var node))
+			return;
+		var magnitude = BattleEffects.ShakeMagnitudeFor(node.IsMothership, node.BlueprintDrawingId);
 		_effects.Play(
 			node.IsMothership
 				? BattleEffects.SfxMothershipDestroyed

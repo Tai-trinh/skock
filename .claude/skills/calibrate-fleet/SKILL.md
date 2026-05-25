@@ -50,18 +50,16 @@ Ask the user to confirm or adjust each target. Recommended proportions (feel fre
 
 ## Step 5 — Update ShipNode.cs
 
-Update the `ScaleFor()` switch arms. Each arm must be `target_world / sprite_pixel_height` using the **actual pixel height** read in Step 1. Example:
+`ScaleFor()` is derived from two dictionaries in `ShipNode.cs`:
 
-```csharp
-"corvette" => 30f / 256f,
-"frigate"  => 40f / 600f,
-```
+- **`SpriteHeightPx`** — sprite pixel heights. Update this when a sprite is regenerated at a new pixel size.
+- **`HullHitRadius`** — hit radii in sim-units. Update this when the target world size changes (Step 6 sets `hull_hit_radii = radius`; the two must be identical).
 
-Ordering: battlecruiser and dreadnought before destroyer/cruiser/frigate to avoid prefix match collisions. Corvette is the `_` default.
+`ScaleFor(hull)` computes `radius * 2 / px` automatically — no other edits needed once these two dicts are current.
 
 ## Step 6 — Update sim_config.json
 
-Set `hull_hit_radii` to `target_world / 2` for each hull:
+Set `hull_hit_radii` to the same values as `HullHitRadius` in ShipNode.cs (i.e. `target_world / 2`):
 
 ```json
 "hull_hit_radii": {

@@ -1,12 +1,12 @@
 use fixed::types::{I16F16, I32F32};
-use types::{HullClass, ProjectileId, ProjectileSubtype, ShipId, TargetPriority};
+use types::{HullClass, ProjectileId, ProjectileSubtype, ShipId};
 
 use crate::{
     geometry::{dist_sq, min_dist_sq_to_segment},
     state::{Event, Fleet, Pos2, Projectile, SimState, Vec2, WeaponKind},
 };
 
-use super::{apply_damage, hull_hit_radius, nearest_enemy_in_range, rng_frac};
+use super::{apply_damage, consume_hardpoint, hull_hit_radius, roll_damage};
 
 pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::SimConfig) {
     let ship_snapshot: Vec<(ShipId, Fleet, Pos2)> =
@@ -21,7 +21,6 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
         let fleet = ship.fleet;
         let ship_pos = ship.pos;
         let ship_heading = ship.heading;
-        let target_priority = ship.target_priority;
 
         for hp_idx in 0..weapon_count {
             let Some(ship) = state.ships.get(&ship_id) else { break };
@@ -65,18 +64,9 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
             let fire_pos = local_to_world(ship_pos, ship_heading, fire_forward, fire_lateral);
 
             // Determine target direction for initial velocity.
-            let target_pos_opt = match target_priority {
-                TargetPriority::Spread => {
-                    let r_sq = I32F32::from_num(range) * I32F32::from_num(range);
-                    nearest_enemy_in_range(&state.ships, &ship_pos, fleet, r_sq)
-                        .map(|tid| state.ships[&tid].pos)
-                }
-                _ => {
-                    let r_sq = I32F32::from_num(range) * I32F32::from_num(range);
-                    super::primary_target(&state.ships, &state.ships[&ship_id], r_sq)
-                        .map(|tid| state.ships[&tid].pos)
-                }
-            };
+            let r_sq = I32F32::from_num(range) * I32F32::from_num(range);
+            let target_pos_opt = super::primary_target(&state.ships, &state.ships[&ship_id], r_sq)
+                .map(|tid| state.ships[&tid].pos);
 
             let base_angle = match target_pos_opt {
                 Some(tpos) => {
@@ -155,14 +145,7 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
                 });
             }
 
-            if let Some(ship) = state.ships.get_mut(&ship_id) {
-                if let Some(w) = ship.weapons.get_mut(hp_idx) {
-                    w.cooldown_remaining = cooldown_ticks;
-                    if let Some(ref mut ammo) = w.ammo {
-                        *ammo -= 1;
-                    }
-                }
-            }
+            consume_hardpoint(state, ship_id, hp_idx, cooldown_ticks);
         }
     }
 
@@ -289,27 +272,9 @@ pub(super) fn advance_projectiles(state: &mut SimState, config: &crate::config::
         }
 
         // ── Swept-segment hit detection ───────────────────────────────────────
-        let mut best_hit: Option<(I32F32, ShipId)> = None;
-
-        for (ship_id, fleet, spos, hull_class) in &ship_snapshot {
-            if *fleet == owner_fleet {
-                continue;
-            }
-            let hull_r = hull_hit_radius(*hull_class, config);
-            let combined_r = hull_r + hit_radius;
-            let combined_r_sq = I32F32::from_num(combined_r) * I32F32::from_num(combined_r);
-            let min_dsq = min_dist_sq_to_segment(spos, &prev_pos, &pos);
-
-            if min_dsq <= combined_r_sq {
-                let center_dsq = dist_sq(&pos, spos);
-                let is_closer = best_hit.is_none_or(|(best, _)| center_dsq < best);
-                if is_closer {
-                    best_hit = Some((center_dsq, *ship_id));
-                }
-            }
-        }
-
-        if let Some((_, target_id)) = best_hit {
+        if let Some(target_id) =
+            swept_segment_first_hit(&ship_snapshot, owner_fleet, prev_pos, pos, hit_radius, config)
+        {
             if expl_radius > I16F16::ZERO {
                 outcomes.push(ProjOutcome::SplashPlusDirect {
                     direct_target: target_id,
@@ -348,8 +313,7 @@ pub(super) fn advance_projectiles(state: &mut SimState, config: &crate::config::
                 crit_damage: crit_mul,
                 attacker,
             } => {
-                let roll = rng_frac(&mut state.rng);
-                let dmg = if roll < crit_chance { base_damage * crit_mul } else { base_damage };
+                let dmg = roll_damage(base_damage, crit_chance, crit_mul, &mut state.rng);
                 apply_damage(state, target, dmg, attacker);
             }
             ProjOutcome::Explosion {
@@ -383,8 +347,7 @@ pub(super) fn advance_projectiles(state: &mut SimState, config: &crate::config::
                 radius,
                 expl_damage,
             } => {
-                let roll = rng_frac(&mut state.rng);
-                let dmg = if roll < crit_chance { direct_damage * crit_mul } else { direct_damage };
+                let dmg = roll_damage(direct_damage, crit_chance, crit_mul, &mut state.rng);
                 apply_damage(state, direct_target, dmg, attacker);
                 apply_explosion(
                     state,
@@ -399,6 +362,33 @@ pub(super) fn advance_projectiles(state: &mut SimState, config: &crate::config::
             }
         }
     }
+}
+
+fn swept_segment_first_hit(
+    snapshot: &[(ShipId, Fleet, Pos2, HullClass)],
+    owner_fleet: Fleet,
+    prev_pos: Pos2,
+    pos: Pos2,
+    hit_radius: I16F16,
+    config: &crate::config::SimConfig,
+) -> Option<ShipId> {
+    let mut best: Option<(I32F32, ShipId)> = None;
+    for (id, fleet, spos, hull_class) in snapshot {
+        if *fleet == owner_fleet {
+            continue;
+        }
+        let hull_r = hull_hit_radius(*hull_class, config);
+        let combined_r = hull_r + hit_radius;
+        let combined_r_sq = I32F32::from_num(combined_r) * I32F32::from_num(combined_r);
+        let min_dsq = min_dist_sq_to_segment(spos, &prev_pos, &pos);
+        if min_dsq <= combined_r_sq {
+            let center_dsq = dist_sq(&pos, spos);
+            if best.is_none_or(|(b, _)| center_dsq < b) {
+                best = Some((center_dsq, *id));
+            }
+        }
+    }
+    best.map(|(_, id)| id)
 }
 
 fn steer_missile(proj: &mut Projectile, ships: &[(ShipId, Fleet, Pos2, HullClass)]) {
@@ -463,8 +453,7 @@ fn apply_explosion(
         .collect();
 
     for target_id in targets {
-        let roll = rng_frac(&mut state.rng);
-        let dmg = if roll < crit_chance { damage * crit_mul } else { damage };
+        let dmg = roll_damage(damage, crit_chance, crit_mul, &mut state.rng);
         apply_damage(state, target_id, dmg, attacker);
     }
 

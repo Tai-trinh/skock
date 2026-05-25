@@ -1,12 +1,12 @@
 use fixed::types::{I16F16, I32F32};
-use types::{ShipId, TargetPriority};
+use types::ShipId;
 
 use crate::{
     geometry::dist_sq,
     state::{Event, SimState, WeaponKind},
 };
 
-use super::{apply_damage, nearest_enemy_in_range, rng_frac};
+use super::{apply_damage, consume_hardpoint, rng_frac, roll_damage};
 
 pub(super) fn fire_hitscan(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
@@ -27,7 +27,6 @@ fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) 
     let (
         fleet,
         ship_pos,
-        target_priority,
         range,
         range_sq,
         damage,
@@ -61,7 +60,6 @@ fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) 
         (
             ship.fleet,
             ship.pos,
-            ship.target_priority,
             w.range,
             r * r,
             w.damage,
@@ -74,13 +72,7 @@ fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) 
         )
     };
 
-    let target_id = match target_priority {
-        TargetPriority::Spread => nearest_enemy_in_range(&state.ships, &ship_pos, fleet, range_sq),
-        _ => {
-            // For all shared-target strategies, pick via the max range of this hardpoint.
-            super::primary_target(&state.ships, &state.ships[&ship_id], range_sq)
-        }
-    };
+    let target_id = super::primary_target(&state.ships, &state.ships[&ship_id], range_sq);
 
     let Some(target_id) = target_id else { return };
 
@@ -102,8 +94,7 @@ fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) 
             target_pos_y: target_pos.y,
         });
     } else {
-        let crit_roll = rng_frac(&mut state.rng);
-        let dmg = if crit_roll < crit_chance { damage * crit_damage } else { damage };
+        let dmg = roll_damage(damage, crit_chance, crit_damage, &mut state.rng);
         apply_damage(state, target_id, dmg, fleet);
         state.events.push(Event::HitscanFired {
             source_id: ship_id,
@@ -117,14 +108,7 @@ fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) 
         });
     }
 
-    if let Some(ship) = state.ships.get_mut(&ship_id) {
-        if let Some(w) = ship.weapons.get_mut(hp_idx) {
-            w.cooldown_remaining = cooldown_ticks;
-            if let Some(ref mut ammo) = w.ammo {
-                *ammo -= 1;
-            }
-        }
-    }
+    consume_hardpoint(state, ship_id, hp_idx, cooldown_ticks);
 }
 
 /// Linearly interpolates miss chance from `miss_near` at `accurate_range` to `miss_far` at `range`.

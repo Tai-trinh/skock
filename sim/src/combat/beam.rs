@@ -1,5 +1,5 @@
 use fixed::types::{I16F16, I32F32};
-use types::{BeamId, HullClass, ShipId, TargetPriority};
+use types::{BeamId, HullClass, ShipId};
 
 use crate::{
     config::SimConfig,
@@ -7,7 +7,7 @@ use crate::{
     state::{BeamEntity, BeamPhase, Fleet, Pos2, SimState, WeaponKind},
 };
 
-use super::{apply_damage, hull_hit_radius, nearest_enemy_in_range, rng_frac};
+use super::{apply_damage, consume_hardpoint, hull_hit_radius, roll_damage};
 
 pub(super) fn start_beams(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
@@ -55,16 +55,10 @@ pub(super) fn start_beams(state: &mut SimState) {
             let crit_chance = w.crit_chance;
             let crit_damage = w.crit_damage;
             let cooldown_ticks = w.cooldown_ticks;
-            let target_priority = ship.target_priority;
 
             let range_sq = I32F32::from_num(range) * I32F32::from_num(range);
 
-            let target_id = match target_priority {
-                TargetPriority::Spread => {
-                    nearest_enemy_in_range(&state.ships, &pos, fleet, range_sq)
-                }
-                _ => super::primary_target(&state.ships, &state.ships[&ship_id], range_sq),
-            };
+            let target_id = super::primary_target(&state.ships, &state.ships[&ship_id], range_sq);
 
             let Some(nearest_id) = target_id else { continue };
 
@@ -101,11 +95,7 @@ pub(super) fn start_beams(state: &mut SimState) {
 
             state.active_beams.insert((ship_id, hp_idx), beam_id);
 
-            if let Some(ship) = state.ships.get_mut(&ship_id) {
-                if let Some(w) = ship.weapons.get_mut(hp_idx) {
-                    w.cooldown_remaining = cooldown_ticks;
-                }
-            }
+            consume_hardpoint(state, ship_id, hp_idx, cooldown_ticks);
         }
     }
 }
@@ -193,15 +183,8 @@ pub(super) fn resolve_beams(state: &mut SimState, config: &SimConfig) {
                 };
 
                 if let Some(target_id) = hit_ship {
-                    let roll = rng_frac(&mut state.rng);
-                    let final_dmg = {
-                        let base = damage * ramp_factor;
-                        if roll < crit_chance {
-                            base * crit_mul
-                        } else {
-                            base
-                        }
-                    };
+                    let final_dmg =
+                        roll_damage(damage * ramp_factor, crit_chance, crit_mul, &mut state.rng);
                     apply_damage(state, target_id, final_dmg, owner_fleet);
 
                     if let Some(beam) = state.beams.get_mut(&bid) {
