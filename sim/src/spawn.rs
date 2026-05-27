@@ -199,6 +199,7 @@ pub fn build_ship(
                 config.hull_hit_radii.get(&format!("{:?}", def.hull_class)).copied().unwrap_or(8.0);
             I16F16::from_num(r)
         },
+        low_hp_flagged: false,
     }
 }
 

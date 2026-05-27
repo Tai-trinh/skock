@@ -20,12 +20,15 @@ pub fn run_tick(state: &mut SimState, config: &SimConfig) -> TickResult {
     state.tick += 1;
     state.events.clear();
 
-    // Phase 2: apply continuous effects (shield recharge)
+    // Phase 2: continuous effects — shield recharge
     for ship in state.ships.values_mut() {
         if ship.shield_recharge_rate > I16F16::ZERO && ship.shield_hp < ship.shield_max_hp {
             ship.shield_hp = (ship.shield_hp + ship.shield_recharge_rate).min(ship.shield_max_hp);
         }
-        // Tick down weapon cooldowns
+    }
+
+    // Phase 2b: tick down weapon cooldowns
+    for ship in state.ships.values_mut() {
         for w in &mut ship.weapons {
             if w.cooldown_remaining > 0 {
                 w.cooldown_remaining -= 1;

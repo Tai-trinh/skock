@@ -24,8 +24,8 @@ pub fn apply_damage(
     state.damage_dealt[idx] += I32F32::from_num(hull_damage);
 
     let low_hp = ship.max_hp / I16F16::from_num(4);
-    if ship.hp <= low_hp && !state.low_hp_flagged.get(&target_id).copied().unwrap_or(false) {
-        state.low_hp_flagged.insert(target_id, true);
+    if ship.hp <= low_hp && !ship.low_hp_flagged {
+        ship.low_hp_flagged = true;
         state.events.push(Event::ShipAtLowHp { id: target_id });
     }
 

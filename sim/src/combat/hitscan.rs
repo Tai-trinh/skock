@@ -1,4 +1,4 @@
-use fixed::types::{I16F16, I32F32};
+use fixed::types::I16F16;
 use types::ShipId;
 
 use crate::{
@@ -6,7 +6,7 @@ use crate::{
     state::{Event, SimState, WeaponKind},
 };
 
-use super::{apply_damage, consume_hardpoint, rng_frac, roll_damage};
+use super::{apply_damage, consume_hardpoint, range_sq, rng_frac, roll_damage};
 
 pub(super) fn fire_hitscan(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
@@ -56,12 +56,11 @@ fn fire_hardpoint_hitscan(state: &mut SimState, ship_id: ShipId, hp_idx: usize) 
         else {
             unreachable!()
         };
-        let r = I32F32::from_num(w.range);
         (
             ship.fleet,
             ship.pos,
             w.range,
-            r * r,
+            range_sq(w.range),
             w.damage,
             miss_chance_far,
             miss_chance_near,

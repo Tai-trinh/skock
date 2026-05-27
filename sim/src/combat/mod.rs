@@ -132,6 +132,11 @@ pub(super) fn consume_hardpoint(
     }
 }
 
+pub(super) fn range_sq(r: I16F16) -> I32F32 {
+    let r = I32F32::from_num(r);
+    r * r
+}
+
 pub(super) fn normalize_angle(a: I16F16) -> I16F16 {
     let pi = I16F16::from_num(std::f64::consts::PI);
     let two_pi = pi + pi;

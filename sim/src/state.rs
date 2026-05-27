@@ -157,6 +157,8 @@ pub struct Ship {
     pub combat_stance: CombatStance,
     pub preferred_range: I16F16,
     pub hit_radius: I16F16,
+    /// True once the ship has dropped to ≤25% HP; prevents re-firing ShipAtLowHp.
+    pub low_hp_flagged: bool,
 }
 
 // ── Projectile entity ─────────────────────────────────────────────────────────
@@ -273,7 +275,6 @@ pub struct SimState {
     pub active_beams: BTreeMap<(ShipId, usize), BeamId>,
     pub rng: Xoshiro256Plus,
     pub events: Vec<Event>,
-    pub low_hp_flagged: BTreeMap<ShipId, bool>,
     pub attrition_started: bool,
     pub killed: Vec<(Fleet, HullClass, bool)>,
     pub damage_dealt: [I32F32; 2],
@@ -292,7 +293,6 @@ impl SimState {
             active_beams: BTreeMap::new(),
             rng,
             events: Vec::new(),
-            low_hp_flagged: BTreeMap::new(),
             attrition_started: false,
             killed: Vec::new(),
             damage_dealt: [I32F32::ZERO, I32F32::ZERO],

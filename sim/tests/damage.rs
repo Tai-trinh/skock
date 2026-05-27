@@ -46,6 +46,7 @@ fn insert_ship(state: &mut SimState, fleet: Fleet, hp: f64, shield_hp: f64, armo
             combat_stance: CombatStance::Standoff,
             preferred_range: I16F16::ZERO,
             hit_radius: I16F16::from_num(5),
+            low_hp_flagged: false,
         },
     );
     id

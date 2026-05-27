@@ -6,7 +6,7 @@ use crate::{
     state::{Event, Fleet, Pos2, Projectile, SimState, Vec2, WeaponKind},
 };
 
-use super::{apply_damage, consume_hardpoint, hull_hit_radius, normalize_angle, roll_damage};
+use super::{apply_damage, consume_hardpoint, hull_hit_radius, normalize_angle, range_sq, roll_damage};
 
 pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::SimConfig) {
     let ship_snapshot: Vec<(ShipId, Fleet, Pos2)> =
@@ -64,8 +64,7 @@ pub(super) fn spawn_projectiles(state: &mut SimState, _config: &crate::config::S
             let fire_pos = local_to_world(ship_pos, ship_heading, fire_forward, fire_lateral);
 
             // Determine target direction for initial velocity.
-            let r_sq = I32F32::from_num(range) * I32F32::from_num(range);
-            let target_pos_opt = super::primary_target(&state.ships, &state.ships[&ship_id], r_sq)
+            let target_pos_opt = super::primary_target(&state.ships, &state.ships[&ship_id], range_sq(range))
                 .map(|tid| state.ships[&tid].pos);
 
             let base_angle = match target_pos_opt {
