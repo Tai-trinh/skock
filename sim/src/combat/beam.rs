@@ -7,7 +7,9 @@ use crate::{
     state::{BeamEntity, BeamPhase, Fleet, Pos2, SimState, WeaponKind},
 };
 
-use super::{apply_damage, consume_hardpoint, hull_hit_radius, normalize_angle, range_sq, roll_damage};
+use super::{
+    apply_damage, consume_hardpoint, hull_hit_radius, normalize_angle, range_sq, roll_damage,
+};
 
 pub(super) fn start_beams(state: &mut SimState) {
     let ship_ids: Vec<ShipId> = state.ships.keys().copied().collect();
@@ -56,7 +58,8 @@ pub(super) fn start_beams(state: &mut SimState) {
             let crit_damage = w.crit_damage;
             let cooldown_ticks = w.cooldown_ticks;
 
-            let target_id = super::primary_target(&state.ships, &state.ships[&ship_id], range_sq(range));
+            let target_id =
+                super::primary_target(&state.ships, &state.ships[&ship_id], range_sq(range));
 
             let Some(nearest_id) = target_id else { continue };
 
