@@ -47,7 +47,7 @@ The retry opponent is drawn fresh from the same jump's pool.
 4. Your fleet warps in from the left; the opponent warps in from the right.
 5. The fleets battle. If combat exceeds 60 seconds, attrition kicks in: ships take 1% of max HP per second, increasing by 1% each additional second. If both Motherships somehow reach 0 HP in the same tick, the result is a draw; draws count as losses (toward the 3-loss limit and the flawless-run check) and earn no Tech.
 6. Earn resources based on outcome:
-   - `Salvage` — flat payout every battle regardless of outcome: `JumpNumber × 10`. Victory adds a flat bonus: `JumpNumber × 15`. Scaling with jump number keeps the payout meaningful as costs grow; the base payout prevents death spirals — a losing player always recovers enough to rebuild.
+   - `Salvage` — flat payout every battle regardless of outcome: `JumpNumber × 10`. Victory adds a flat bonus: `JumpNumber × 15`.
    - `Tech` — victories only. Scales with JumpNumber: 1 Tech (jumps 1–3), 2 Tech (jumps 4–6), 3 Tech (jumps 7–8).
 
 ### Between jumps
@@ -62,7 +62,7 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 
 - **Hitscan** — damage resolves instantly at the tick fired. No sim entity created. Optional `miss_chance` (0.0–1.0): rolled via battle RNG each shot; on miss, a `hitscan_missed` event fires and no damage is applied.
 - **Projectile** — a first-class sim entity with position, velocity, and `fuse_ticks_remaining`. On expiry without a hit the projectile is silently removed from sim state; if the weapon carries an explosive payload the explosion still triggers on fuse expiry.
-- **Beam / ray** — two-phase weapon. **Charge phase** (`charge_ticks`): the turret slews toward the target; beam entity exists in state snapshots so the renderer shows the turret aiming. Charge cancels immediately if the firing ship is stunned. **Firing phase** (`duration_ticks`): continuous damage each tick to the first enemy in the current ray direction within `range`. Beam ends immediately if the intended target dies.
+- **Beam / ray** — two-phase weapon. **Charge phase** (`charge_ticks`): the turret slews toward the target; beam entity exists in state snapshots so the renderer shows the turret aiming. **Firing phase** (`duration_ticks`): continuous damage each tick to the first enemy in the current ray direction within `range`.
 
   Tracking uses two angular rates (see ADR-0016): `slew_rate` (fast) when the ray is not hitting any enemy; `track_rate` (slow) when firing on an enemy. Both are active during charge and firing.
 
@@ -72,11 +72,11 @@ The only way to permanently remove a ship is to manually salvage it in the docky
 
 ### Projectile subtypes
 
-- **Seeking missile** — homes toward a target each tick within a turn-rate limit. Fizzles after N ticks if no hit. Interceptable by point defense.
-- **Torpedo** — straight-line, no homing (or very low turn rate). High damage, long lifetime. Interceptable by point defense. May carry an explosive payload (see below).
-- **Drifting bomb / mine** — launched with an initial velocity then drifts unpowered. Detonates on proximity (radius trigger). No target tracking. Can be shot down by point defense. Always explosive.
+- **Seeking missile** — homes toward a target each tick within a turn-rate limit. Fizzles after N ticks if no hit.
+- **Torpedo** — straight-line, no homing (or very low turn rate). High damage, long lifetime. May carry an explosive payload (see below).
+- **Drifting bomb / mine** — launched with an initial velocity then drifts unpowered. Detonates on proximity (radius trigger). No target tracking. Always explosive.
 
-**Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits enemy ships only (filtered by fleet; no friendly fire). The explosion is a renderer event (`explosion_detonated`) with a position and radius for visual effect.
+**Explosive payload:** torpedoes, bombs, and mines may carry an explosive payload defined by `explosion_radius` and `explosion_damage` on the weapon block. On detonation, an expanding explosion ring is emitted — every ship within `explosion_radius` takes `explosion_damage` exactly once, regardless of position in the ring. Damage is flat within the radius (no falloff). Hits enemy ships only (filtered by fleet; no friendly fire). The explosion fires a `projectile_explosion` event (position, radius) for the renderer's visual effect.
 
 ### Ship roles
 
@@ -129,7 +129,7 @@ Ships are identified by two fields plus an optional weight designation. Display 
 
 **AddHardpoint effect:** a `FleetEffect` variant that appends a hardpoint to every ship matching a scope filter at sim spawn time. Stored in the fleet's effect arrays (`doctrines`, `role_equipment`, etc.) when purchased. The sim resolves the effective hardpoint list at spawn: base `ShipDef.hardpoints` + all matching `AddHardpoint` effects. The shared `catalog` crate exposes `fn describe_ship(def: &ShipDef, effective_hardpoints: &[HardpointDef]) -> String` and `fn label_hardpoint(h: &HardpointDef) -> String`; the dockyard binary calls these and includes the generated strings in fleet-info responses. No description strings are hand-authored in fleet JSON.
 
-**Multi-beam indexing:** `SimState.active_beams` is keyed `BTreeMap<(ShipId, usize), BeamId>` where `usize` is the hardpoint index. `BeamEntity` carries `hardpoint_index: usize`. A ship may have multiple simultaneous active beams — one per beam hardpoint. The old `BTreeMap<ShipId, BeamId>` (one beam per ship) is superseded.
+**Multi-beam indexing:** `SimState.active_beams` is keyed `BTreeMap<(ShipId, usize), BeamId>` where `usize` is the hardpoint index. `BeamEntity` carries `hardpoint_index: usize`. A ship may have multiple simultaneous active beams — one per beam hardpoint.
 
 
 

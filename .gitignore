@@ -23,3 +23,6 @@ player_state.json
 # comfy ui
 ComfyUI_windows_portable_nvidia
 ComfyUI_windows_portable
+
+# graphify extraction cache (local speed-up, not needed in repo)
+graphify-out/cache/

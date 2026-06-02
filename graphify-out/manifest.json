@@ -1,0 +1,1197 @@
+{
+  "/mnt/c/Users/Qinn/source/repos/skock/result.json": {
+    "mtime": 1779310680.635262,
+    "ast_hash": "7bf30b05c71836973ba0039ad3d2057c",
+    "semantic_hash": "7bf30b05c71836973ba0039ad3d2057c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim_config.json": {
+    "mtime": 1779569443.9008896,
+    "ast_hash": "f56b6757e6b1653bc164694242f0a068",
+    "semantic_hash": "f56b6757e6b1653bc164694242f0a068"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/tai.json": {
+    "mtime": 1779311243.61472,
+    "ast_hash": "141513ea87ebabe5d06612d1c2ca1b75",
+    "semantic_hash": "141513ea87ebabe5d06612d1c2ca1b75"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/user_settings.json": {
+    "mtime": 1779572365.1421893,
+    "ast_hash": "89db0d340535a425461145c45f53f62a",
+    "semantic_hash": "89db0d340535a425461145c45f53f62a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/settings.json": {
+    "mtime": 1780085711.4506185,
+    "ast_hash": "cd0127700946e8111bf54d0754611b9a",
+    "semantic_hash": "cd0127700946e8111bf54d0754611b9a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/settings.local.json": {
+    "mtime": 1780139032.7438736,
+    "ast_hash": "793e593294efdeba8cb271133f5e1d39",
+    "semantic_hash": "793e593294efdeba8cb271133f5e1d39"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/diagnose/scripts/hitl-loop.template.sh": {
+    "mtime": 1777549091.0,
+    "ast_hash": "46a2a00761be2785e59661f0e3c11471",
+    "semantic_hash": "46a2a00761be2785e59661f0e3c11471"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.githooks/pre-commit": {
+    "mtime": 1779489979.209826,
+    "ast_hash": "2ed03b74bddbea8426f4410130414cef",
+    "semantic_hash": "2ed03b74bddbea8426f4410130414cef"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.vscode/extensions.json": {
+    "mtime": 1779317439.9613206,
+    "ast_hash": "b49b4c4e1e3fd59a75c2cf67e6cc3171",
+    "semantic_hash": "b49b4c4e1e3fd59a75c2cf67e6cc3171"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/admiral/src/catalog.rs": {
+    "mtime": 1779316828.1791017,
+    "ast_hash": "c19b0003d180ca86edcd9081d3701214",
+    "semantic_hash": "c19b0003d180ca86edcd9081d3701214"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/admiral/src/main.rs": {
+    "mtime": 1779316234.4839962,
+    "ast_hash": "14af406a8e93233e7dddc9c5f3b9828b",
+    "semantic_hash": "14af406a8e93233e7dddc9c5f3b9828b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_1.json": {
+    "mtime": 1779572828.354063,
+    "ast_hash": "4f82288e47054a3ef4f62c90bc64326d",
+    "semantic_hash": "4f82288e47054a3ef4f62c90bc64326d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_2.json": {
+    "mtime": 1779573037.8571403,
+    "ast_hash": "24a9382cbb161f8c8ee242e6f5a4e7df",
+    "semantic_hash": "24a9382cbb161f8c8ee242e6f5a4e7df"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_3.json": {
+    "mtime": 1779573037.8669312,
+    "ast_hash": "78d3d72715e85d8b2f200181247fe297",
+    "semantic_hash": "78d3d72715e85d8b2f200181247fe297"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_4.json": {
+    "mtime": 1779573037.875578,
+    "ast_hash": "9110ae275dc2c177fa6b109789d5efb3",
+    "semantic_hash": "9110ae275dc2c177fa6b109789d5efb3"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_5.json": {
+    "mtime": 1779573037.8853416,
+    "ast_hash": "4ac2bcb899374fc569d8edd54e5d1800",
+    "semantic_hash": "4ac2bcb899374fc569d8edd54e5d1800"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_6.json": {
+    "mtime": 1779573037.8941174,
+    "ast_hash": "87db7c88459cff918c4b8e812ecc138f",
+    "semantic_hash": "87db7c88459cff918c4b8e812ecc138f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_7.json": {
+    "mtime": 1779573037.9044554,
+    "ast_hash": "a181ebe9352be5e0ffa7c9a57742b249",
+    "semantic_hash": "a181ebe9352be5e0ffa7c9a57742b249"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/data/opponents/jump_8.json": {
+    "mtime": 1779573037.911542,
+    "ast_hash": "d1f9f7984ea34973e7cb6654346a31ea",
+    "semantic_hash": "d1f9f7984ea34973e7cb6654346a31ea"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/catalog/src/lib.rs": {
+    "mtime": 1779402423.2944694,
+    "ast_hash": "ba862a7aa42e5f3897822acec7c0c1e9",
+    "semantic_hash": "ba862a7aa42e5f3897822acec7c0c1e9"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/skock.csproj": {
+    "mtime": 1779297443.4777133,
+    "ast_hash": "828c8bb484285778e076b03f605e3a2a",
+    "semantic_hash": "828c8bb484285778e076b03f605e3a2a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/skock.sln": {
+    "mtime": 1779049349.1435306,
+    "ast_hash": "b85e84fade9562bba818135d72124ec5",
+    "semantic_hash": "b85e84fade9562bba818135d72124ec5"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/AdmiralCatalog.cs": {
+    "mtime": 1779345745.7512445,
+    "ast_hash": "985f6c01335e18992e98698b6b9a9aca",
+    "semantic_hash": "985f6c01335e18992e98698b6b9a9aca"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/AdmiralSelectUi.cs": {
+    "mtime": 1779345893.709552,
+    "ast_hash": "5b7de575683bd482eb54a4171f9ca529",
+    "semantic_hash": "5b7de575683bd482eb54a4171f9ca529"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/AdmiralSession.cs": {
+    "mtime": 1779317997.7777276,
+    "ast_hash": "00ef9de83a971dbb71762e81b5ba1ee6",
+    "semantic_hash": "00ef9de83a971dbb71762e81b5ba1ee6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/BattleInputs.cs": {
+    "mtime": 1778923884.0316384,
+    "ast_hash": "65d7a794a08b7ff59846a665e9a0b44c",
+    "semantic_hash": "65d7a794a08b7ff59846a665e9a0b44c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/BattleOutcomeResolver.cs": {
+    "mtime": 1779367813.5813534,
+    "ast_hash": "2741450ee2eeb8aaeb9ee19bf193962d",
+    "semantic_hash": "2741450ee2eeb8aaeb9ee19bf193962d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/DockSession.cs": {
+    "mtime": 1779368401.8205695,
+    "ast_hash": "15bf39641c886c4b802035da79fbf803",
+    "semantic_hash": "15bf39641c886c4b802035da79fbf803"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/DockSessionModel.cs": {
+    "mtime": 1779368596.0862086,
+    "ast_hash": "e427874ca08355a104c7803c6a249eb7",
+    "semantic_hash": "e427874ca08355a104c7803c6a249eb7"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/DockUi.cs": {
+    "mtime": 1779368554.3156848,
+    "ast_hash": "b1b0defa93f7f346902e350d7d3955b4",
+    "semantic_hash": "b1b0defa93f7f346902e350d7d3955b4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/Faction.cs": {
+    "mtime": 1778925018.5938349,
+    "ast_hash": "3b577d6057f22b3ea871d5e97bc6c9ff",
+    "semantic_hash": "3b577d6057f22b3ea871d5e97bc6c9ff"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/FleetData.cs": {
+    "mtime": 1779382740.4957561,
+    "ast_hash": "da9f4165d0fe81642dedab1cd8d566c5",
+    "semantic_hash": "da9f4165d0fe81642dedab1cd8d566c5"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/IAdmiralSelection.cs": {
+    "mtime": 1779345692.4859066,
+    "ast_hash": "7b72e251abc0189da749698d0cb07b71",
+    "semantic_hash": "7b72e251abc0189da749698d0cb07b71"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/IDockyard.cs": {
+    "mtime": 1779132861.8994768,
+    "ast_hash": "312ed95ab0444e589709ac647ddea841",
+    "semantic_hash": "312ed95ab0444e589709ac647ddea841"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/IEncounterSource.cs": {
+    "mtime": 1779406218.5066698,
+    "ast_hash": "26c020cc41f5926eb5648920fe88242a",
+    "semantic_hash": "26c020cc41f5926eb5648920fe88242a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/IRunData.cs": {
+    "mtime": 1779346958.7346857,
+    "ast_hash": "b99458e81d4a2ffb9b77822af10689b8",
+    "semantic_hash": "b99458e81d4a2ffb9b77822af10689b8"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/IRunStore.cs": {
+    "mtime": 1779170934.5499444,
+    "ast_hash": "ad65f4f2dcc6c49e95c5edc383bf7033",
+    "semantic_hash": "ad65f4f2dcc6c49e95c5edc383bf7033"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/IStatsStore.cs": {
+    "mtime": 1779056243.6844814,
+    "ast_hash": "cc0d0887c58b42fa6de3befc043dfcf4",
+    "semantic_hash": "cc0d0887c58b42fa6de3befc043dfcf4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/JumpRecord.cs": {
+    "mtime": 1778922768.859768,
+    "ast_hash": "d7e178642d14625e5dfc815ff383efa6",
+    "semantic_hash": "d7e178642d14625e5dfc815ff383efa6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/LifetimeStats.cs": {
+    "mtime": 1778922784.2841344,
+    "ast_hash": "a67a1df74204afed62033bab0bcf599a",
+    "semantic_hash": "a67a1df74204afed62033bab0bcf599a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/LocalAdmiralAdapter.cs": {
+    "mtime": 1779345703.776812,
+    "ast_hash": "7600fc7434e4a5b059469ebde747eede",
+    "semantic_hash": "7600fc7434e4a5b059469ebde747eede"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/LocalDockyardAdapter.cs": {
+    "mtime": 1779470501.2647283,
+    "ast_hash": "93857647a85ce4bd07b06fe5b98e6e07",
+    "semantic_hash": "93857647a85ce4bd07b06fe5b98e6e07"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/LocalEncounterAdapter.cs": {
+    "mtime": 1779468038.794575,
+    "ast_hash": "57822a796a4372d47c64f30e706a0ebe",
+    "semantic_hash": "57822a796a4372d47c64f30e706a0ebe"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/LocalRunStore.cs": {
+    "mtime": 1779170963.7409644,
+    "ast_hash": "a153fb307927470637b60f6cfaa5299e",
+    "semantic_hash": "a153fb307927470637b60f6cfaa5299e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/LocalStatsStore.cs": {
+    "mtime": 1779056249.0975127,
+    "ast_hash": "cb5904514db424e9b3af2730d4c7a75f",
+    "semantic_hash": "cb5904514db424e9b3af2730d4c7a75f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/MainMenuUi.cs": {
+    "mtime": 1779053099.3573227,
+    "ast_hash": "9995da4b57102dc22f614c6826a6030b",
+    "semantic_hash": "9995da4b57102dc22f614c6826a6030b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/OptionsOverlay.cs": {
+    "mtime": 1779571999.2092085,
+    "ast_hash": "2787dc6e34ec875c7fa00efa6f09a4ee",
+    "semantic_hash": "2787dc6e34ec875c7fa00efa6f09a4ee"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/ResearchUpgrade.cs": {
+    "mtime": 1779385147.6848009,
+    "ast_hash": "11f1e5386aeba27eeb1d56bcf499e91e",
+    "semantic_hash": "11f1e5386aeba27eeb1d56bcf499e91e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/RunEndUi.cs": {
+    "mtime": 1779470501.2768223,
+    "ast_hash": "fc47d1b0d11d55e9e1f91120a046f96c",
+    "semantic_hash": "fc47d1b0d11d55e9e1f91120a046f96c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/RunSnapshot.cs": {
+    "mtime": 1779345758.7380154,
+    "ast_hash": "b6720d2db0f7253b0cbecaa828ab939c",
+    "semantic_hash": "b6720d2db0f7253b0cbecaa828ab939c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/RunState.cs": {
+    "mtime": 1779470501.2910495,
+    "ast_hash": "2c57b1a00d1df2360d8f1db32f95d33a",
+    "semantic_hash": "2c57b1a00d1df2360d8f1db32f95d33a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/meta/UserSettings.cs": {
+    "mtime": 1779572087.1384108,
+    "ast_hash": "68761df50616940237984759a2547ef8",
+    "semantic_hash": "68761df50616940237984759a2547ef8"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/BattleEffects.cs": {
+    "mtime": 1779404335.0747995,
+    "ast_hash": "043f1abf64c00885b95af50730b2906d",
+    "semantic_hash": "043f1abf64c00885b95af50730b2906d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/BattleRenderer.cs": {
+    "mtime": 1779742898.860358,
+    "ast_hash": "322d854f13f4e176a7469854baf56ebd",
+    "semantic_hash": "322d854f13f4e176a7469854baf56ebd"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/BeamNode.cs": {
+    "mtime": 1779219201.428132,
+    "ast_hash": "825e1561b773e29e32d07e2fb88dd509",
+    "semantic_hash": "825e1561b773e29e32d07e2fb88dd509"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/ExplosionEffect.cs": {
+    "mtime": 1779219201.428132,
+    "ast_hash": "81b7f5a9b16969c3eca5c60c1a1e2add",
+    "semantic_hash": "81b7f5a9b16969c3eca5c60c1a1e2add"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/HitscanEffect.cs": {
+    "mtime": 1779741492.1762707,
+    "ast_hash": "265390da215653ac016c68406edb7c75",
+    "semantic_hash": "265390da215653ac016c68406edb7c75"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/HitscanImpactEffect.cs": {
+    "mtime": 1779387176.2886183,
+    "ast_hash": "9dd11e1b4689a9a67fde6bf17d3dd837",
+    "semantic_hash": "9dd11e1b4689a9a67fde6bf17d3dd837"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/ProjectileNode.cs": {
+    "mtime": 1779742879.102662,
+    "ast_hash": "ba1f2e4ec5a8a054f53aec0a2a4f1580",
+    "semantic_hash": "ba1f2e4ec5a8a054f53aec0a2a4f1580"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/ShipDestroyedEffect.cs": {
+    "mtime": 1779389802.8001282,
+    "ast_hash": "475996b4d381d021423bbed64f35d9dd",
+    "semantic_hash": "475996b4d381d021423bbed64f35d9dd"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/rendering/ShipNode.cs": {
+    "mtime": 1779741492.1802697,
+    "ast_hash": "22ba2b7da311186fe95ef004b30f1577",
+    "semantic_hash": "22ba2b7da311186fe95ef004b30f1577"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/BattleLog.cs": {
+    "mtime": 1779218652.7536337,
+    "ast_hash": "c206717ea9b731f79cdda8d2eedccad7",
+    "semantic_hash": "c206717ea9b731f79cdda8d2eedccad7"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/BattleLogParser.cs": {
+    "mtime": 1779402946.758181,
+    "ast_hash": "72d04ace9f4738d43f5c2c9054b59241",
+    "semantic_hash": "72d04ace9f4738d43f5c2c9054b59241"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/ISimRunner.cs": {
+    "mtime": 1779223434.7277427,
+    "ast_hash": "4c39100b76fe6031f2f692cd6f8dcf1d",
+    "semantic_hash": "4c39100b76fe6031f2f692cd6f8dcf1d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/LocalSimRunner.cs": {
+    "mtime": 1779470501.3086338,
+    "ast_hash": "fbcc8e7794556ba5024e9bba18f56a73",
+    "semantic_hash": "fbcc8e7794556ba5024e9bba18f56a73"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/PlaybackState.cs": {
+    "mtime": 1779254973.1075897,
+    "ast_hash": "e58037f98c9e95e1dbeb729f7993e00f",
+    "semantic_hash": "e58037f98c9e95e1dbeb729f7993e00f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/SimRunner.cs": {
+    "mtime": 1779223518.37426,
+    "ast_hash": "dcd4a4bfb45e67dcdb1ccc790777bcf4",
+    "semantic_hash": "dcd4a4bfb45e67dcdb1ccc790777bcf4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/sim/StoredLogSimRunner.cs": {
+    "mtime": 1779223489.9399388,
+    "ast_hash": "a97b0ceac919a59efb0f4876657d197e",
+    "semantic_hash": "a97b0ceac919a59efb0f4876657d197e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/ui/DebugOverlay.cs": {
+    "mtime": 1778843368.1156495,
+    "ast_hash": "3ec95f3a2035dc9b4204518017307c5a",
+    "semantic_hash": "3ec95f3a2035dc9b4204518017307c5a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/src/ui/FleetInspector.cs": {
+    "mtime": 1779385147.689312,
+    "ast_hash": "7b904612283695130711eedf45c847d0",
+    "semantic_hash": "7b904612283695130711eedf45c847d0"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/BattleLogParserTests.cs": {
+    "mtime": 1779406626.0835438,
+    "ast_hash": "f5cbdfd1e80913858280f8662c01df84",
+    "semantic_hash": "f5cbdfd1e80913858280f8662c01df84"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/BattleOutcomeResolverTests.cs": {
+    "mtime": 1779367736.8715906,
+    "ast_hash": "ee8a178ceb02207b4ecc0e4fcda44615",
+    "semantic_hash": "ee8a178ceb02207b4ecc0e4fcda44615"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/DockCatalogBridgeTests.cs": {
+    "mtime": 1779383036.760409,
+    "ast_hash": "b7c541ef4cab3f16d0a9983cf14b0fee",
+    "semantic_hash": "b7c541ef4cab3f16d0a9983cf14b0fee"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/DockSessionModelTests.cs": {
+    "mtime": 1779368453.51512,
+    "ast_hash": "285e28f1b84a12fe4f253fb447434f6e",
+    "semantic_hash": "285e28f1b84a12fe4f253fb447434f6e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/LocalEncounterAdapterTests.cs": {
+    "mtime": 1779468678.9187717,
+    "ast_hash": "2b85d8763c3275bd3eccaf53517d8a1f",
+    "semantic_hash": "2b85d8763c3275bd3eccaf53517d8a1f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/LocalRunStoreTests.cs": {
+    "mtime": 1779171323.004205,
+    "ast_hash": "f5d272d306556a7a2dbc66439c243460",
+    "semantic_hash": "f5d272d306556a7a2dbc66439c243460"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/LocalStatsStoreTests.cs": {
+    "mtime": 1779053192.593726,
+    "ast_hash": "66151387ede037e4afd7ebd3b5cf752a",
+    "semantic_hash": "66151387ede037e4afd7ebd3b5cf752a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/PlaybackStateTests.cs": {
+    "mtime": 1779127178.6818655,
+    "ast_hash": "1b7031ed5d8430c5787036349edc2978",
+    "semantic_hash": "1b7031ed5d8430c5787036349edc2978"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/skock.tests.csproj": {
+    "mtime": 1779049718.2982068,
+    "ast_hash": "3617c0901b418effe943dc20ada42650",
+    "semantic_hash": "3617c0901b418effe943dc20ada42650"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/bin/Debug/net8.0/skock.tests.deps.json": {
+    "mtime": 1779345953.6864586,
+    "ast_hash": "234e05ba8e7c818b8e964c5b5dcf9033",
+    "semantic_hash": "234e05ba8e7c818b8e964c5b5dcf9033"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/bin/Debug/net8.0/skock.tests.runtimeconfig.json": {
+    "mtime": 1779345953.7525465,
+    "ast_hash": "9fcdf880f73e74cf6347f8194b9f3509",
+    "semantic_hash": "9fcdf880f73e74cf6347f8194b9f3509"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/Fakes/FakeDockyard.cs": {
+    "mtime": 1779368421.3945615,
+    "ast_hash": "77d06e50f9df47e875e6dec1653b4e2a",
+    "semantic_hash": "77d06e50f9df47e875e6dec1653b4e2a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/Fakes/FakeRunData.cs": {
+    "mtime": 1779171305.1415133,
+    "ast_hash": "5480ea353865db67bbeb0aea12777108",
+    "semantic_hash": "5480ea353865db67bbeb0aea12777108"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/project.assets.json": {
+    "mtime": 1779297725.8144536,
+    "ast_hash": "992bcf109f4e37b6700bf8c608e7167f",
+    "semantic_hash": "992bcf109f4e37b6700bf8c608e7167f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/skock.tests.csproj.nuget.dgspec.json": {
+    "mtime": 1779297725.819466,
+    "ast_hash": "514d393eb554fd15a031d73a11b54cc1",
+    "semantic_hash": "514d393eb554fd15a031d73a11b54cc1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/Debug/net8.0/.NETCoreApp,Version=v8.0.AssemblyAttributes.cs": {
+    "mtime": 1779049675.3056686,
+    "ast_hash": "9b225453b5a8008eefb62f6c5c66ce15",
+    "semantic_hash": "9b225453b5a8008eefb62f6c5c66ce15"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/Debug/net8.0/skock.tests.AssemblyInfo.cs": {
+    "mtime": 1779742900.9222114,
+    "ast_hash": "33a803afa4244e7078fa4110f4ab2b23",
+    "semantic_hash": "33a803afa4244e7078fa4110f4ab2b23"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/Debug/net8.0/skock.tests.GlobalUsings.g.cs": {
+    "mtime": 1779049674.8402188,
+    "ast_hash": "0ca42cbc4f22da0578a209aaeb544bf8",
+    "semantic_hash": "0ca42cbc4f22da0578a209aaeb544bf8"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/Debug/net8.0/skock.tests.sourcelink.json": {
+    "mtime": 1779742900.941753,
+    "ast_hash": "2da0a115b3f0e7f29272c6873e321198",
+    "semantic_hash": "2da0a115b3f0e7f29272c6873e321198"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/dockyard/src/catalog.rs": {
+    "mtime": 1779346999.782775,
+    "ast_hash": "ebf5bcc13a0070506985f74fccb8ac60",
+    "semantic_hash": "ebf5bcc13a0070506985f74fccb8ac60"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/dockyard/src/main.rs": {
+    "mtime": 1779132405.917943,
+    "ast_hash": "30e44ca021666f9c5c189d2b9b71a0a6",
+    "semantic_hash": "30e44ca021666f9c5c189d2b9b71a0a6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/dockyard/src/protocol.rs": {
+    "mtime": 1779346741.4759824,
+    "ast_hash": "291f4e3baa02ae40263d22cc8355ce25",
+    "semantic_hash": "291f4e3baa02ae40263d22cc8355ce25"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/dockyard/src/session.rs": {
+    "mtime": 1779355807.0831375,
+    "ast_hash": "bd5d0d467db894ba097c17c1d4a01d82",
+    "semantic_hash": "bd5d0d467db894ba097c17c1d4a01d82"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/encounter/src/main.rs": {
+    "mtime": 1779406185.618482,
+    "ast_hash": "c36c87b08495ad332d20bad2e2c1b2e4",
+    "semantic_hash": "c36c87b08495ad332d20bad2e2c1b2e4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/comfyui_submit.py": {
+    "mtime": 1779563561.8564417,
+    "ast_hash": "7a13aae2431c79675260536ed04c07ff",
+    "semantic_hash": "7a13aae2431c79675260536ed04c07ff"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/gen_image.ps1": {
+    "mtime": 1779563573.8655808,
+    "ast_hash": "06631cfe99d7bce5015790dac6e216e4",
+    "semantic_hash": "06631cfe99d7bce5015790dac6e216e4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/install-comfyui-extras.ps1": {
+    "mtime": 1779561818.6043234,
+    "ast_hash": "1bf7b075776440f8b7015ddbec567663",
+    "semantic_hash": "1bf7b075776440f8b7015ddbec567663"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/install-comfyui.ps1": {
+    "mtime": 1779539932.193367,
+    "ast_hash": "cd3f96faced290d49125392e4e20b814",
+    "semantic_hash": "cd3f96faced290d49125392e4e20b814"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/install-deps.ps1": {
+    "mtime": 1779536094.4682436,
+    "ast_hash": "005cc9728cb42cc7722790c409382a9a",
+    "semantic_hash": "005cc9728cb42cc7722790c409382a9a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/list-comfyui-models.sh": {
+    "mtime": 1779555427.2134137,
+    "ast_hash": "972ba5ae9ae80185b10b2f8bfe4616b7",
+    "semantic_hash": "972ba5ae9ae80185b10b2f8bfe4616b7"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/start-godot.ps1": {
+    "mtime": 1778843153.9347816,
+    "ast_hash": "e024f654b1c83df3883b5c9f5dcbb561",
+    "semantic_hash": "e024f654b1c83df3883b5c9f5dcbb561"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/workflows/flux_text_only.json": {
+    "mtime": 1779558839.1131585,
+    "ast_hash": "ceaf722655f90dc5b5b2541af7989866",
+    "semantic_hash": "ceaf722655f90dc5b5b2541af7989866"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/workflows/sdxl_ipadapter.json": {
+    "mtime": 1779551044.9912105,
+    "ast_hash": "c1f4c8f01cc378c69a652b0273924480",
+    "semantic_hash": "c1f4c8f01cc378c69a652b0273924480"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/workflows/sdxl_text_only.json": {
+    "mtime": 1779551041.742038,
+    "ast_hash": "7372c7b9cc55c35fdccc68c705cedc8d",
+    "semantic_hash": "7372c7b9cc55c35fdccc68c705cedc8d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scripts/workflows/unet_text_only.json": {
+    "mtime": 1779559422.9814844,
+    "ast_hash": "659775483781b87e3d9e9054dcaacfac",
+    "semantic_hash": "659775483781b87e3d9e9054dcaacfac"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/boids.rs": {
+    "mtime": 1779742916.2620578,
+    "ast_hash": "8652d8da775188041026895762a51d4a",
+    "semantic_hash": "8652d8da775188041026895762a51d4a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/config.rs": {
+    "mtime": 1779402248.1413329,
+    "ast_hash": "a264f7ea389816b37cf3c053f6b32f16",
+    "semantic_hash": "a264f7ea389816b37cf3c053f6b32f16"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/geometry.rs": {
+    "mtime": 1779300924.9630315,
+    "ast_hash": "de66a5dfa7c460adb37bec2762d16d50",
+    "semantic_hash": "de66a5dfa7c460adb37bec2762d16d50"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/lib.rs": {
+    "mtime": 1779218551.312371,
+    "ast_hash": "5d6b2043fb0cf24e20542c57b270c514",
+    "semantic_hash": "5d6b2043fb0cf24e20542c57b270c514"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/log.rs": {
+    "mtime": 1779400692.4972296,
+    "ast_hash": "4dd8fbfc49aa64d52377deb92b4d9bf1",
+    "semantic_hash": "4dd8fbfc49aa64d52377deb92b4d9bf1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/main.rs": {
+    "mtime": 1779310942.1449034,
+    "ast_hash": "56c2044676fd84d3f86b13f0c22d388c",
+    "semantic_hash": "56c2044676fd84d3f86b13f0c22d388c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/spawn.rs": {
+    "mtime": 1779901222.5360754,
+    "ast_hash": "a9dfe86b37865c5d8580c8858663e8dc",
+    "semantic_hash": "a9dfe86b37865c5d8580c8858663e8dc"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/state.rs": {
+    "mtime": 1779901208.8018205,
+    "ast_hash": "9e7d7c3cdd5220e14f6dc1f9c21627f8",
+    "semantic_hash": "9e7d7c3cdd5220e14f6dc1f9c21627f8"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/tick.rs": {
+    "mtime": 1779901235.7267063,
+    "ast_hash": "c325fdfe5f4409ffb1e355810f6a9c34",
+    "semantic_hash": "c325fdfe5f4409ffb1e355810f6a9c34"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/combat/beam.rs": {
+    "mtime": 1779910595.7948637,
+    "ast_hash": "7d713cdfb556578e52c0df37b2e801e0",
+    "semantic_hash": "7d713cdfb556578e52c0df37b2e801e0"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/combat/damage.rs": {
+    "mtime": 1779901216.052691,
+    "ast_hash": "003c81b0d56b6b02719ce8f4b8a91276",
+    "semantic_hash": "003c81b0d56b6b02719ce8f4b8a91276"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/combat/hitscan.rs": {
+    "mtime": 1779901274.7369921,
+    "ast_hash": "7cbc37a08ef1d0329baa782923e242bb",
+    "semantic_hash": "7cbc37a08ef1d0329baa782923e242bb"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/combat/mod.rs": {
+    "mtime": 1779901243.912142,
+    "ast_hash": "6289b9cffbbcbdc04119a1e400371793",
+    "semantic_hash": "6289b9cffbbcbdc04119a1e400371793"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/src/combat/projectile.rs": {
+    "mtime": 1779910595.805904,
+    "ast_hash": "633df7854acfbaefc540de3711253dc3",
+    "semantic_hash": "633df7854acfbaefc540de3711253dc3"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/beam_combat.rs": {
+    "mtime": 1779901677.2201025,
+    "ast_hash": "3a67affd5c495fd3ecb2291387424a87",
+    "semantic_hash": "3a67affd5c495fd3ecb2291387424a87"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/boid_movement.rs": {
+    "mtime": 1779901677.202432,
+    "ast_hash": "b52fc1e11b692eb502da4c6fb5660517",
+    "semantic_hash": "b52fc1e11b692eb502da4c6fb5660517"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/damage.rs": {
+    "mtime": 1779901677.2105925,
+    "ast_hash": "fbef26632ebaff38f52af1fbce89f75f",
+    "semantic_hash": "fbef26632ebaff38f52af1fbce89f75f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/determinism.rs": {
+    "mtime": 1779572853.428704,
+    "ast_hash": "279c19a131ef253ebbaa0a90c5be0ea6",
+    "semantic_hash": "279c19a131ef253ebbaa0a90c5be0ea6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/hardpoint_mechanics.rs": {
+    "mtime": 1779909558.6659424,
+    "ast_hash": "738b947c4bd0052d0dffc2e01df2e27b",
+    "semantic_hash": "738b947c4bd0052d0dffc2e01df2e27b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/missile_movement.rs": {
+    "mtime": 1779400949.939126,
+    "ast_hash": "136d39c8b1c87b533fdbe0e02ad58599",
+    "semantic_hash": "136d39c8b1c87b533fdbe0e02ad58599"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/tests/projectile_physics.rs": {
+    "mtime": 1779901677.2389586,
+    "ast_hash": "f0a2e646401827ad5c2f5efd5131b914",
+    "semantic_hash": "f0a2e646401827ad5c2f5efd5131b914"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/test_data/fleet_a.json": {
+    "mtime": 1779572828.4242675,
+    "ast_hash": "8bb54736eb397406c1a9e00204d847ea",
+    "semantic_hash": "8bb54736eb397406c1a9e00204d847ea"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/sim/test_data/fleet_b.json": {
+    "mtime": 1779572828.4303887,
+    "ast_hash": "19307aed11210015ce19e184d1a5a42f",
+    "semantic_hash": "19307aed11210015ce19e184d1a5a42f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/types/src/fleet.rs": {
+    "mtime": 1779374851.82455,
+    "ast_hash": "d51b3574bd17359041ee6adc05021111",
+    "semantic_hash": "d51b3574bd17359041ee6adc05021111"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/types/src/ids.rs": {
+    "mtime": 1778804695.4755318,
+    "ast_hash": "111f396646db439ba05f4e6226a12415",
+    "semantic_hash": "111f396646db439ba05f4e6226a12415"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/types/src/lib.rs": {
+    "mtime": 1779374866.456489,
+    "ast_hash": "5c752b2c7ed3350803f2f280098ee151",
+    "semantic_hash": "5c752b2c7ed3350803f2f280098ee151"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/CLAUDE.md": {
+    "mtime": 1780085711.4405892,
+    "ast_hash": "168048992928fb55716bb2e79786d6c1",
+    "semantic_hash": "168048992928fb55716bb2e79786d6c1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/CONTEXT.md": {
+    "mtime": 1779949951.219994,
+    "ast_hash": "4ab9fe760d361a2a9a56be3ab4251175",
+    "semantic_hash": "4ab9fe760d361a2a9a56be3ab4251175"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/README.md": {
+    "mtime": 1779045660.2545574,
+    "ast_hash": "14e88da9383e8c97c88bd52640d0b0f4",
+    "semantic_hash": "14e88da9383e8c97c88bd52640d0b0f4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scratch.md": {
+    "mtime": 1779210842.651563,
+    "ast_hash": "4211f47efa0feadac6a312dfc023f4fe",
+    "semantic_hash": "4211f47efa0feadac6a312dfc023f4fe"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/CLAUDE.md": {
+    "mtime": 1780085711.4310026,
+    "ast_hash": "db73b0edd7ffbc61ceac177130730865",
+    "semantic_hash": "db73b0edd7ffbc61ceac177130730865"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/architecture/SKILL.md": {
+    "mtime": 1778887442.1586547,
+    "ast_hash": "435340062e7dd3e37ee33e16697dc382",
+    "semantic_hash": "435340062e7dd3e37ee33e16697dc382"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/calibrate-fleet/SKILL.md": {
+    "mtime": 1779741174.498429,
+    "ast_hash": "281d526cefa96eb6cc9e14258eefe259",
+    "semantic_hash": "281d526cefa96eb6cc9e14258eefe259"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/caveman/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "d675bd2128851ccb38a88a15fd941986",
+    "semantic_hash": "d675bd2128851ccb38a88a15fd941986"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/code-review/SKILL.md": {
+    "mtime": 1778887442.159652,
+    "ast_hash": "3d72a70538ea6029e7f8fb5c03fb5d4d",
+    "semantic_hash": "3d72a70538ea6029e7f8fb5c03fb5d4d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/diagnose/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "70cd92c9a5219eb8db60629b1bf59949",
+    "semantic_hash": "70cd92c9a5219eb8db60629b1bf59949"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/gen-admiral/SKILL.md": {
+    "mtime": 1779558419.9005895,
+    "ast_hash": "d3d57789a14ffd9fc42562f6748d4dd1",
+    "semantic_hash": "d3d57789a14ffd9fc42562f6748d4dd1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/gen-image/SKILL.md": {
+    "mtime": 1779575463.9192393,
+    "ast_hash": "7a7926c06023f796617d6c24a4d6f7c3",
+    "semantic_hash": "7a7926c06023f796617d6c24a4d6f7c3"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/gen-ship/SKILL.md": {
+    "mtime": 1779565183.242444,
+    "ast_hash": "6d3a3c92a34c27df4672dfa8434edd89",
+    "semantic_hash": "6d3a3c92a34c27df4672dfa8434edd89"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/graphify/SKILL.md": {
+    "mtime": 1780085711.4159107,
+    "ast_hash": "5ae00786ea53e4d944ab70abe11eedd1",
+    "semantic_hash": "5ae00786ea53e4d944ab70abe11eedd1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/grill-me/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "8cb45c74133150e6a00f18b2059aae8c",
+    "semantic_hash": "8cb45c74133150e6a00f18b2059aae8c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/grill-with-docs/ADR-FORMAT.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "bb327bab674f400796f64b6e2ef5850c",
+    "semantic_hash": "bb327bab674f400796f64b6e2ef5850c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/grill-with-docs/CONTEXT-FORMAT.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "57e7e26a1a46884f8f952c67fb233af2",
+    "semantic_hash": "57e7e26a1a46884f8f952c67fb233af2"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/grill-with-docs/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "5ad241e49d5ffcd394eeff3a5ca46953",
+    "semantic_hash": "5ad241e49d5ffcd394eeff3a5ca46953"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/improve-codebase-architecture/DEEPENING.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "ebdd48f7e3b0afeb8085d797df543e1a",
+    "semantic_hash": "ebdd48f7e3b0afeb8085d797df543e1a"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/improve-codebase-architecture/INTERFACE-DESIGN.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "aee2c0695396f8c6432ba5bfe547f195",
+    "semantic_hash": "aee2c0695396f8c6432ba5bfe547f195"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/improve-codebase-architecture/LANGUAGE.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "680627d828b489f96b92d4a2d7fa3bb6",
+    "semantic_hash": "680627d828b489f96b92d4a2d7fa3bb6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/improve-codebase-architecture/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "38f2089311c7cb0fa42d2dc4a3e1340e",
+    "semantic_hash": "38f2089311c7cb0fa42d2dc4a3e1340e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tais-context-pruner/SKILL.md": {
+    "mtime": 1779354522.7780683,
+    "ast_hash": "0e8d97d933be4150b419aef0b7e2b785",
+    "semantic_hash": "0e8d97d933be4150b419aef0b7e2b785"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tais-context-splitter/SKILL.md": {
+    "mtime": 1779354578.4041426,
+    "ast_hash": "0741aae241e7f6dd9382e2eed0cf9200",
+    "semantic_hash": "0741aae241e7f6dd9382e2eed0cf9200"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tdd/deep-modules.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "fee2c44ab025f43e10ed717bb42cc9c2",
+    "semantic_hash": "fee2c44ab025f43e10ed717bb42cc9c2"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tdd/interface-design.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "fc309d957e5735a1ac3d27023842fa1b",
+    "semantic_hash": "fc309d957e5735a1ac3d27023842fa1b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tdd/mocking.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "c5505e8da8f516c7dacebd01c58a4c2c",
+    "semantic_hash": "c5505e8da8f516c7dacebd01c58a4c2c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tdd/refactoring.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "ecbf516d99a591169adce39a8a933f2e",
+    "semantic_hash": "ecbf516d99a591169adce39a8a933f2e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tdd/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "7ca080c0a0b0986e031fe6a47771d57e",
+    "semantic_hash": "7ca080c0a0b0986e031fe6a47771d57e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tdd/tests.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "253c991bba867959c0146c72b93a6f6f",
+    "semantic_hash": "253c991bba867959c0146c72b93a6f6f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/tech-debt/SKILL.md": {
+    "mtime": 1778887442.1661818,
+    "ast_hash": "3ecb436a4b2e66e07eb2598811478e86",
+    "semantic_hash": "3ecb436a4b2e66e07eb2598811478e86"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/write-a-skill/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "492ef034b4fc9e497cc69b8fed78a742",
+    "semantic_hash": "492ef034b4fc9e497cc69b8fed78a742"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.claude/skills/zoom-out/SKILL.md": {
+    "mtime": 1777549091.0,
+    "ast_hash": "204f114b01386f4a0a8e6c7784266369",
+    "semantic_hash": "204f114b01386f4a0a8e6c7784266369"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.github/workflows/ci.yml": {
+    "mtime": 1779468692.4500394,
+    "ast_hash": "ebf8979170e169ddd75b9588c4a85411",
+    "semantic_hash": "ebf8979170e169ddd75b9588c4a85411"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/.github/workflows/release.yml": {
+    "mtime": 1779467453.6784215,
+    "ast_hash": "3e68f23f0ba19a48485f5d15a2269dce",
+    "semantic_hash": "3e68f23f0ba19a48485f5d15a2269dce"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/deps.html": {
+    "mtime": 1779319971.2449188,
+    "ast_hash": "c0940dcc720f4759b48ca5fefed9417d",
+    "semantic_hash": "c0940dcc720f4759b48ca5fefed9417d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client.tests/obj/Debug/net8.0/skock.tests.csproj.FileListAbsolute.txt": {
+    "mtime": 1779345953.763572,
+    "ast_hash": "7f7ccdcae75656f7625423d8bc83009d",
+    "semantic_hash": "7f7ccdcae75656f7625423d8bc83009d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/rust/architecture/admiral.md": {
+    "mtime": 1779468334.2932715,
+    "ast_hash": "19307167398018d2b4cc99ea53542ed8",
+    "semantic_hash": "19307167398018d2b4cc99ea53542ed8"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/rust/architecture/catalog.md": {
+    "mtime": 1779468334.2965603,
+    "ast_hash": "74335883ba0acc5fabe36195bdad1140",
+    "semantic_hash": "74335883ba0acc5fabe36195bdad1140"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/rust/architecture/dockyard.md": {
+    "mtime": 1779468334.3000667,
+    "ast_hash": "1a59c05c36553d3217c073267f59fd7f",
+    "semantic_hash": "1a59c05c36553d3217c073267f59fd7f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/rust/architecture/encounter.md": {
+    "mtime": 1779468334.30358,
+    "ast_hash": "96660596045af8e056db60f7a446a3d1",
+    "semantic_hash": "96660596045af8e056db60f7a446a3d1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/rust/architecture/sim.md": {
+    "mtime": 1779468334.3077116,
+    "ast_hash": "951a2abc00532038347d7a7e96d78c17",
+    "semantic_hash": "951a2abc00532038347d7a7e96d78c17"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/rust/architecture/types.md": {
+    "mtime": 1779468334.311715,
+    "ast_hash": "29de140bafbe9dd3b2f246109aea5b4b",
+    "semantic_hash": "29de140bafbe9dd3b2f246109aea5b4b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/API-CONTRACTS.md": {
+    "mtime": 1779949981.0728972,
+    "ast_hash": "a11378d1d0f18b2d27912096ffaf687c",
+    "semantic_hash": "a11378d1d0f18b2d27912096ffaf687c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/ARCHITECTURE.md": {
+    "mtime": 1779949970.156825,
+    "ast_hash": "6ef3e0ca4cf6ddd1939a4deee16f81da",
+    "semantic_hash": "6ef3e0ca4cf6ddd1939a4deee16f81da"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/CONVENTIONS.md": {
+    "mtime": 1779390141.4172225,
+    "ast_hash": "e9f2e1a2b7937a3e1776688bf632ff51",
+    "semantic_hash": "e9f2e1a2b7937a3e1776688bf632ff51"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/GDD.md": {
+    "mtime": 1779949985.0847678,
+    "ast_hash": "d97dd2cc59d453b3430ad690c507646e",
+    "semantic_hash": "d97dd2cc59d453b3430ad690c507646e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/STANDARDS.md": {
+    "mtime": 1779351359.0054326,
+    "ast_hash": "a607eb7d3f52340fbbd0bfbf46fb4a12",
+    "semantic_hash": "a607eb7d3f52340fbbd0bfbf46fb4a12"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/WORKFLOWS.md": {
+    "mtime": 1779212468.4437518,
+    "ast_hash": "391ce75eb0176a8827f9cc92ba421a71",
+    "semantic_hash": "391ce75eb0176a8827f9cc92ba421a71"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0001-deterministic-containers.md": {
+    "mtime": 1779137041.2276907,
+    "ast_hash": "2db45a56e88a036c8d6bf3278d8e2977",
+    "semantic_hash": "2db45a56e88a036c8d6bf3278d8e2977"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0002-fixed-point-math.md": {
+    "mtime": 1779051438.5175307,
+    "ast_hash": "e3460f80fa592823fb89d02fd746cca8",
+    "semantic_hash": "e3460f80fa592823fb89d02fd746cca8"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0003-honor-system-anti-cheat.md": {
+    "mtime": 1779051754.4116633,
+    "ast_hash": "9a8798d10be9eaded00efa1616f16ebe",
+    "semantic_hash": "9a8798d10be9eaded00efa1616f16ebe"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0004-stats-store-separate-from-run-store.md": {
+    "mtime": 1779136951.7621682,
+    "ast_hash": "b3e3e5de26661b4ebadcb907e5112044",
+    "semantic_hash": "b3e3e5de26661b4ebadcb907e5112044"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0005-no-ship-permadeath.md": {
+    "mtime": 1779137017.4476113,
+    "ast_hash": "dccbf88bca6c983818ad1dce4a18dfb9",
+    "semantic_hash": "dccbf88bca6c983818ad1dce4a18dfb9"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0006-admiral-effects-pre-applied-at-save.md": {
+    "mtime": 1779051721.0319214,
+    "ast_hash": "3fc83e3327fbfebbcd65157e8005d2f4",
+    "semantic_hash": "3fc83e3327fbfebbcd65157e8005d2f4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0007-release-package-layout.md": {
+    "mtime": 1779467487.4894536,
+    "ast_hash": "f24994b47d0c8407c245a5e37f758c86",
+    "semantic_hash": "f24994b47d0c8407c245a5e37f758c86"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0008-csharp-test-project-layout.md": {
+    "mtime": 1779137062.8000484,
+    "ast_hash": "4875aef945d5595b9f3d59f668c293d1",
+    "semantic_hash": "4875aef945d5595b9f3d59f668c293d1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0009-rust-source-of-truth.md": {
+    "mtime": 1779313573.7584896,
+    "ast_hash": "9155721e5610bcabbdfcc80ab7bb277b",
+    "semantic_hash": "9155721e5610bcabbdfcc80ab7bb277b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0010-tick-loop-phase-order.md": {
+    "mtime": 1779210245.4044638,
+    "ast_hash": "301a65002428e5e49e5c8d6c0bdeba0b",
+    "semantic_hash": "301a65002428e5e49e5c8d6c0bdeba0b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0011-damage-resolution-order.md": {
+    "mtime": 1779210248.217688,
+    "ast_hash": "679fb82893a93794293ec43baee1e013",
+    "semantic_hash": "679fb82893a93794293ec43baee1e013"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0012-interface-first-client-architecture.md": {
+    "mtime": 1779211175.729982,
+    "ast_hash": "ac992ab219eabf316a0b52ea234148b7",
+    "semantic_hash": "ac992ab219eabf316a0b52ea234148b7"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0013-swept-segment-projectile-collision.md": {
+    "mtime": 1779213738.2867458,
+    "ast_hash": "e079e662be7b22715fd28d5d122f8fa2",
+    "semantic_hash": "e079e662be7b22715fd28d5d122f8fa2"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0014-multi-circle-hull-hit-shapes.md": {
+    "mtime": 1779213744.529805,
+    "ast_hash": "de9de004e4fcc50a5a4696c169c0d277",
+    "semantic_hash": "de9de004e4fcc50a5a4696c169c0d277"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0015-beam-damage-ramp.md": {
+    "mtime": 1779214941.537377,
+    "ast_hash": "cc6f8f3b6ade3d1c7a01c27c30542777",
+    "semantic_hash": "cc6f8f3b6ade3d1c7a01c27c30542777"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0016-beam-dual-tracking-rates.md": {
+    "mtime": 1779214948.795421,
+    "ast_hash": "4b02be61ed121ac5a1bfb3e1482cb107",
+    "semantic_hash": "4b02be61ed121ac5a1bfb3e1482cb107"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0017-admiral-selection-binary.md": {
+    "mtime": 1779315241.1616025,
+    "ast_hash": "fee175b820c39a1cf454132124deb968",
+    "semantic_hash": "fee175b820c39a1cf454132124deb968"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0018-shared-catalog-crate.md": {
+    "mtime": 1779315569.2314723,
+    "ast_hash": "d52d2e4839eef6d170767a2ff9b0bb00",
+    "semantic_hash": "d52d2e4839eef6d170767a2ff9b0bb00"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0019-encounter-source-binary.md": {
+    "mtime": 1779406091.840345,
+    "ast_hash": "a1fe29df2a6af50d4322b7c8978fc390",
+    "semantic_hash": "a1fe29df2a6af50d4322b7c8978fc390"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/docs/adr/0020-comfyui-asset-generation-pipeline.md": {
+    "mtime": 1779546490.2514563,
+    "ast_hash": "d1c182c03147a07734b14eb13ef95d6c",
+    "semantic_hash": "d1c182c03147a07734b14eb13ef95d6c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/scratch/TODO.md": {
+    "mtime": 1779401779.5639577,
+    "ast_hash": "d88533070132499926ebb3b455705215",
+    "semantic_hash": "d88533070132499926ebb3b455705215"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/gen/curvy_girl - Copy.png": {
+    "mtime": 1779562204.898414,
+    "ast_hash": "e9bd6f2567d4ff85778c60acfcfbe023",
+    "semantic_hash": "e9bd6f2567d4ff85778c60acfcfbe023"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/gen/curvy_girl.png": {
+    "mtime": 1779562452.421046,
+    "ast_hash": "a43dc19a0ed12dc86db2a6f9cf25e9fe",
+    "semantic_hash": "a43dc19a0ed12dc86db2a6f9cf25e9fe"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/gen/pretty_anime_girl.png": {
+    "mtime": 1779559600.179342,
+    "ast_hash": "95733bfcc9c7ee248c0c1e9367cb4714",
+    "semantic_hash": "95733bfcc9c7ee248c0c1e9367cb4714"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/gen/pretty_lady - Copy (2).png": {
+    "mtime": 1779576999.3659997,
+    "ast_hash": "9c908ea095bc649a0f7fd65ea2b96c1b",
+    "semantic_hash": "9c908ea095bc649a0f7fd65ea2b96c1b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/gen/pretty_lady - Copy.png": {
+    "mtime": 1779576938.2271879,
+    "ast_hash": "d89daadbe2045b7e09b82953d2da7d46",
+    "semantic_hash": "d89daadbe2045b7e09b82953d2da7d46"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/gen/pretty_lady.png": {
+    "mtime": 1779578588.8011918,
+    "ast_hash": "0d57f0dd220d8573c89fe894995313b6",
+    "semantic_hash": "0d57f0dd220d8573c89fe894995313b6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/portraits/admiral_aria.png": {
+    "mtime": 1779560955.7259269,
+    "ast_hash": "5c12811e4a0a91ee496bf37ad17e3738",
+    "semantic_hash": "5c12811e4a0a91ee496bf37ad17e3738"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/portraits/admiral_kicki.png": {
+    "mtime": 1779551522.053591,
+    "ast_hash": "f65052a68edfd5fe7049f317771bd82b",
+    "semantic_hash": "f65052a68edfd5fe7049f317771bd82b"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/portraits/admiral_kira.png": {
+    "mtime": 1779550955.4152038,
+    "ast_hash": "9d652d1795f080b90968beed59273652",
+    "semantic_hash": "9d652d1795f080b90968beed59273652"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/portraits/admiral_yuna.png": {
+    "mtime": 1779558564.5109713,
+    "ast_hash": "7c74c4b9ccb49f35d35d6b82eceea1c6",
+    "semantic_hash": "7c74c4b9ccb49f35d35d6b82eceea1c6"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/portraits/admiral_zara.png": {
+    "mtime": 1779553080.334191,
+    "ast_hash": "5668cdee4d6ad6da989cfc3d4f42bf6f",
+    "semantic_hash": "5668cdee4d6ad6da989cfc3d4f42bf6f"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/battlecruiser_a.png": {
+    "mtime": 1779566949.5375323,
+    "ast_hash": "6d2034c467d4d9b6aac5393b4b140e0d",
+    "semantic_hash": "6d2034c467d4d9b6aac5393b4b140e0d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/corvette_a.png": {
+    "mtime": 1779567642.523429,
+    "ast_hash": "6e7044008ec305a1ae109611bfe9427c",
+    "semantic_hash": "6e7044008ec305a1ae109611bfe9427c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/cruiser_a.png": {
+    "mtime": 1779564688.8126328,
+    "ast_hash": "b8c2ff8442be4c5b43e8666f1bd6c3d4",
+    "semantic_hash": "b8c2ff8442be4c5b43e8666f1bd6c3d4"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/destroyer_a.png": {
+    "mtime": 1779567094.7839074,
+    "ast_hash": "0dd6bba014b849d35ca49e54b058715e",
+    "semantic_hash": "0dd6bba014b849d35ca49e54b058715e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/dreadnought_a.png": {
+    "mtime": 1779565484.505221,
+    "ast_hash": "9221a5615f8f3215bb522ce1e40984da",
+    "semantic_hash": "9221a5615f8f3215bb522ce1e40984da"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/frigate_a.png": {
+    "mtime": 1779565659.9521132,
+    "ast_hash": "85e6e3c5a1be61580d54b6debd9e63bb",
+    "semantic_hash": "85e6e3c5a1be61580d54b6debd9e63bb"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sprites/mothership_a.png": {
+    "mtime": 1779567360.6146972,
+    "ast_hash": "96b97fd6bcee7843ff6efbb3f44fd07c",
+    "semantic_hash": "96b97fd6bcee7843ff6efbb3f44fd07c"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/include.png": {
+    "mtime": 1779356565.251382,
+    "ast_hash": "18e5b8f5915890a489a6aabcbf1aefed",
+    "semantic_hash": "18e5b8f5915890a489a6aabcbf1aefed"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/BattleLog.png": {
+    "mtime": 1779318655.5310633,
+    "ast_hash": "17635cedbc369f35e54d0ebe75b1020e",
+    "semantic_hash": "17635cedbc369f35e54d0ebe75b1020e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/BattleLogParser.png": {
+    "mtime": 1779318655.7035208,
+    "ast_hash": "1730356ec8b727d0c2ccf6f39002ae68",
+    "semantic_hash": "1730356ec8b727d0c2ccf6f39002ae68"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/ISimRunner.png": {
+    "mtime": 1779318655.8900857,
+    "ast_hash": "5afe1771baae64154b77b71e000cc968",
+    "semantic_hash": "5afe1771baae64154b77b71e000cc968"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/LocalSimRunner.png": {
+    "mtime": 1779318656.0835,
+    "ast_hash": "405898916cb849a2c6c055c3ed630193",
+    "semantic_hash": "405898916cb849a2c6c055c3ed630193"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/PlaybackState.png": {
+    "mtime": 1779318654.965546,
+    "ast_hash": "590c0d7a487d135a1ec7aad3d4927a21",
+    "semantic_hash": "590c0d7a487d135a1ec7aad3d4927a21"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/SimRunner.png": {
+    "mtime": 1779318656.3358848,
+    "ast_hash": "2790261357599623444dcf12af24ffa9",
+    "semantic_hash": "2790261357599623444dcf12af24ffa9"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/diagrams/csharp/client/src/sim/StoredLogSimRunner.png": {
+    "mtime": 1779318656.5137725,
+    "ast_hash": "58baf770db64188a4728070860a77963",
+    "semantic_hash": "58baf770db64188a4728070860a77963"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/inspo/ships/corvette.png": {
+    "mtime": 1779564801.993611,
+    "ast_hash": "05208754bf68328df40dcaded1a90c8e",
+    "semantic_hash": "05208754bf68328df40dcaded1a90c8e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/inspo/ships/cruiser.png": {
+    "mtime": 1779564019.486609,
+    "ast_hash": "31d6616e7dac1329cd2b7de681228553",
+    "semantic_hash": "31d6616e7dac1329cd2b7de681228553"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/inspo/ships/starleaf-02.gif": {
+    "mtime": 1779488307.3497846,
+    "ast_hash": "f529727e197b7f0900b271f08ed97dc0",
+    "semantic_hash": "f529727e197b7f0900b271f08ed97dc0"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_beam.wav": {
+    "mtime": 1779387438.8961525,
+    "ast_hash": "451fcf04248201bf08812e8f1ebc0e58",
+    "semantic_hash": "451fcf04248201bf08812e8f1ebc0e58"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_explosion_large.wav": {
+    "mtime": 1779387438.9297361,
+    "ast_hash": "41848f9c5cc636d4ab0af684110b0cb5",
+    "semantic_hash": "41848f9c5cc636d4ab0af684110b0cb5"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_explosion_small.wav": {
+    "mtime": 1779387438.917703,
+    "ast_hash": "9de33296d94bbbd7e55886a565125d65",
+    "semantic_hash": "9de33296d94bbbd7e55886a565125d65"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_hitscan.wav": {
+    "mtime": 1779387438.8876398,
+    "ast_hash": "25fa74844bcff2ea5c888697b39d17aa",
+    "semantic_hash": "25fa74844bcff2ea5c888697b39d17aa"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_mine_deploy.wav": {
+    "mtime": 1779387438.911189,
+    "ast_hash": "46f58ac9fe1c0ea85ec1674f558b6007",
+    "semantic_hash": "46f58ac9fe1c0ea85ec1674f558b6007"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_missile_launch.wav": {
+    "mtime": 1779392414.698645,
+    "ast_hash": "df0a0813dadb6b158a043fdd9eaa5e6e",
+    "semantic_hash": "df0a0813dadb6b158a043fdd9eaa5e6e"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_mothership_destroyed.wav": {
+    "mtime": 1779387438.9602768,
+    "ast_hash": "65a0ab26cb9830c8a4f1e9dd8b6c61c1",
+    "semantic_hash": "65a0ab26cb9830c8a4f1e9dd8b6c61c1"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_ship_destroyed.wav": {
+    "mtime": 1779387438.9407518,
+    "ast_hash": "9e1b694f2e27135eb34a3045b3fa6f5d",
+    "semantic_hash": "9e1b694f2e27135eb34a3045b3fa6f5d"
+  },
+  "/mnt/c/Users/Qinn/source/repos/skock/client/assets/sfx/sfx_torpedo_launch.wav": {
+    "mtime": 1779392414.7413065,
+    "ast_hash": "45e23b57928cca1ed2554db44db75826",
+    "semantic_hash": "45e23b57928cca1ed2554db44db75826"
+  }
+}

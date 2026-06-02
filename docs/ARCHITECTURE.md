@@ -125,7 +125,7 @@ PlayerID is passed to the dockyard binary on every session open. The binary uses
 Each tick executes phases in this exact order — order is part of the determinism contract (see ADR-0010):
 
 1. Increment tick counter
-2. Apply continuous effects — shield recharge, burn/radiation damage, status effect countdowns
+2. Apply continuous effects — shield recharge
 3. Rebuild spatial grid from current positions
 4. Compute boid forces per ship (reads spatial grid)
 5. Integrate positions and velocities (apply forces + inertia)
@@ -159,10 +159,6 @@ At battle start, all effects from `doctrines`, `role_equipment`, `faction_effect
 
 Positions use `I32F32`; everything else `I16F16`. See ADR-0002.
 
-### Point defense targeting
-
-Point defense (`PointDefense` role) uses `target_priority: "projectile"`. Each tick it scans all live projectiles within weapon `range`, picks the one closest to any friendly ship (highest threat), and fires if cooldown allows. Interception resolves instantly (hitscan — no interceptor projectile spawned): if PD fires and the target projectile is in range, `projectile_intercepted` fires and the projectile is removed. A `miss_chance` on the PD weapon block is the tuning knob for PD reliability.
-
 ### Projectile hit detection
 
 Swept segment test (see ADR-0013): each tick the projectile's movement is treated as a line segment `prev_pos → pos` (derived as `pos - velocity`). A hit occurs when the minimum distance from any circle center in the target ship's hull hit shape to the segment is ≤ `(circle.radius + projectile.hit_radius)`. `projectile.hit_radius` is a per-subtype default from sim config (e.g. `torpedo: 4`, `seeking_missile: 1`), overridable via `hit_radius` in the weapon block.
@@ -172,8 +168,7 @@ Swept segment test (see ADR-0013): each tick the projectile's movement is treate
 ```
 {
   source:                 ShipId,
-  target:                 ShipId,
-  current_angle:          I16F16,   // radians, ship-local heading toward target
+  current_angle:          I16F16,   // radians, world-space direction of the beam
   phase:                  "charging" | "firing",
   charge_ticks_remaining: u32,      // counts down during charge phase
   damage_ticks_remaining: u32,      // counts down during firing phase
@@ -181,7 +176,7 @@ Swept segment test (see ADR-0013): each tick the projectile's movement is treate
 }
 ```
 
-Created at charge start. Destroyed when: charge is cancelled by stun, target dies, or `damage_ticks_remaining` reaches 0.
+Created at charge start. Destroyed when `damage_ticks_remaining` reaches 0.
 
 ### Beam hit detection
 

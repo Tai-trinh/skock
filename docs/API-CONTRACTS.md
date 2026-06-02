@@ -119,7 +119,9 @@ All stats are fully resolved — the sim performs no blueprint lookups. Each shi
     "separation": 1.5,
     "cohesion": 0.8,
     "alignment": 0.6,
-    "seek_enemy": 2.0,
+    "seek_nearest": 1.5,
+    "seek_mass": 0.5,
+    "seek_mothership": 1.0,
     "maintain_range": 1.2
   },
   "armor": 0.10,
@@ -239,7 +241,7 @@ Reasons: `mothership_destroyed`, `timeout_draw`. `fleet_a_survivors` and `fleet_
 ```
 State snapshot and events for the same tick are one record. Godot builds the scrub index and event list in a single pass. No framing needed beyond MessagePack's own length encoding.
 
-**Events:** `projectile_fired`, `projectile_hit`, `projectile_fizzled`, `projectile_intercepted`, `mine_detonated`, `explosion_detonated`, `beam_fired`, `beam_hit`, `beam_ended`, `hitscan_fired`, `hitscan_missed`, `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
+**Events:** `hitscan_fired`, `hitscan_missed`, `projectile_explosion` (pos, radius — drives explosion VFX), `ship_destroyed`, `ship_at_low_hp` (hull ≤ 25% max HP, fires once per ship), `attrition_started` (fires at tick 1800)
 
 **Render loop:** interpolated. Renderer runs at display framerate. Each frame computes `t ∈ [0,1]` between the two nearest sim ticks and lerps ship positions and headings. Events fire when `t` crosses a tick boundary. State snapshots allow seeking to any tick directly without replaying from tick 0.
 

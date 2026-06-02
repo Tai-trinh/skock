@@ -17,7 +17,13 @@
       "Bash(curl -s http://localhost:8188/system_stats)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('ComfyUI OK'\\)\")",
       "Bash(powershell.exe *)",
-      "Bash(make comfyui-models *)"
+      "Bash(make comfyui-models *)",
+      "Bash(xargs ls -la)",
+      "Bash(git push *)",
+      "Bash(graphify export *)",
+      "Bash(graphify benchmark *)",
+      "Bash(graphify --help)",
+      "Bash(cmd.exe *)"
     ]
   }
 }

@@ -73,7 +73,7 @@ If the caller already passed explicit model choices, skip this step and proceed 
 
 Text encoders always default to clip_l + t5xxl — do not ask.
 
-## Step 3 — Print generation summary
+## Step 3 — Print generation summary + run command
 
 **Print this block before invoking `gen_image.ps1`**:
 
@@ -100,7 +100,13 @@ Output     : <output path>
 =================
 ```
 
-Then proceed — no need to wait for user confirmation.
+Then **print the exact PowerShell command** that will be run, as a fenced `powershell` code block the user can copy and paste. Use the fully-expanded form with no line continuations — one `-Param "value"` per line is fine, but it must be a single command the user can paste into a PowerShell terminal and run directly:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File "C:\...\scripts\gen_image.ps1" -Prompt "..." -Output "..." ...
+```
+
+After printing the command, proceed to run it — no need to wait for user confirmation.
 
 ## Invocation
 

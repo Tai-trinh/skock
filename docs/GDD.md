@@ -170,7 +170,7 @@ Behavior changes by tuning weights per role, not per ship. Neighbor search uses 
 - **Torpedo** — straight-line, high damage, long lifetime. Interceptable. May carry explosive payload.
 - **Drifting bomb / mine** — launches with initial velocity then drifts. Detonates on proximity. Always explosive.
 
-Explosive payloads deal flat damage within `explosion_radius` — no falloff. Hits friendly and enemy ships.
+Explosive payloads deal flat damage within `explosion_radius` — no falloff. Enemy ships only; no friendly fire.
 
 **Beam** — two-phase weapon:
 - *Charge phase:* turret slews toward target; beam entity visible so renderer shows aiming. Charge cancels on stun.
